@@ -1,0 +1,27 @@
+body {
+  background-color: #1a1a1a;
+  color: white;
+  font-family: sans-serif;
+}
+
+table {
+  background-color: #2a2a2a;
+  color: white;
+  margin-top: 20px;
+}
+
+th, td {
+  border: 1px solid #444;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+thead {
+  background-color: #333;
+  color: #fff;
+}
+
+ul {
+  padding-left: 20px;
+  margin: 0;
+}

@@ -1,0 +1,122 @@
+.sidebar {
+  position: fixed;
+  width: 210px;
+  min-height: 100vh;
+  background: #1c1f26 ;
+  display: flex;
+  flex-direction: column;
+  color: white;
+  padding: 1rem 0.5rem;
+  padding-top: 10px;
+  box-sizing: border-box;
+  z-index: 10;
+  border-right: 1px solid var(--color-border);
+}
+
+.sidebar-header {
+  display: flexbox;
+  flex-direction: column;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.sidebar-line {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0px 0 20px;
+}
+
+.sidebar-logo {
+  width: 130px;
+  display: block;
+  margin: 0 auto 0.1rem;
+}
+
+.sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Each list item holds one “card-link” */
+.sidebar nav li {
+  margin-bottom: 1rem;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+}
+
+.sidebar li {
+  margin-bottom: 10px;
+}
+
+.sidebar a {
+  color: white;
+  text-decoration: none;
+}
+
+.sidebar a:hover {
+  text-decoration: underline;
+}
+
+.sidebar nav li a {
+  display: block;
+  text-decoration: none;
+  background-color: var(--color-bg); /* dark grey background for cards */
+  color: var(--color-text);           /* white/ light text */
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.18s ease, transform 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+/* 5) Hover state: lighten slightly and lift up */
+.sidebar nav li a:hover {
+  background-color: #2a2a2a; /* slightly lighter than var(--color-bg) */
+  transform: translateY(-1px);
+}
+
+.sidebar nav li a.active {
+  background-color: #386086; /* bright blue (you can pick another variable/color) */
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+}
+
+.sidebar nav li a .icon {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar.collapsed .sidebar-line,
+.sidebar.collapsed .sidebar-header h2 {
+  display: none;
+}
+
+.sidebar.collapsed nav li a {
+  padding-left: 0.8rem;
+  text-align: center;
+}
+
+/* 9) Make sure the sidebar stays above the main content */
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar.collapsed .sidebar-line,
+.sidebar.collapsed .sidebar-header h2 {
+  display: none;
+}
+
+.sidebar.collapsed nav li a {
+  padding-left: 0.8rem;
+  text-align: center;
+}
