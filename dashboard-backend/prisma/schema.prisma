@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,30 +8,133 @@ datasource db {
 }
 
 model ClientApplication {
-  client_id     Int                 @id         @default(autoincrement())            
-  app_id        String?             @unique
-  app_name      String?
-  version       String?
-  url           String?
-  created_at    DateTime?           @default(now())
-  last_update   DateTime?           @updatedAt
-  services       ClientAppService[]
+  client_id       Int        @id @default(autoincrement())
+  app_id          String?    @unique
+  app_title       String?
+  version         String?
+  url             String?
+  api_url         String?
+  created_at      DateTime?  @db.Timestamp(6)
+  last_update     DateTime?  @updatedAt @db.Timestamp(6)
+  proctor_edu     Boolean?   @default(false)
+  proctorio       Boolean?   @default(false)
+  superset_apache Boolean?   @default(false)
+  services        services[]
 
   @@map("client_applications")
 }
 
-model ClientAppService {
-  service_id      Int                 @id    @default(autoincrement())               
-  client_id       Int
-  service_name     String?
-  ip_address      String?
-  status          String?
-  last_heartbeat  DateTime?           @default(now())
-  is_main         Boolean             @default(false)
-  melody          String?
-  system_info     Json?               @db.JsonB
-  client          ClientApplication   @relation(fields: [client_id], references: [client_id], onDelete: Cascade)
+model services {
+  id                  String            @id
+  app_id              String
+  type                String            @db.VarChar(50)
+  last_ping           DateTime?         @db.Timestamp(6)
+  status              String?           @db.VarChar(20)
+  client_applications ClientApplication @relation(fields: [app_id], references: [app_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_client_app_services_app_id")
+}
 
-  @@unique([client_id, service_name])
-  @@map("client_app_services")
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model statistics_log {
+  id                             String   @id(map: "pk_statistics_log")
+  recorded_at                    DateTime @db.Timestamp(6)
+  user_cnt                       Int?
+  active_users                   Int?
+  locked_users                   Int?
+  suspended_users                Int?
+  pending_users                  Int?
+  inactive_users                 Int?
+  user_group_cnt                 Int?
+  root_user_group_cnt            Int?
+  avg_users_per_group            Decimal? @db.Decimal
+  admin_cnt                      Int?
+  proctor_cnt                    Int?
+  instructor_cnt                 Int?
+  student_cnt                    Int?
+  custom_role_cnt                Int?
+  all_pools                      Int?
+  all_root_pools                 Int?
+  all_pools_with_questions       Int?
+  avg_questions_in_pools         Decimal? @db.Decimal
+  single_choice_questions        Int?
+  multiple_choice_questions      Int?
+  essay_questions                Int?
+  true_false_questions           Int?
+  matrix_questions               Int?
+  matching_questions             Int?
+  fill_in_blanks_questions       Int?
+  ordering_questions             Int?
+  hotspot_questions              Int?
+  open_ended_questions           Int?
+  def_correctincorrect_scoring   Int?
+  by_answer_weight_scoring       Int?
+  manual_scoring                 Int?
+  by_combination_scoring         Int?
+  by_rules_scoring               Int?
+  custom_question_properties     Int?
+  default_tests                  Int?
+  only_tests_with_sections       Int?
+  all_manual_tests               Int?
+  all_generated_tests            Int?
+  generated_by_category_tests    Int?
+  avg_test_versions_root_tests   Decimal? @db.Decimal
+  max_test_versions_root_tests   Int?
+  avg_test_versions_root_sec     Decimal? @db.Decimal
+  max_test_versions_root_sec     Int?
+  test_templates                 Int?
+  limited_time_tests             Int?
+  unlimited_time_tests           Int?
+  duration_per_question_tests    Int?
+  duration_per_quiz_tests        Int?
+  deadline_per_quiz_tests        Int?
+  test_one_page                  Int?
+  test_page_per_question         Int?
+  after_test_report              Int?
+  after_grading_report           Int?
+  after_verification_report      Int?
+  on_manager_approval_report     Int?
+  realtime_grading               Int?
+  score_details                  Int?
+  only_score                     Int?
+  test_certificates              Int?
+  surveys                        Int?
+  self_enrollment_global         Int?
+  session_user_groups            Int?
+  session_training               Int?
+  proctoredu                     Int?
+  proctorio                      Int?
+  favorite_reports               Int?
+  scheduled_reports              Int?
+  training_courses               Int?
+  pinned_courses                 Int?
+  avg_steps_per_training         Decimal? @db.Decimal
+  avg_tests_per_training         Decimal? @db.Decimal
+  enabled_email_notifications    Int?
+  disabled_email_notifications   Int?
+  enabled_app_notifications      Int?
+  disabled_app_notifications     Int?
+  language_bundles               Int?
+  users_logged_all_time          Int?
+  users_logged_last_month        Int?
+  users_created_last_month       Int?
+  qpools_created_last_month      Int?
+  questions_in_qpools_last_month Int?
+  attempts_last_month            Int?
+  total_attempts                 Int?
+  test_attempts_last_month       Int?
+  total_test_attempts            Int?
+  survey_attempts_last_month     Int?
+  total_survey_attempts          Int?
+  max_concurrent_users_ever      Int?
+  max_concurrent_users_last_mont Int?
+  failed_logins_last_month       Int?
+  failed_emails                  Int?
+  unfinished_attempts            Int?
+  unfinished_disconnected_attemp Int?
+  unfinished_in_progress_attemp  Int?
+  unfinished_avb_continue_attemp Int?
+  unfinished_suspended_attemp    Int?
+  has_state_defined              Int?
+  has_country_defined            Int?
+  total_questions                Int?
+  accounting_questions           Int?
 }

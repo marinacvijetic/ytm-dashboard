@@ -1,13 +1,18 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+import { PrimeReactProvider } from "primereact/api";
 import App from './App.tsx'
-import "./styles/variables.css";
-import "./styles/globals.css";
-import "./styles/table.css";
+
+// 1) Tailwind
+import './App.css'
+
+// 2) PrimeReact styles
+import 'primeicons/primeicons.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <PrimeReactProvider value={{unstyled: true}}>
+        <App />
+    </PrimeReactProvider>
   </StrictMode>,
 )

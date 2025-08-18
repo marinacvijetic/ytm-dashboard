@@ -1,68 +1,32 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const clientModel = require('../models/client.model');
-const eventBus = require('../utils/eventBus');
+const axios = require('axios');
+const clientModel = require("../models/client.model");
+const eventBus = require("../utils/eventBus");
 
-// exports.getAllClients = async (req, res) => {
-//   try {
-//     const clients = await prisma.clientApplication.findMany({
-//       include: {
-//         servers: {
-//           select: {
-//             server_id:      true,
-//             server_name:    true,
-//             ip_address:     true,
-//             status:         true,
-//             is_main:        true,
-//             melody:         true,
-//             system_info:    true,
-//           },
-//         },
-//       },
-//     });
-//     // The JSON key will be "servers", so in front-end we use `client.services = data.services`
-//     // (or map servers → services if needed).
-//     res.json(
-//       clients.map((c) => ({
-//         client_id: c.client_id,
-//         app_id:    c.app_id,
-//         app_name:  c.app_name,
-//         version:   c.version,
-//         url:       c.url,
-//         services:  c.services,  // rename key here if you want exact “services”
-//       }))
-//     );
-//   } catch (err) {
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// };
 exports.getAllClients = async (req, res) => {
- try {
+  try {
     const clients = await prisma.clientApplication.findMany({
       include: { services: true },
     });
     res.json(clients);
   } catch (err) {
     console.error("Error in getAllClients:", err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
-
-}
-
+};
 
 exports.getPaginatedClients = async (req, res) => {
-  
   // Parse `page` and `limit` from the query string (defaults: page=1, limit=10)
-  const page  = parseInt(req.query.page  || "1", 10);
+  const page = parseInt(req.query.page || "1", 10);
   const limit = parseInt(req.query.limit || "6", 10);
 
   // If invalid page/limit, force sensible defaults
-  const safePage  = isNaN(page)  || page < 1 ? 1 : page;
+  const safePage = isNaN(page) || page < 1 ? 1 : page;
   const safeLimit = isNaN(limit) || limit < 1 ? 6 : limit;
-  
+
   // Compute how many rows to skip (0-based)
   const skip = (safePage - 1) * safeLimit;
-
 
   try {
     // 2) Use your Prisma helpers—no raw SQL here
@@ -70,177 +34,154 @@ exports.getPaginatedClients = async (req, res) => {
       clientModel.findClientsPage(skip, safeLimit),
       clientModel.countClients(),
     ]);
-    
+
     const totalPages = Math.ceil(totalCount / safeLimit);
 
     res.json({
       data,
-      page:       safePage,
+      page: safePage,
       totalPages,
       totalCount,
       pageSize: safeLimit,
     });
   } catch (err) {
     console.error("Error in getAllClients:", err.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 exports.registerApp = async (req, res) => {
   try {
-    const { app_id, app_name, version, url, services } = req.body;
+    const {
+      appId,
+      title,
+      version,
+      url,
+      apiUrl,
+      proctorEdu,
+      proctorio,
+      superset,
+      services,
+    } = req.body;
 
-    if (!app_id || !app_name || !version || !url || !Array.isArray(services)) {
-      return res.status(400).json({ error: 'Invalid request payload' });
+    if (!appId) {
+      return res.status(400).json({ error: "Invalid request payload" });
     }
 
     // 1) Update/insert client application
-    let clientApp = await clientModel.findClientByAppId(app_id);
+    let clientApp = await clientModel.findClientByAppId(appId);
     if (!clientApp) {
       clientApp = await clientModel.createClient(
-        app_id,
-        app_name,
+        appId,
+        title,
         version,
-        url
+        url,
+        apiUrl,
+        proctorEdu,
+        proctorio,
+        superset
       );
     } else {
       clientApp = await clientModel.updateClient(
-        app_id,
-        app_name,
+        appId,
+        title,
         version,
-        url
+        url,
+        apiUrl,
+        proctorEdu,
+        proctorio,
+        superset
       );
     }
 
-    // 2) Main-service election: check if any service already marked main
-    const existingMain = await clientModel.findMainService(clientApp.client_id);
-    let hasMain = Boolean(existingMain);
-
-    // 3) Process each incoming service
-    for (const srv of services) {
-      const { service_name, ip_address, status } = srv;
-      const existing = await clientModel.findService(
-        clientApp.client_id,
-        service_name
-      );
-
-      if (existing) {
-        // just update
-        await clientModel.updateService(
-          clientApp.client_id,
-          service_name,
-          ip_address,
-          status
-        );
-      } else {
-        // new service: elect as main if none exists yet
-        const isMain = !hasMain;
-        await clientModel.createService(
-          clientApp.client_id,
-          service_name,
-          ip_address,
-          status,
-          isMain
-        );
-        if (isMain) hasMain = true;
+    if (Array.isArray(services)) {
+      for (const svc of services) {
+        await prisma.services.upsert({
+          where: { id: svc.id },
+          create: {
+            id: svc.id,
+            appId: svc.app_id,
+            type: svc.type,
+            client_applications: { connect: { app_id: clientApp.app_id },
+            },
+          },
+          update: {
+            // in case type changed
+            type: svc.type,
+          },
+        });
       }
     }
 
     // 4) Emit event and respond
-    eventBus.emit('app_registered', {
+    eventBus.emit("app_registered", {
       clientId: clientApp.client_id,
-      app_id,
-      serviceCount: services.length,
+      appId,
     });
 
-    res.status(200).json({ message: 'App registered successfully' });
+    res.status(200).json({ message: "App registered successfully", clientApp });
   } catch (err) {
-    console.error('Register App Error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Register App Error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
+  
 };
 
-exports.heartbeat = async (req, res) => {
-  try {
-    const { app_id, service_name, status, melody, system_info } = req.body;
-    if (!app_id || !service_name || !status) {
-      return res.status(400).json({ error: 'app_id, service_name and status required' });
+exports.syncAllAppInfo = async (req, res) => {
+    try {
+      const clients = await prisma.clientApplication.findMany({
+      include: { services: true },
+    });
+
+      const results = await Promise.all(clients.map(async (client) => {
+        const baseUrl = ('http://localhost:8085/ytm.webview/' || '').replace(/\/+$/, '');
+        if(!baseUrl) {
+          return { appId: client.app_id, status: 'skipped', reason: 'no URL'};
+        }
+
+        const servletUrl = `${baseUrl}/app/info`;
+        try {
+          const { data: appInfo } = await axios.get(servletUrl, {timeout: 10_000});
+          await clientModel.updateClient(
+            client.app_id,
+            appInfo.title,
+            appInfo.version,
+            appInfo.url,
+            appInfo.api_url,
+            appInfo.proctor_edu,
+            appInfo.proctorio,
+            appInfo.superset_apache
+          );
+
+          if(Array.isArray(appInfo.services)) {
+            for (const svc of appInfo.services) {
+              await prisma.services.upsert({
+                where: { id: svc.id },
+                create: {
+                  id: svc.id,
+                  app_id: svc.app_id,
+                  type: svc.type,
+                  client_applications: { connect: { app_id: client.app_id } },
+                },
+                update: {
+                  // in case type changed
+                  type: svc.type,
+                },
+              });
+            }
+          }
+          return { appId: client.app_id, status: 'updated'};
+        }catch (e) {
+          console.error(`Failed to sync app info for ${client.app_id}:`, e.message);
+          return { appId: client.app_id, status: 'error', reason: e.message };
+        }
+
+      }));
+
+      return res.json(results);
+
+    } catch (e) {
+      console.error('Application information sync failed', e);
+      return res.status(500).json({ error: 'Sync all failed', details: e.message });
     }
-    // find client
-    const clientApp = await clientModel.findClientByAppId(app_id);
-    if (!clientApp) {
-      return res.status(404).json({ error: 'Unknown app_id' });
-    }
-    // update existing service
-    await clientModel.updateHeartbeat(
-      clientApp.client_id,
-      service_name,
-      status,
-      melody ?? null,
-      system_info ?? null
-    );
-    res.json({ message: 'Heartbeat updated' });
-  } catch (err) {
-    console.error('Heartbeat Error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
   }
-};
-
-exports.setMainService = async (req, res) => {
-  const clientId  = parseInt(req.params.clientId, 10);
-  const serviceId = parseInt(req.params.serviceId, 10);
-  console.log(`[client.controller] setMainService called with clientId=${clientId}, serviceId=${serviceId}`);
-  try {
-    // 1) Unset existing main (if any)
-    await clientModel.unsetMainService(clientId);
-    // 2) Set the new one
-    await clientModel.setMainService(serviceId);
-    res.json({ message: 'Main service updated' });
-  } catch (err) {
-    console.error(err);
-    console.error(`[client.controller] Error in setMainService:`, err);
-    res.status(500).json({ error: 'Could not set main service' });
-  }
-};
-
-// exports.registerApp = async (req, res) => {
-//   try {
-//     const { app_id, app_name, version, url, servers } = req.body;
-
-//     if (!app_id || !app_name || !version || !url || !Array.isArray(servers)) {
-//       return res.status(400).json({ error: 'Invalid request payload' });
-//     }
-
-//     let clientApp = await clientModel.findClientByAppId(app_id);
-
-//     if (!clientApp) {
-//       const nextId = await clientModel.getNextClientId();
-//       clientApp = await clientModel.createClient(nextId, app_id, app_name, version, url);
-//     } else {
-//       clientApp = await clientModel.updateClient(app_id, app_name, version, url);
-//     }
-
-//     for (const server of servers) {
-//       const { server_name, ip_address, status } = server;
-//       const existing = await clientModel.findServer(clientApp.client_id, server_name);
-
-//       if (existing) {
-//         await clientModel.updateServer(clientApp.client_id, server_name, ip_address, status);
-//       } else {
-//         const nextServerId = await clientModel.getNextServerId();
-//         await clientModel.createServer(nextServerId, clientApp.client_id, server_name, ip_address, status);
-//       }
-//     }
-
-//     eventBus.emit('app_registered', {
-//       clientId: clientApp.client_id,
-//       app_id,
-//       serverCount: servers.length,
-//     });
-
-//     res.status(200).json({ message: 'App registered successfully' });
-//   } catch (err) {
-//     console.error('Register App Error:', err.message);
-//     res.status(500).json({ error: 'Internal Server Error' });
-//   }
-// };

@@ -1,27 +1,114 @@
-body {
-  background-color: #1a1a1a;
-  color: white;
-  font-family: sans-serif;
+@import "tailwindcss";
+@layer tailwind-base, tailwind-utilities, primereact;
+
+@layer base {
+  h2 {
+    @apply text-3xl font-semibold mb-4 text-gray-700;
+  }
+
+  //Links
+  a {
+    @apply text-blue-500 hover:underline;
+  }
+
+  // Table elements
+  thead tr {
+    @apply bg-gray-300 border border-gray-300;
+  }
+  .client-table th {
+    @apply px-4 py-2 place-content-center whitespace-nowrap min-w-max bg-[#F4F6F8]  text-sm font-semibold text-gray-800 border border-gray-200 ;
+  }
+  .client-table th,
+.client-table td {
+  min-width: 120px;
+}
+  tbody tr:nth-child(even) {
+    @apply bg-[#F9FAFB];
+  }
+  td {
+    @apply px-4 py-3 text-sm text-gray-800 border border-gray-300;
+  }
+
+  input{
+    @apply bg-white
+  }
+
+  textarea,
+  select {
+    @apply px-3 py-2 border border-gray-400 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500;
+  }
 }
 
-table {
-  background-color: #2a2a2a;
-  color: white;
-  margin-top: 20px;
+@layer components {
+  .client-table {
+    @apply font-normal table-fixed;
+  }
+  .badge-yesno {
+    @apply inline-flex items-center justify-center rounded-lg font-semibold 
+    text-xs w-20 h-7 text-center;
+  }
+  .badge-yes {
+    @apply bg-green-500/30 text-green-900;
+  }
+  .badge-no {
+    @apply bg-red-500/30 text-red-900;
+  }
+  .column{
+    @apply border border-gray-200
+  }
+  .url{
+    @apply text-blue-700 text-[14px]
+  }
+
+  .card-dashboard {
+    @apply flex flex-col bg-white border border-gray-300 rounded-xl shadow-lg w-70 h-46 p-6;
+  }
+
+  /* Paginator container */
+  .paginator {
+    @apply flex justify-center items-center gap-1 mt-2 bg-gray-100 py-2 rounded-b-lg;
+  }
+
+  /* Page number buttons */
+  .paginator [data-pc-section="pagebutton"] {
+    @apply bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-1 mx-1 transition hover:bg-blue-100 hover:text-blue-600 cursor-pointer;
+  }
+
+  /* Active page button */
+  .paginator [data-pc-section="pagebutton"][aria-current="true"] {
+    @apply bg-primary-blue text-white font-bold ;
+  }
+
+  /* Prev/Next/First/Last buttons */
+  .paginator [data-pc-section="prevpagebutton"],
+  .paginator [data-pc-section="nextpagebutton"],
+  .paginator [data-pc-section="firstpagebutton"],
+  .paginator [data-pc-section="lastpagebutton"] {
+    @apply bg-white border border-gray-300 text-gray-700 rounded-lg px-2 py-1 mx-1 transition hover:bg-blue-100 hover:text-blue-600 cursor-pointer;
+  }
+
+  /* Disabled state */
+  .paginator button:disabled {
+    @apply bg-gray-200 text-gray-400 cursor-not-allowed border-gray-200;
+  }
+
+  //Primary button
+  .btn-primary {
+    @apply inline-flex items-center px-4 py-2 bg-primary-blue text-white font-medium rounded hover:bg-indigo-700 transition;
+  }
+
+  //Text-only button (for icons, refresh etc.)
+  .btn-text {
+    @apply inline-flex items-center px-2 py-1 text-indigo-500 hover:text-indigo-400 transition;
+  }
+
 }
 
-th, td {
-  border: 1px solid #444;
-  padding: 8px 12px;
-  text-align: left;
-}
-
-thead {
-  background-color: #333;
-  color: #fff;
-}
-
-ul {
-  padding-left: 20px;
-  margin: 0;
+@theme {
+  --color-background: #FFFFFF;
+  --color-primary-blue: #2FABDF;
+  --color-background3: #F4F8FE ;
+  --color-sidebarText: #687C93;
+  --color-background4: #5DA7DB;
+  --color-sky: oklch(95.1% 0.026 236.824);
 }

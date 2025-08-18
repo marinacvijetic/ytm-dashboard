@@ -8,123 +8,74 @@ exports.findClientByAppId = async (app_id) => {
   });
 };
 
-exports.createClient = async (app_id, app_name, version, url) => {
+exports.createClient = async (app_id, app_title, version, url, api_url, proctor_edu, proctorio, superset_apache) => {
   return await prisma.clientApplication.create({
     data: {
       app_id,
-      app_name,
+      app_title,
       version,
       url,
+      api_url,
       created_at: new Date(),
       last_update: new Date(),
+      proctor_edu,
+      proctorio,
+      superset_apache,
     },
   });
 };
 
-exports.updateClient = async (app_id, app_name, version, url) => {
+exports.updateClient = async (app_id, app_title, version, url, api_url, proctor_edu, proctorio, superset_apache) => {
   return await prisma.clientApplication.update({
     where: { app_id },
     data: {
-      app_name,
+      app_title,
       version,
       url,
+      api_url,
       last_update: new Date(),
+      proctor_edu,
+      proctorio,
+      superset_apache,
     },
   });
 };
 
-exports.findService = async (client_id, service_name) => {
-  return await prisma.clientAppService.findUnique({
+exports.findService = async (app_id, type) => {
+  return await prisma.services.findUnique({
     where: {
-      client_id_service_name: {
-        client_id,
-        service_name,
+      app_id_service_type: {
+        app_id,
+        type,
       },
     },
   });
 };
 
-exports.findMainService = async (client_id) => {
-  return await prisma.clientAppService.findFirst({
-    where: {client_id, is_main: true },
-  });
-};
-
-
-exports.createService = async (client_id, service_name, ip_address, status, is_main = false, melody, system_info) => {
-  return await prisma.clientAppService.create({
+exports.createService = async (app_id, type, last_ping, status) => {
+  return await prisma.services.create({
     data: {
-      client_id,
-      service_name,
-      ip_address,
-      status,
-      last_heartbeat: new Date(),
-      is_main,
-      melody,
-      system_info
+      app_id,
+      type,
+      last_ping,
+      status
     },
   });
 };
-
-exports.updateService = async (client_id, service_name, ip_address, status, melody, system_info) => {
-  return await prisma.clientAppService.update({
+exports.updateService = async (app_id, type, last_ping, status) => {
+  return await prisma.services.update({
     where: {
-      client_id_service_name: {client_id, service_name},
-    },
-    data: {
-      ip_address,
-      status,
-      last_heartbeat: new Date(),
-      melody,
-      system_info
-    },
-  });
-};
-
-exports.setMainService = async (service_id) => {
-  return prisma.clientAppService.updateMany({
-    where: {
-      service_id: service_id,   
-    },
-    data: {
-      is_main: true,            
-    },
-  });
-};
-
-exports.unsetMainService = async (client_id) => {
-  console.log(`[client.model] → unsetMainService(${client_id})`);
-  try {
-    const result = await prisma.clientAppService.updateMany({
-      where: {
-        client_id: client_id,
-        is_main:   true,
+      app_id_service_type: {
+        app_id,
+        type,
       },
-      data: {
-        is_main: false,
-      },
-    });
-    console.log(`[client.model] unsetMainService result =`, result);
-    return result;
-  } catch (err) {
-    console.error(`[client.model] Error in unsetMainService:`, err);
-    throw err;
-  }
-};
-
-exports.updateHeartbeat = async (client_id, service_name, status, melody = null, system_info = null) => {
-  return prisma.clientAppService.update({
-    where: { client_id_service_name: { client_id, service_name } },
+    },
     data: {
-      status,
-      last_heartbeat: new Date(),
-      // only update these if provided
-      ...(melody        !== null && { melody }),
-      ...(system_info   !== null && { system_info }),
+      last_ping,
+      status
     },
   });
 };
-
 
 // Returns the total number of clients in the table.
 exports.countClients = async () => {
@@ -141,7 +92,7 @@ exports.findClientsPage = async (skip, take) => {
     const clients = await prisma.clientApplication.findMany({
       skip: skip,
       take: take,
-      include: {services: true},
+      // include: {services: true},
     });
 
     // Map into the exact shape your front‐end expects:

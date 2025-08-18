@@ -1,31 +1,23 @@
 import React, { useEffect, useState } from "react";
-import "../../styles/table.css";
-import "../../styles/buttons.css";
-import { ServiceDetails } from "../services/ServiceDetails";
-
-type Service = {
-  service_id: number;
-  service_name: string;
-  ip_address: string;
-  status: string;
-  last_heartbeat: string;
-  is_main: boolean;
-  melody?: string;
-  system_info?: JSON;
-};
+import { DataTable, type DataTablePageEvent } from "primereact/datatable";
+import { Column } from "primereact/column";
+import { InputText } from "primereact/inputtext";
+import { Button } from "primereact/button";
 
 type Client = {
   client_id: number;
   app_id: string;
-  app_name: string;
+  app_title: string;
   version: string;
   url: string;
+  api_url: string;
   created_at: string;
   last_update: string;
-  services: Service[];
+  proctor_edu: boolean;
+  proctorio: boolean;
+  superset_apache: boolean;
 };
 
-// This is the shape of the paginated response from the backend
 type PaginatedResponse = {
   data: Client[];
   page: number;
@@ -34,335 +26,196 @@ type PaginatedResponse = {
 };
 
 export const ClientTable: React.FC = () => {
-  // Table data and loading state
   const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1); // 1-based
+  const [limit] = useState<number>(6); // rows per page
+  const [, setTotalPages] = useState<number>(1);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [filter, setFilter] = useState<string>("");
+  const [countdown, setCountdown] = useState<number>(30);
 
-  // Filter (search) state
-  const [filter, setFilter] = useState("");
-
-  // Last updated and countdown state
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [countdown, setCountdown] = useState(30);
-
-  // Which service’s details modal is open
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-
-  // Helper function for opening ServiceDetails modal
-  const openServiceDetails = (client: Client) => {
-  setSelectedClient(client);
-  };
-  // Pagination state:
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [limit] = useState(6); // always show 10 rows/page
-
-  // Loads page from the server, then updates clients, totalPages etc
-  const fetchData = (_pageToLoad: number = 1) => {
+  // Fetch a specific page from the server
+  const fetchData = (pageToLoad: number = 1) => {
     setLoading(true);
-    fetch(`http://localhost:3300/api/clients?page=${page}&limit=${limit}`)
+    fetch(
+      `${
+        import.meta.env.VITE_BASE_URL
+      }/clients?page=${pageToLoad}&limit=${limit}`
+    )
       .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then((json: PaginatedResponse) => {
         setClients(json.data);
         setTotalPages(json.totalPages);
-        setLoading(false);
-        setCountdown(30); // reset countdown after every successfull fetch
-        setLastUpdated(new Date());
+        setTotalCount(json.totalCount);
+        setCountdown(30);
       })
       .catch((err) => {
-        console.error("Error fetching clients:", err);
-        setLoading(false);
-      });
+        console.error("Failed to fetch clients", err);
+      })
+      .finally(() => setLoading(false));
   };
 
-  // Initial load and autorefresh every 30s
+  // Load data whenever `page` changes
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, [page]); // Re-run any time page changes
+    fetchData(page);
+  }, [page]);
 
-  //Filter by app_name
-  const filteredClients = clients.filter((client) =>
-    client.app_name?.toLowerCase().includes(filter.toLowerCase())
+  // Countdown timer for auto-refresh indicator
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => (prev <= 1 ? 30 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Handler for DataTable pagination event
+  const onPage = (e: DataTablePageEvent) => {
+    // e.page is zero-based, so add 1
+    setPage(e.page! + 1);
+  };
+
+  // Client-side filter on the currently loaded page
+  const filteredClients = clients.filter((c) =>
+    c.app_title.toLowerCase().includes(filter.toLowerCase())
   );
 
-  //Call your PUT /setMain endpoint
-  const handleSetMain = async (clientId: Number, serviceId: Number) => {
-    await fetch(
-      `http://localhost:3300/api/clients/${clientId}/services/${serviceId}/setMain`,
-      { method: "PUT" }
-    );
-    fetchData();
-  };
+  // Render a badge for boolean values
+  const yesNoBadge = (value: boolean) => (
+    <span
+      className={`badge-yesno ${value ? "badge-yes" : "badge-no"}`}>
+      {value ? "Yes" : "No"}
+    </span>
+  );
 
-  // Countdown timer effect (runs every 1 sec)
-  useEffect(() => {
-    // If lastUpdated is null, don’t start countdown yet
-    if (!lastUpdated) return;
-
-    // Decrement every second
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          // When it hits 0, next fetch will also reset countdown to 30.
-          return 30;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [lastUpdated]);
-  // Re‐run this effect whenever `lastUpdated` is reset
-
-  // Handlers for pagination buttons
-  const goToPrevPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  };
-  const goToNextPage = () => {
-    if (page < totalPages) {
-      setPage(page + 1);
+  const handleSyncAll = async () => {
+    setLoading(true);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_BASE_URL}/app-info/sync`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const summary = await resp.json();
+      console.log('Bulk sync results:', summary);
+      fetchData(page);  // reload table data
+    } catch (err) {
+      console.error('Sync all failed', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) return <p style={{ color: "#fff" }}>Loading…</p>;
+  if (loading) {
+    return <p className="text-white p-4">Loading…</p>;
+  }
 
   return (
-    <div className="table-container">
-      {/* SEARCH + REFRESH */}
-      <div className="table-header">
-        <input
-          type="text"
-          placeholder="Search app name..."
-          className="search-bar"
+    <div className="p-4 w-full">
+      {/* Search + Refresh Controls */}
+      <div className="flex justify-between items-center mb-4">
+        <InputText
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={(e) => setFilter(e.currentTarget.value)}
+          placeholder="Search by client name..."
+          className="px-3 py-2 border border-gray-400 rounded text-sm text-black"
         />
-        <div className="refresh-wrapper">
-          <span className="last-updated">
-            Last updated: {lastUpdated?.toLocaleTimeString() || "—"}
+        <div className="flex items-center gap-4">
+          <span className="text-gray-700 font-semibold text-sm">
+            {`Next refresh in ${countdown}s`}
           </span>
-          <span className="countdown">
-            {lastUpdated ? `Next refresh in ${countdown}s` : ""}
-          </span>
-          <button className="btn-refresh" onClick={() => fetchData(page)}>
-            🔄 Refresh
-          </button>
+          <Button
+            className="btn-text"
+            icon="pi pi-refresh"
+            onClick={() => handleSyncAll()}
+            label="Sync Now"
+          />
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="table-wrapper">
-        <table className="standard-table">
-          <thead>
-            <tr>
-              <th>App Name</th>
-              <th>Version</th>
-              <th>URL</th>
-              <th>Main Service</th>
-              <th>Status</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredClients.map((client) => {
-              // Compute the main service for this client:
-              const mainService = client.services.find((s) => s.is_main) ||
-                client.services[0] || {
-                  service_name: "No services",
-                  status: "—",
-                  service_id: 0,
-                };
-
-              return (
-                <React.Fragment key={client.client_id}>
-                  <tr className="clickable-row">
-                    <td>{client.app_name}</td>
-                    <td>{client.version}</td>
-                    <td>
-                      <a
-                        href={client.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="url-link"
-                      >
-                        {client.url}
-                      </a>
-                    </td>
-
-                    {/* Main service*/}
-                    <td>
-                      {mainService ? mainService.service_name : "—"}
-                    </td>
-
-                    {/* Status badge */}
-                    <td>
-                      {!client.services || client.services.length === 0 ? (
-                        <span className="status-badge status-neutral">No services</span>
-                      ) : mainService ? (
-                      <span className={`status-badge ${mainService.status.toLowerCase() === "healthy" ? "status-healthy" : "status-unhealthy"}`}>
-                       {mainService.status}
-                      </span>
-                      ) : ( 
-                      <span className="status-badge status-neutral">No services</span>
-                      )}
-                    </td>
-
-                    {/* “Details” column, button view which opens ServiceDetails modal */}
-                    <td>
-                      <button
-                        className="btn-refresh"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openServiceDetails(client);
-                        }}
-                      >
-                        ℹ️ View
-                      </button>
-                    </td>
-                  </tr>
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Render the ServiceDetails modal when selectedClient != null */}
-      {selectedClient && (
-        <ServiceDetails
-          client={selectedClient}
-          onClose={() => setSelectedClient(null)}
-          onChangeMain={handleSetMain}
-        />
-      )}
-
-      <div className="pagination-controls">
-        <button
-          className="btn-page"
-          onClick={goToPrevPage}
-          disabled={page <= 1}
+      {/* PrimeReact DataTable with server-side pagination */}
+      <div className="overflow-x-auto">
+        <DataTable
+          value={filteredClients}
+          loading={loading}
+          scrollable
+          scrollHeight="400px"
+          paginatorClassName="paginator"
+          paginator
+          rows={limit}
+          first={(page - 1) * limit}
+          totalRecords={totalCount}
+          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink PageDropdown RowsPerPageDropdown"
+          onPage={onPage}
+          className="client-table"
+          emptyMessage="No clients found"
+          globalFilterFields={["app_title"]}
+          globalFilter={filter}
         >
-          ← Prev
-        </button>
-
-        <span className="page-info">
-          Page {page} of {totalPages}
-        </span>
-
-        <button
-          className="btn-page"
-          onClick={goToNextPage}
-          disabled={page >= totalPages}
-        >
-          Next →
-        </button>
+          <Column
+            field="app_title"
+            header="Client"
+            className="column"
+            frozen
+          />
+          <Column field="app_id" header="APP ID" className="column" />
+          <Column
+            field="version"
+            header="Version"
+            className="column text-center"
+          />
+          <Column
+            field="url"
+            header="URL"
+            className="column"
+            body={(row) => (
+              <a
+                href={row.url}
+                target="_blank"
+                rel="noreferrer"
+                className="url"
+              >
+                {row.url}
+              </a>
+            )}
+          />
+          <Column
+            field="api_url"
+            header="API URL"
+            className="column"
+            body={(row) => (
+              <a
+                href={row.api_url}
+                target="_blank"
+                rel="noreferrer"
+                className="url"
+              >
+                {row.api_url}
+              </a>
+            )}
+          />
+          <Column
+            field="proctor_edu"
+            header="Proctor Edu"
+            body={(row) => yesNoBadge(row.proctor_edu)}
+            className="column text-center"
+          />
+          <Column
+            field="proctorio"
+            header="Proctorio"
+            body={(row) => yesNoBadge(row.proctorio)}
+            className="column text-center"
+          />
+          <Column
+            field="superset_apache"
+            header="Superset Apache"
+            body={(row) => yesNoBadge(row.superset_apache)}
+            className="column text-center"
+          />
+          <Column field="billing" header="Billing" className="column" />
+          <Column header="Last Updated" className="column" />
+        </DataTable>
       </div>
     </div>
   );
 };
-
-// return (
-//   <div className="table-container">
-//     <div className="table-header">
-//       <input
-//         type="text"
-//         placeholder="Search app name..."
-//         className="search-bar"
-//         value={filter}
-//         onChange={(e) => setFilter(e.target.value)}
-//       />
-
-//       <div className="refresh-wrapper">
-//         <span className="last-updated">
-//           Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : "—"}
-//         </span>
-//         <button className="btn-refresh" onClick={fetchData}>
-//           🔄 Refresh
-//         </button>
-//       </div>
-//     </div>
-
-//     <div className="table-wrapper">
-//       <table className="standard-table">
-//         <thead>
-//           <tr>
-//             <th>App Name</th>
-//             <th>Version</th>
-//             <th>URL</th>
-//             <th>Main Service (click to switch)</th>
-//             <th>Status</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {filteredClients.map((client) => {
-//             const main =
-//               client.services.find((s) => s.is_main) || client.services[0] || {
-//                 service_name: "Service",
-//                 status: "Status",
-//                 service_id: 0,
-//               };
-
-//             return (
-//               <tr key={client.client_id}>
-//                 <td>{client.app_name}</td>
-//                 <td>{client.version}</td>
-//                 <td>
-//                   <a href={client.url} target="_blank" rel="noreferrer">
-//                     {client.url}
-//                   </a>
-//                 </td>
-
-//                 {/* Main service name + dropdown to switch */}
-//                 <td>
-//                   <details>
-//                     <summary className="service-main-summary">
-//                       {main.service_name}
-//                     </summary>
-//                     <select
-//                       className="service-select"
-//                       value={main.service_id}
-//                       onChange={(e) =>
-//                         handleSetMain(
-//                           client.client_id,
-//                           Number(e.target.value)
-//                         )
-//                       }
-//                     >
-//                       {client.services.map((s) => (
-//                         <option key={s.service_id} value={s.service_id}>
-//                           {s.service_name} ({s.ip_address})
-//                         </option>
-//                       ))}
-//                     </select>
-//                   </details>
-//                 </td>
-
-//                 {/* Display the status badge */}
-//                 <td>
-//                   <span
-//                     className={`status-badge ${
-//                       main.status.toLowerCase() === "healthy"
-//                         ? "status-healthy"
-//                         : "status-unhealthy"
-//                     }`}
-//                   >
-//                     {main.status}
-//                   </span>
-//                 </td>
-//               </tr>
-//             );
-//           })}
-//         </tbody>
-//       </table>
-//     </div>
-//   </div>
-// );

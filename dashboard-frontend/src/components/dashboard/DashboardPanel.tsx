@@ -1,40 +1,31 @@
-import React, { useEffect, useState } from 'react';
-
+import React, { useEffect, useState } from "react";
+import { Card } from "primereact/card";
 export const DashboardPanel: React.FC = () => {
-  const [stats, setStats] = useState({ apps: 0, services: 0, healthy: 0, unhealthy: 0 });
+  const [stats, setStats] = useState({ apps: 0 });
 
   useEffect(() => {
-    fetch('http://localhost:3300/api/all-clients')
-      .then(res => res.json())
+    fetch(`${import.meta.env.VITE_BASE_URL}/all-clients`)
+      .then((res) => res.json())
       .then((data: any[]) => {
-        const allServices = data.flatMap((app: any) => app.services);
-        const healthy = allServices.filter((s: any) => s.status?.toLowerCase() === 'healthy').length;
-        const unhealthy = allServices.length - healthy;
         setStats({
           apps: data.length,
-          services: allServices.length,
-          healthy,
-          unhealthy
         });
       });
   }, []);
 
   return (
-    <div>
+    <div className="p-6">
       <h2>Dashboard Overview</h2>
-      <div style={{ display: 'flex', gap: '20px' }}>
+      <div className="flex gap-5">
         <StatBox label="Applications" value={stats.apps} />
-        <StatBox label="Services" value={stats.services} />
-        <StatBox label="Healthy Services" value={stats.healthy} />
-        <StatBox label="Unhealthy Services" value={stats.unhealthy} />
       </div>
     </div>
   );
 };
 
-const StatBox = ({ label, value }: { label: string, value: number }) => (
-  <div style={{ background: '#242933', padding: '20px', borderRadius: '8px', flex: 1 }}>
-    <h3>{label}</h3>
-    <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{value}</p>
-  </div>
+const StatBox = ({ label, value }: { label: string; value: number }) => (
+  <Card className="card-dashboard">
+    <h3 className="text-lg font-medium text-gray-700 mb-2">{label}</h3>
+    <p className="text-4xl font-semibold text-gray-700 text-center mt-7">{value}</p>
+  </Card>
 );

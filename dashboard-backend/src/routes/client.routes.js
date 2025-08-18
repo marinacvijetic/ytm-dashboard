@@ -6,10 +6,8 @@ router.get('/clients', clientController.getPaginatedClients);
 
 router.get('/all-clients', clientController.getAllClients);
 
+router.get('/app-info/sync', clientController.syncAllAppInfo)
+
 router.post('/register-app', clientController.registerApp);
-
-router.post('/heartbeat', clientController.heartbeat);
-
-router.put('/clients/:clientId/services/:serviceId/setMain',clientController.setMainService);
 
 module.exports = router;
