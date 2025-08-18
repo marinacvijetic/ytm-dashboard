@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const axios = require('axios');
+const axios = require("axios");
 const clientModel = require("../models/client.model");
 const eventBus = require("../utils/eventBus");
 
@@ -102,8 +102,7 @@ exports.registerApp = async (req, res) => {
             id: svc.id,
             appId: svc.app_id,
             type: svc.type,
-            client_applications: { connect: { app_id: clientApp.app_id },
-            },
+            client_applications: { connect: { app_id: clientApp.app_id } },
           },
           update: {
             // in case type changed
@@ -124,64 +123,73 @@ exports.registerApp = async (req, res) => {
     console.error("Register App Error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
-  
 };
 
-exports.syncAllAppInfo = async (req, res) => {
-    try {
-      const clients = await prisma.clientApplication.findMany({
+exports.syncAppInfo = async (req, res) => {
+  const { appId } = req.params;
+
+  try {
+    const client = await prisma.clientApplication.findUnique({
+      where: { app_id: appId },
       include: { services: true },
     });
 
-      const results = await Promise.all(clients.map(async (client) => {
-        const baseUrl = ('http://localhost:8085/ytm.webview/' || '').replace(/\/+$/, '');
-        if(!baseUrl) {
-          return { appId: client.app_id, status: 'skipped', reason: 'no URL'};
-        }
-
-        const servletUrl = `${baseUrl}/app/info`;
-        try {
-          const { data: appInfo } = await axios.get(servletUrl, {timeout: 10_000});
-          await clientModel.updateClient(
-            client.app_id,
-            appInfo.title,
-            appInfo.version,
-            appInfo.url,
-            appInfo.api_url,
-            appInfo.proctor_edu,
-            appInfo.proctorio,
-            appInfo.superset_apache
-          );
-
-          if(Array.isArray(appInfo.services)) {
-            for (const svc of appInfo.services) {
-              await prisma.services.upsert({
-                where: { id: svc.id },
-                create: {
-                  id: svc.id,
-                  app_id: svc.app_id,
-                  type: svc.type,
-                  client_applications: { connect: { app_id: client.app_id } },
-                },
-                update: {
-                  // in case type changed
-                  type: svc.type,
-                },
-              });
-            }
-          }
-          return { appId: client.app_id, status: 'updated'};
-        }catch (e) {
-          console.error(`Failed to sync app info for ${client.app_id}:`, e.message);
-          return { appId: client.app_id, status: 'error', reason: e.message };
-        }
-
-      }));
-
-      return res.json(results);
-
-    } catch (e) {
-      console.error('Application information sync failed', e);
-      return res.status(500).json({ error: 'Sync all failed', details: e.message });
+    if (!client) {
+      return res.status(404).json({ error: "Client application not found" });
     }
+
+    const baseUrl = ('http://localhost:8085/ytm.webview/' || "").replace(/\/$/, "");
+    // const baseUrl = (client.api_url || "").replace(/\/$/, "");
+    if (!baseUrl) {
+      return res
+        .status(400)
+        .json({ error: "Client has no API URL configured" });
+    }
+
+    const servletUrl = `${baseUrl}/app/info`;
+    try {
+      const { data: appInfo } = await axios.get(servletUrl, {
+        timeout: 10_000,
+      });
+
+      await clientModel.updateClient(
+        client.app_id,
+        appInfo.title,
+        appInfo.version,
+        appInfo.url,
+        appInfo.apiUrl,
+        appInfo.proctorEdu,
+        appInfo.proctorio,
+        appInfo.superset
+      );
+
+      if (Array.isArray(appInfo.services)) {
+        for (const svc of appInfo.services) {
+          await prisma.services.upsert({
+            where: { id: svc.id },
+            create: {
+              id: svc.id,
+              app_id: svc.app_id,
+              type: svc.type,
+              client_applications: { connect: { app_id: client.app_id } },
+            },
+            update: {
+              // in case type changed
+              type: svc.type,
+            },
+          });
+        }
+      }
+
+      return res.json({ appId: client.app_id, status: "updated" });
+    } catch (e) {
+      console.error(`Failed to sync app info for ${client.app_id}:`, e.message);
+      return res
+        .status(500)
+        .json({ appId: client.app_id, status: "error", reason: e.message });
+    }
+  } catch (e) {
+    console.error("Application information sync failed", e);
+    return res.status(500).json({ error: "Sync failed", details: e.message });
   }
+};

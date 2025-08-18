@@ -177,6 +177,7 @@ const filteredStats = filter
       <div className="overflow-x-auto">
         <DataTable
           value={filteredStats}
+          lazy
           loading={loading}
           className="client-table"
           paginator

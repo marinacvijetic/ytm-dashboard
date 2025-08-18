@@ -6,7 +6,7 @@ router.get('/clients', clientController.getPaginatedClients);
 
 router.get('/all-clients', clientController.getAllClients);
 
-router.get('/app-info/sync', clientController.syncAllAppInfo)
+router.get('/app-info/sync/:appId', clientController.syncAppInfo)
 
 router.post('/register-app', clientController.registerApp);
 

@@ -85,22 +85,28 @@ export const ClientTable: React.FC = () => {
 
   // Render a badge for boolean values
   const yesNoBadge = (value: boolean) => (
-    <span
-      className={`badge-yesno ${value ? "badge-yes" : "badge-no"}`}>
+    <span className={`badge-yesno ${value ? "badge-yes" : "badge-no"}`}>
       {value ? "Yes" : "No"}
     </span>
   );
 
-  const handleSyncAll = async () => {
+  const handleRefesh = async () => {
+    fetchData(page);
+  };
+
+  const handleSync = async (appId: string) => {
     setLoading(true);
     try {
-      const resp = await fetch(`${import.meta.env.VITE_BASE_URL}/app-info/sync`);
+      const resp = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/app-info/sync/${appId}`
+      );
+
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const summary = await resp.json();
-      console.log('Bulk sync results:', summary);
-      fetchData(page);  // reload table data
+
+      await resp.json();
+      fetchData(page);
     } catch (err) {
-      console.error('Sync all failed', err);
+      console.error(`Sync failed for ${appId}`, err);
     } finally {
       setLoading(false);
     }
@@ -127,8 +133,8 @@ export const ClientTable: React.FC = () => {
           <Button
             className="btn-text"
             icon="pi pi-refresh"
-            onClick={() => handleSyncAll()}
-            label="Sync Now"
+            onClick={handleRefesh}
+            label="Refresh"
           />
         </div>
       </div>
@@ -137,6 +143,7 @@ export const ClientTable: React.FC = () => {
       <div className="overflow-x-auto">
         <DataTable
           value={filteredClients}
+          lazy
           loading={loading}
           scrollable
           scrollHeight="400px"
@@ -152,12 +159,7 @@ export const ClientTable: React.FC = () => {
           globalFilterFields={["app_title"]}
           globalFilter={filter}
         >
-          <Column
-            field="app_title"
-            header="Client"
-            className="column"
-            frozen
-          />
+          <Column field="app_title" header="Client" className="column" frozen />
           <Column field="app_id" header="APP ID" className="column" />
           <Column
             field="version"
@@ -213,7 +215,28 @@ export const ClientTable: React.FC = () => {
             className="column text-center"
           />
           <Column field="billing" header="Billing" className="column" />
-          <Column header="Last Updated" className="column" />
+          <Column
+            field="last_update"
+            header="Last Updated"
+            className="column"
+            body={(row) => (
+              <div className="flex items-center gap-2">
+                <span>
+                  {row.last_update
+                    ? new Date(row.last_update).toLocaleDateString()
+                    : ""}
+                </span>
+                <Button
+                  className="btn-text"
+                  icon="pi pi-refresh"
+                  onClick={() => handleSync(row.app_id)}
+                  tooltip="Update"
+                  rounded
+                  text
+                />
+              </div>
+            )}
+          />
         </DataTable>
       </div>
     </div>
