@@ -152,7 +152,7 @@ exports.syncAppInfo = async (req, res) => {
         timeout: 10_000,
       });
 
-      await clientModel.updateClient(
+      const updatedClient = await clientModel.updateClient(
         client.app_id,
         appInfo.title,
         appInfo.version,
@@ -181,7 +181,7 @@ exports.syncAppInfo = async (req, res) => {
         }
       }
 
-      return res.json({ appId: client.app_id, status: "updated" });
+      return res.json(updatedClient);
     } catch (e) {
       console.error(`Failed to sync app info for ${client.app_id}:`, e.message);
       return res

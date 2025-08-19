@@ -95,7 +95,6 @@ export const ClientTable: React.FC = () => {
   };
 
   const handleSync = async (appId: string) => {
-    setLoading(true);
     try {
       const resp = await fetch(
         `${import.meta.env.VITE_BASE_URL}/app-info/sync/${appId}`
@@ -103,8 +102,10 @@ export const ClientTable: React.FC = () => {
 
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-      await resp.json();
-      fetchData(page);
+      const updated: Client = await resp.json();
+      setClients((prev) => 
+      prev.map((c) => (c.app_id === appId ? {...c, ...updated} : c)));
+
     } catch (err) {
       console.error(`Sync failed for ${appId}`, err);
     } finally {
@@ -223,7 +224,14 @@ export const ClientTable: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span>
                   {row.last_update
-                    ? new Date(row.last_update).toLocaleDateString()
+                    ? new Date(row.last_update).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                    })
                     : ""}
                 </span>
                 <Button
