@@ -15,7 +15,7 @@ model ClientApplication {
   url                  String?
   api_url              String?
   created_at           DateTime?  @db.Timestamp(6)
-  last_update          DateTime?  @updatedAt @db.Timestamp(6)
+  last_update          DateTime?  @db.Timestamp(6)
   proctor_edu          Boolean?   @default(false)
   proctorio            Boolean?   @default(false)
   superset_apache      Boolean?   @default(false)

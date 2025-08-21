@@ -4,7 +4,6 @@ import { Column } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
-import { PrimeReactProvider } from "primereact/api";
 
 type Client = {
   client_id: number;
@@ -100,7 +99,7 @@ export const ClientTable: React.FC = () => {
     let color = "";
     let tooltip = "";
     if (!row.last_ping_successful) {
-      text = "Error";
+      text = "Application Down";
       color = "text-red-600";
       tooltip = "Last ping failed";
     } else if (outdated) {
@@ -110,10 +109,7 @@ export const ClientTable: React.FC = () => {
     } else if (row.is_active) {
       text = "Active";
       color = "text-green-600";
-    } else {
-      text = "Inactive";
-      color = "text-gray-600";
-    }
+    } 
     return <span className={color} title={tooltip}>{text}</span>;
   };
 
@@ -160,7 +156,7 @@ export const ClientTable: React.FC = () => {
       }
       toast.current?.show({
         severity: "error",
-        summary: "Sync Failed",
+        summary: "Sync Failed.",
         detail: message,
         life: 5000,
       });

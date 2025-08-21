@@ -3,6 +3,13 @@ import { defineConfig } from 'tailwindcss'
 export default defineConfig({
   content: [
     './index.html',
-    './src/**/*.{js,jsx,ts,tsx,mdx}'  
-  ]
+    './src/**/*.{js,jsx,ts,tsx,mdx,css}'  
+  ],
+  theme: {
+    extend: {
+      colors: {
+        'primary-blue': '#2fabdf',
+      }
+    }
+  }
 })
