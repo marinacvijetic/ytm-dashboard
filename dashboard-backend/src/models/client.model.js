@@ -18,6 +18,9 @@ exports.createClient = async (app_id, app_title, version, url, api_url, proctor_
       api_url,
       created_at: new Date(),
       last_update: new Date(),
+      last_ping_at: null,
+      last_ping_successful: false,
+      is_active: false,
       proctor_edu,
       proctorio,
       superset_apache,
@@ -37,6 +40,17 @@ exports.updateClient = async (app_id, app_title, version, url, api_url, proctor_
       proctor_edu,
       proctorio,
       superset_apache,
+    },
+  });
+};
+
+exports.updatePingStatus = async (app_id, success) => {
+  return await prisma.clientApplication.update({
+    where: {app_id},
+    data: {
+      last_ping_at: new Date(),
+      last_ping_successful: success,
+      is_active: success,
     },
   });
 };

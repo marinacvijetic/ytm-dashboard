@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { DataTable, type DataTablePageEvent } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
+import { Toast } from "primereact/toast";
 
 type Client = {
   client_id: number;
@@ -13,6 +14,9 @@ type Client = {
   api_url: string;
   created_at: string;
   last_update: string;
+  last_ping_at: string | null;
+  last_ping_successful: boolean;
+  is_active: boolean;
   proctor_edu: boolean;
   proctorio: boolean;
   superset_apache: boolean;
@@ -33,8 +37,10 @@ export const ClientTable: React.FC = () => {
   const [, setTotalPages] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [filter, setFilter] = useState<string>("");
-  const [countdown, setCountdown] = useState<number>(30);
+  const toast = useRef<Toast>(null);
 
+  const OUTDATED_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
+  const GRACE_MS = 60 * 60 * 1000; // 60 minutes
   // Fetch a specific page from the server
   const fetchData = (pageToLoad: number = 1) => {
     setLoading(true);
@@ -51,7 +57,6 @@ export const ClientTable: React.FC = () => {
         setClients(json.data);
         setTotalPages(json.totalPages);
         setTotalCount(json.totalCount);
-        setCountdown(30);
       })
       .catch((err) => {
         console.error("Failed to fetch clients", err);
@@ -63,14 +68,6 @@ export const ClientTable: React.FC = () => {
   useEffect(() => {
     fetchData(page);
   }, [page]);
-
-  // Countdown timer for auto-refresh indicator
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => (prev <= 1 ? 30 : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Handler for DataTable pagination event
   const onPage = (e: DataTablePageEvent) => {
@@ -90,24 +87,74 @@ export const ClientTable: React.FC = () => {
     </span>
   );
 
+  const isOutdated = (row: Client) => {
+    if(!row.last_update) return false;
+    const diff = Date.now() - new Date(row.last_update).getTime();
+    return diff > OUTDATED_THRESHOLD_MS + GRACE_MS;
+  };
+
+  const statusBody = (row: Client) => {
+    const outdated = isOutdated(row);
+    let text = "";
+    let color = "";
+    let tooltip = "";
+    if (!row.last_ping_successful) {
+      text = "Error";
+      color = "text-red-600";
+      tooltip = "Last ping failed";
+    } else if (outdated) {
+      text = "Outdated";
+      color = "text-yellow-600";
+      tooltip = "No update in over 24h";
+    } else if (row.is_active) {
+      text = "Active";
+      color = "text-green-600";
+    } else {
+      text = "Inactive";
+      color = "text-gray-600";
+    }
+    return <span className={color} title={tooltip}>{text}</span>;
+  };
+
+  const rowClassName = (row: Client) => {
+    const outdated = isOutdated(row);
+    return {
+      "bg-red-100": !row.last_ping_successful,
+      "bg-yellow-100": row.last_ping_successful && outdated,
+    };
+  };
+
+
   const handleRefesh = async () => {
     fetchData(page);
   };
 
   const handleSync = async (appId: string) => {
+    setLoading(true);
     try {
       const resp = await fetch(
         `${import.meta.env.VITE_BASE_URL}/app-info/sync/${appId}`
       );
 
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
 
-      const updated: Client = await resp.json();
-      setClients((prev) => 
-      prev.map((c) => (c.app_id === appId ? {...c, ...updated} : c)));
+      if (!resp.ok) {
+        if(data?.client) {
+          setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data.client} : c)));
+        }
+        throw new Error(data.reason || data.error || `HTTP ${resp.status}`);
+      }
 
-    } catch (err) {
+      setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data.client } : c)));
+    } catch (err: unknown) {
       console.error(`Sync failed for ${appId}`, err);
+      const message = err instanceof Error ? err.message : String(err);
+      toast.current?.show({
+        severity: "error",
+        summary: "Sync Failed",
+        detail: message,
+        life: 5000,
+      });
     } finally {
       setLoading(false);
     }
@@ -119,6 +166,7 @@ export const ClientTable: React.FC = () => {
 
   return (
     <div className="p-4 w-full">
+      <Toast ref={toast} />
       {/* Search + Refresh Controls */}
       <div className="flex justify-between items-center mb-4">
         <InputText
@@ -128,9 +176,6 @@ export const ClientTable: React.FC = () => {
           className="px-3 py-2 border border-gray-400 rounded text-sm text-black"
         />
         <div className="flex items-center gap-4">
-          <span className="text-gray-700 font-semibold text-sm">
-            {`Next refresh in ${countdown}s`}
-          </span>
           <Button
             className="btn-text"
             icon="pi pi-refresh"
@@ -159,6 +204,7 @@ export const ClientTable: React.FC = () => {
           emptyMessage="No clients found"
           globalFilterFields={["app_title"]}
           globalFilter={filter}
+          rowClassName={rowClassName}
         >
           <Column field="app_title" header="Client" className="column" frozen />
           <Column field="app_id" header="APP ID" className="column" />
@@ -215,6 +261,7 @@ export const ClientTable: React.FC = () => {
             body={(row) => yesNoBadge(row.superset_apache)}
             className="column text-center"
           />
+          <Column field="status" header="Status" className="column text-center" body={statusBody} />
           <Column field="billing" header="Billing" className="column" />
           <Column
             field="last_update"
@@ -231,17 +278,18 @@ export const ClientTable: React.FC = () => {
                         hour: "2-digit",
                         minute: "2-digit",
                         second: "2-digit",
-                    })
+                      })
                     : ""}
                 </span>
-                <Button
-                  className="btn-text"
-                  icon="pi pi-refresh"
+                <button
                   onClick={() => handleSync(row.app_id)}
-                  tooltip="Update"
-                  rounded
-                  text
-                />
+                  className="update-button"
+                  title="Update"
+                  aria-label="Update"
+                >
+                  <i className="pi pi-refresh" />
+                  <span>Update</span>
+                </button>
               </div>
             )}
           />

@@ -8,18 +8,21 @@ datasource db {
 }
 
 model ClientApplication {
-  client_id       Int        @id @default(autoincrement())
-  app_id          String?    @unique
-  app_title       String?
-  version         String?
-  url             String?
-  api_url         String?
-  created_at      DateTime?  @db.Timestamp(6)
-  last_update     DateTime?  @updatedAt @db.Timestamp(6)
-  proctor_edu     Boolean?   @default(false)
-  proctorio       Boolean?   @default(false)
-  superset_apache Boolean?   @default(false)
-  services        services[]
+  client_id            Int        @id @default(autoincrement())
+  app_id               String?    @unique
+  app_title            String?
+  version              String?
+  url                  String?
+  api_url              String?
+  created_at           DateTime?  @db.Timestamp(6)
+  last_update          DateTime?  @updatedAt @db.Timestamp(6)
+  proctor_edu          Boolean?   @default(false)
+  proctorio            Boolean?   @default(false)
+  superset_apache      Boolean?   @default(false)
+  last_ping_at         DateTime?  @db.Timestamp(6)
+  last_ping_successful Boolean?   @default(false)
+  is_active            Boolean?   @default(false)
+  services             services[]
 
   @@map("client_applications")
 }

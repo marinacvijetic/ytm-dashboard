@@ -181,12 +181,19 @@ exports.syncAppInfo = async (req, res) => {
         }
       }
 
-      return res.json(updatedClient);
+      await clientModel.updatePingStatus(client.app_id, true);
+      const finalClient = await clientModel.findClientByAppId(client.app_id);
+      return res.json(finalClient);
     } catch (e) {
       console.error(`Failed to sync app info for ${client.app_id}:`, e.message);
-      return res
-        .status(500)
-        .json({ appId: client.app_id, status: "error", reason: e.message });
+      await clientModel.updatePingStatus(client.app_id, false);
+      const failedClient = await clientModel.findClientByAppId(client.app_id);
+      return res.status(500).json({
+        appId: client.app_id,
+        status: "error",
+        reason: e.message,
+        client: failedClient,
+      });
     }
   } catch (e) {
     console.error("Application information sync failed", e);

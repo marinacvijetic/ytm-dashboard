@@ -16,12 +16,12 @@
     @apply bg-gray-300 border border-gray-300;
   }
   .client-table th {
-    @apply px-4 py-2 place-content-center whitespace-nowrap min-w-max bg-[#F4F6F8]  text-sm font-semibold text-gray-800 border border-gray-200 ;
+    @apply px-4 py-2 place-content-center whitespace-nowrap min-w-max bg-[#F4F6F8]  text-sm font-semibold text-gray-800 border border-gray-200;
   }
   .client-table th,
-.client-table td {
-  min-width: 120px;
-}
+  .client-table td {
+    min-width: 120px;
+  }
   tbody tr:nth-child(even) {
     @apply bg-[#F9FAFB];
   }
@@ -29,8 +29,8 @@
     @apply px-4 py-3 text-sm text-gray-800 border border-gray-300;
   }
 
-  input{
-    @apply bg-white
+  input {
+    @apply bg-white;
   }
 
   textarea,
@@ -53,15 +53,19 @@
   .badge-no {
     @apply bg-red-500/30 text-red-900;
   }
-  .column{
-    @apply border border-gray-200
+  .column {
+    @apply border border-gray-200;
   }
-  .url{
-    @apply text-blue-700 text-[14px]
+  .url {
+    @apply text-blue-700 text-[14px];
   }
 
   .card-dashboard {
     @apply flex flex-col bg-white border border-gray-300 rounded-xl shadow-lg w-70 h-46 p-6;
+  }
+
+  .update-button {
+    @apply ml-4 flex items-center gap-2 px-3 py-1 rounded-full bg-primary-blue text-white text-sm hover:bg-blue-700 transition-colors;
   }
 
   /* Paginator container */
@@ -76,7 +80,7 @@
 
   /* Active page button */
   .paginator [data-pc-section="pagebutton"][aria-current="true"] {
-    @apply bg-primary-blue text-white font-bold ;
+    @apply bg-primary-blue text-white font-bold;
   }
 
   /* Prev/Next/First/Last buttons */
@@ -96,19 +100,13 @@
   .btn-primary {
     @apply inline-flex items-center px-4 py-2 bg-primary-blue text-white font-medium rounded hover:bg-indigo-700 transition;
   }
-
-  //Text-only button (for icons, refresh etc.)
-  .btn-text {
-    @apply inline-flex items-center px-2 py-1 text-indigo-500 hover:text-indigo-400 transition;
-  }
-
 }
 
 @theme {
-  --color-background: #FFFFFF;
-  --color-primary-blue: #2FABDF;
-  --color-background3: #F4F8FE ;
-  --color-sidebarText: #687C93;
-  --color-background4: #5DA7DB;
+  --color-background: #ffffff;
+  --color-primary-blue: #2fabdf;
+  --color-background3: #f4f8fe;
+  --color-sidebarText: #687c93;
+  --color-background4: #5da7db;
   --color-sky: oklch(95.1% 0.026 236.824);
 }
