@@ -111,6 +111,9 @@ exports.registerApp = async (req, res) => {
         });
       }
     }
+    // Mark registration as a successful ping and active app
+    await clientModel.updatePingStatus(appId, true);
+    clientApp = await clientModel.findClientByAppId(appId);
 
     // 4) Emit event and respond
     eventBus.emit("app_registered", {

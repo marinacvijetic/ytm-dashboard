@@ -130,7 +130,6 @@ export const ClientTable: React.FC = () => {
   };
 
   const handleSync = async (appId: string) => {
-    setLoading(true);
     try {
       const resp = await fetch(
         `${import.meta.env.VITE_BASE_URL}/app-info/sync/${appId}`
@@ -140,12 +139,25 @@ export const ClientTable: React.FC = () => {
 
       if (!resp.ok) {
         if(data?.client) {
-          setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data.client} : c)));
+          setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data.client } : c)));
+          toast.current?.show({
+            severity: "success",
+            summary: "Sync Successful",
+            detail: `Client ${data.client.app_title} synced successfully.`,
+            life: 5000,
+          });
+          return;
         }
         throw new Error(data.reason || data.error || `HTTP ${resp.status}`);
       }
 
-      setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data.client } : c)));
+      setClients((prev) => prev.map((c) => (c.app_id === appId ? {...c, ...data} : c)));
+      toast.current?.show({
+        severity: "success",
+        summary: "Sync Successful",
+        detail: `${data.app_title} information updated successfully.`,
+        life: 5000,
+      })
     } catch (err: unknown) {
       console.error(`Sync failed for ${appId}`, err);
       const message = err instanceof Error ? err.message : String(err);
@@ -155,9 +167,7 @@ export const ClientTable: React.FC = () => {
         detail: message,
         life: 5000,
       });
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   if (loading) {
