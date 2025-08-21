@@ -101,33 +101,33 @@
     @apply inline-flex items-center px-4 py-2 bg-primary-blue text-white font-medium rounded hover:bg-indigo-700 transition;
   }
 
-  .p-toast {
+  [data-pc-name="toast"]  {
     @apply fixed top-6 right-6 z-50 flex flex-col gap-2;
   }
-  .p-toast-message {
+  [data-pc-name="toast"] [data-pc-section="message"] {
     @apply flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg bg-white border border-gray-200;
     min-width: 300px;
     max-width: 400px;
   }
-  .p-toast-message-success {
+  [data-pc-name="toast"] [data-pc-section="message"][data-pc-severity="success"] {
     @apply border-green-400 bg-green-50 text-green-800;
   }
-  .p-toast-message-error {
+  [data-pc-name="toast"] [data-pc-section="message"][data-pc-severity="error"] {
     @apply border-red-400 bg-red-50 text-red-800;
   }
-  .p-toast-message-info {
+  [data-pc-name="toast"] [data-pc-section="message"][data-pc-severity="info"] {
     @apply border-blue-400 bg-blue-50 text-blue-800;
   }
-  .p-toast-message-icon {
+  [data-pc-name="toast"] [data-pc-section="icon"] {
     @apply text-xl mr-2;
   }
-  .p-toast-summary {
+  [data-pc-name="toast"] [data-pc-section="summary"] {
     @apply font-semibold text-base;
   }
-  .p-toast-detail {
+  [data-pc-name="toast"] [data-pc-section="detail"] {
     @apply text-sm text-gray-700;
   }
-  .p-toast-close-icon {
+  [data-pc-name="toast"] [data-pc-section="closebutton"] {
     @apply ml-auto text-gray-400 hover:text-gray-700 cursor-pointer text-lg;
   }
 }
