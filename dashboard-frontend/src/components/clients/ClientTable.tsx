@@ -4,6 +4,7 @@ import { Column } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
+import { PrimeReactProvider } from "primereact/api";
 
 type Client = {
   client_id: number;
@@ -137,30 +138,26 @@ export const ClientTable: React.FC = () => {
 
       const data = await resp.json();
 
-      if (!resp.ok) {
+      if (!resp.ok || data.status === "error") {
         if(data?.client) {
           setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data.client } : c)));
-          toast.current?.show({
-            severity: "success",
-            summary: "Sync Successful",
-            detail: `Client ${data.client.app_title} synced successfully.`,
-            life: 5000,
-          });
-          return;
         }
         throw new Error(data.reason || data.error || `HTTP ${resp.status}`);
       }
 
       setClients((prev) => prev.map((c) => (c.app_id === appId ? {...c, ...data} : c)));
-      toast.current?.show({
+        toast.current?.show({
         severity: "success",
         summary: "Sync Successful",
-        detail: `${data.app_title} information updated successfully.`,
-        life: 5000,
-      })
+        detail: `${data.app_title || appId} synced successfully.`,
+        life: 3000,
+      });
     } catch (err: unknown) {
       console.error(`Sync failed for ${appId}`, err);
-      const message = err instanceof Error ? err.message : String(err);
+      let message = err instanceof Error ? err.message : String(err);
+      if(/ECONNREFUSED/i.test(message)){
+        message = "Application is unreachable.";
+      }
       toast.current?.show({
         severity: "error",
         summary: "Sync Failed",

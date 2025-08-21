@@ -191,10 +191,10 @@ exports.syncAppInfo = async (req, res) => {
       console.error(`Failed to sync app info for ${client.app_id}:`, e.message);
       await clientModel.updatePingStatus(client.app_id, false);
       const failedClient = await clientModel.findClientByAppId(client.app_id);
-      return res.status(500).json({
+      const reason = e.code === "ECONNREFUSED" ? "Application is not active" : e.message;
+      return res.status(503).json({
         appId: client.app_id,
         status: "error",
-        reason: e.message,
         client: failedClient,
       });
     }
