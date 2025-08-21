@@ -1,0 +1,113 @@
+package com.mallocinc.ytm.model.entities.job;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.Map;
+
+import com.mallocinc.shared.util.time.TimestampUtility;
+import com.mallocinc.ytm.model.entities.api.Entity;
+import com.mallocinc.ytm.model.usecase.jobs.UpdateJob;
+import com.mallocinc.ytm.model.user.ApplicationUserModel;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public class Job implements Entity {
+   private final BigDecimal          id;
+   private final String              name;
+   private final String              description;
+   private final JobType             type;
+   private final String              serviceId;
+   private final Timestamp           startDate;
+   private final Timestamp           endDate;
+   private final int                 repeatCount;
+   private final int                 repeatInterval;
+   private final Map<String, Object> data;
+   private final Timestamp           lastExecuted;
+   private final BigDecimal          createUserId;
+   private final Timestamp           createDatetime;
+   private final BigDecimal          updateUserId;
+   private final Timestamp           updateDatetime;
+
+   Job execute() {
+      return new Job(id,
+                     name,
+                     description,
+                     type,
+                     serviceId,
+                     startDate,
+                     endDate,
+                     repeatCount,
+                     repeatInterval,
+                     data,
+                     TimestampUtility.getCurrentTimestamp(),
+                     createUserId,
+                     createDatetime,
+                     updateUserId,
+                     updateDatetime);
+   }
+
+   public final boolean isInfinite() {
+      return repeatCount == -1;
+   }
+
+   public boolean isFinished() {
+      Timestamp curTimestamp = TimestampUtility.getCurrentTimestamp();
+      return curTimestamp.after(startDate)
+             && ((endDate != null && curTimestamp.after(endDate))
+                 || repeatCount == 0
+                 || (repeatCount > 0 && curTimestamp.after(calculateEndDate())));
+   }
+
+   public boolean isNotFinished() {
+      return !isFinished();
+   }
+
+   /** Returns the time when the next run should start.
+    * @return
+    */
+   public Timestamp getNextRunDate() {
+
+      return isFinished() ? null : getNextRunPrediction();
+   }
+
+   private Timestamp getNextRunPrediction() {
+      Timestamp currentTime = TimestampUtility.getCurrentTimestamp();
+      if (this.repeatInterval == 0 || currentTime.before(startDate))
+         return startDate;
+      return new Timestamp(startDate
+            .getTime() + getRepeatIntervalMili() * ((currentTime.getTime() - startDate.getTime()) / getRepeatIntervalMili() + 1));
+   }
+
+   private Timestamp calculateEndDate() {
+      return new Timestamp(startDate.getTime() + getRepeatIntervalMili() * repeatCount);
+   }
+
+   private int getRepeatIntervalMili() {
+      return repeatInterval * 1000;
+   }
+
+   public Job update(UpdateJob.Input updateData, ApplicationUserModel user) {
+      return new Job(id,
+                     updateData.getName(),
+                     updateData.getDescription(),
+                     type,
+                     serviceId,
+                     updateData.getStartDate(),
+                     updateData.getEndDate(),
+                     updateData.getRepeatCount(),
+                     updateData.getRepeatInterval(),
+                     updateData.getData(),
+                     lastExecuted,
+                     createUserId,
+                     createDatetime,
+                     user.getUserId(),
+                     TimestampUtility.getCurrentTimestamp());
+   }
+
+   public boolean isExecutedOnlyOnce() {
+      return type.isExecutedOnlyOnce();
+   }
+}

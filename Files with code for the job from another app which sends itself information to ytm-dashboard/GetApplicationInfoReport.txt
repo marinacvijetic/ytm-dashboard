@@ -1,0 +1,38 @@
+package com.mallocinc.ytm.model.usecase.appInfo;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.mallocinc.ytm.model.providers.system.ApplicationInformation;
+import com.mallocinc.ytm.model.providers.system.SystemParametersManager;
+import com.mallocinc.ytm.model.usecase.ListInput;
+import com.mallocinc.ytm.model.usecase.jobs.pojo.ApplicationInfoReport;
+import com.mallocinc.ytm.model.usecase.jobs.pojo.ServicesInfo;
+import com.mallocinc.ytm.model.usecase.service.ListServices;
+import com.mallocinc.ytm.model.usecase.service.Service;
+
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+public class GetApplicationInfoReport {
+
+   private final ApplicationInformation appInfo = ApplicationInformation.getInstance();
+
+   public ApplicationInfoReport buildReport() {
+      String title = SystemParametersManager.getWhiteLabelingAppTitle();
+      String appId = SystemParametersManager.getApplicationId();
+      String url = SystemParametersManager.getApplicationUrl();
+      String apiUrl = SystemParametersManager.getRestApiParameters().getApiUrl();
+      Boolean proctorEdu = SystemParametersManager.isProctorEduEnabled();
+      Boolean proctorio = SystemParametersManager.isProctorioModuleEnabled();
+      Boolean superset = SystemParametersManager.isSupersetAdvancedReportingEnabled();
+      String version = appInfo.getVersion();
+
+      List<Service> services = new ListServices().execute(ListInput.builder().listAll(true).build()).getList();
+
+      List<ServicesInfo> serviceDtos = services.stream().map(svc -> new ServicesInfo(svc.getId(), appId, svc.getType().name()))
+            .collect(Collectors.toList());
+
+      return new ApplicationInfoReport(title, appId, url, apiUrl, proctorEdu, proctorio, superset, version, serviceDtos);
+   }
+}

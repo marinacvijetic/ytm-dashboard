@@ -1,0 +1,7 @@
+ALTER TABLE job
+ADD constraint ckc_type_job check (type in ('EXPORT','IMPORT','STORE_MEDIA_ON_FILESYSTEM','PEARSON_VUE_RESULTS_IMPORT','REMARK_RESULTS_IMPORT','IMPORT_QUESTIONS_FROM_QTI', 'REMOVE_NOTIFICATIONS', 'EXPORT_TEST_RESULTS_WITH_POOL_BREAKDOWN', 'SEND_USAGE_REPORT', 'IMPORT_SWISS_USERS', 'ASSIGNING_AUTHORIZATIONS_AUTOMATICALLY', 'GENERATE_QUESTIONS_AI', 'GENERATE_STEPS_AI', 'QUESTION_VERSION_ACTIVATION', 'TEST_INTEGRITY_CHECK','REFRESH_MATERIALIZED_VIEWS', 'REFRESH_PARTITIONED_TABLES', 'RENEW_SESSION_PASSWORD', 'SYNCHRONIZE_CERTIFICATES', 'SUSPEND_EXPIRED_ATTEMPTS', 'SEND_APPLICATION_INFO_REPORT'));
+
+--changeset marina:2_adding_new_job_for_sending_app_info
+--comment: Creating new job for sending app info
+INSERT INTO job (id, name, description, type, start_date, end_date, repeat_count,repeat_interval, data, last_executed, create_user_id, create_datetime, update_user_id,update_datetime, service_id)
+VALUES (5, 'Application info report', 'This job sends required information about applications to YTM dashboard app.', 'SEND_APPLICATION_INFO_REPORT', TO_TIMESTAMP('2025-06-30 07:00:00', 'YYYY-MM-DDHH24:MI:SS'), null, -1, 86400,'{}', null, 0, current_timestamp, null, null, null);

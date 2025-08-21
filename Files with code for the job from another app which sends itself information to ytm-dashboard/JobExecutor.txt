@@ -1,0 +1,106 @@
+package com.mallocinc.ytm.model.usecase.jobs;
+
+import java.sql.Timestamp;
+import java.util.Objects;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import com.mallocinc.shared.util.time.TimestampUtility;
+import com.mallocinc.ytm.model.entities.job.Job;
+import com.mallocinc.ytm.model.entities.job.JobInstance;
+import com.mallocinc.ytm.model.entities.user.EntityUser;
+import com.mallocinc.ytm.model.usecase.UseCase.IdInput;
+import com.mallocinc.ytm.model.usecase.user.GetUserById;
+import com.mallocinc.ytm.model.user.ApplicationUserModel;
+import com.mallocinc.ytm.model.util.StringUtils;
+
+import lombok.Getter;
+
+public abstract class JobExecutor {
+   private final StringBuilder  logger = new StringBuilder();
+
+   @Getter
+   private final Job            job;
+
+   private ApplicationUserModel appUser;
+
+   private int                  errorCount;
+
+   JobExecutor(Job job) {
+      super();
+      Objects.requireNonNull(job);
+      this.job = job;
+   }
+
+   protected final void error(String message) {
+      errorCount++;
+      logger.append("ERROR: ").append(message).append("\n");
+   }
+
+   protected final void info(String message) {
+      logger.append("INFO: ").append(message).append("\n");
+   }
+
+   /**
+    * Appends log from the service that the job uses.
+    * @param subLogText
+    */
+   protected final void subLog(String subLogText, String serviceName) {
+      logger.append(String.format("Service %s log - BEGIN", serviceName)).append("\n");
+      logger.append(subLogText).append("\n");
+      logger.append(String.format("Service %s log - END", serviceName)).append("\n");
+   }
+
+   protected final void exception(Exception e) {
+      if (e instanceof ConstraintViolationException) {
+         ((ConstraintViolationException) e).getConstraintViolations().stream().map(this::createConstraintErrorMessage)
+               .forEach(this::error);
+      } else {
+         error(handleOtherExceptions(e));
+      }
+   }
+
+   private String handleOtherExceptions(Exception e) {
+      return e.getMessage() != null ? e.getMessage() : ExceptionUtils.getStackTrace(e);
+   }
+
+   private String createConstraintErrorMessage(ConstraintViolation<?> constraintViolation) {
+      return StringUtils.splitCamelCaseAndCapitalise(constraintViolation.getPropertyPath().toString())
+             + " : "
+             + constraintViolation.getMessage();
+   }
+
+   protected abstract void executeImpl();
+
+   public JobInstance execute() {
+      errorCount = 0;
+      Timestamp startedAt = TimestampUtility.getCurrentTimestamp();
+      Timestamp finishedAt;
+      info("Job started.");
+      try {
+         executeImpl();
+         info("Job finished.");
+      } catch (Exception e) {
+         error("Job execution encountered an error: " + e.getMessage());
+      } finally {
+         finishedAt = TimestampUtility.getCurrentTimestamp();
+      }
+      return new JobInstance(job, startedAt, finishedAt, errorCount, logger.toString());
+   }
+
+   protected ApplicationUserModel getAppUser() {
+      if (appUser == null) {
+         EntityUser admin = new GetUserById().execute(IdInput.of(job.getCreateUserId())).getEntity();
+         appUser = new ApplicationUserModel(admin.getTo());
+      }
+      return appUser;
+   }
+
+   protected void addErrorCountFromService(int errorCount) {
+      this.errorCount += errorCount;
+   }
+
+}

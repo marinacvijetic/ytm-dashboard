@@ -1,0 +1,74 @@
+package com.mallocinc.ytm.model.usecase.jobs;
+
+import java.io.IOException;
+
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mallocinc.ytm.model.entities.job.Job;
+import com.mallocinc.ytm.model.usecase.appInfo.GetApplicationInfoReport;
+import com.mallocinc.ytm.model.usecase.jobs.pojo.ApplicationInfoReport;
+import com.mallocinc.ytm.model.util.ModelException;
+
+import lombok.extern.log4j.Log4j;
+
+@Log4j
+public class SendApplicationInfoReportJobExecutor extends JobExecutor {
+
+   private final String                   endpointUrl;
+   private final GetApplicationInfoReport reportBuilder = new GetApplicationInfoReport();
+
+   public SendApplicationInfoReportJobExecutor(Job job) {
+      super(job);
+
+      this.endpointUrl = getJob().getData().get("endpointUrl").toString();
+   }
+
+   @Override
+   protected void executeImpl() {
+      try {
+
+         ApplicationInfoReport report = reportBuilder.buildReport();
+
+         this.postApplicationInfoReport(report);
+      } catch (Exception e) {
+         log.error(e.getMessage(), e);
+      }
+   }
+
+   private void postApplicationInfoReport(ApplicationInfoReport report) {
+      log.info("Post Application Info Report - Started");
+      try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+         HttpPost httpPost = new HttpPost(this.endpointUrl);
+         httpPost.setHeader("Content-Type", "application/json");
+         //         httpPost.setHeader("Authorization", "Bearer " + accessToken.getToken());
+
+         ObjectMapper objectMapper = new ObjectMapper();
+         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+         String jsonInputString = objectMapper.writeValueAsString(report);
+         httpPost.setEntity(new StringEntity(jsonInputString));
+
+         try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            String responseBody = EntityUtils.toString(response.getEntity());
+            if (statusCode != 200) {
+               throw new ModelException("Post Application Info Report request returned unexpected status %s and response body %s.",
+                                        statusCode,
+                                        responseBody);
+            }
+            log.info("Post Application Info Report - Finished");
+
+         }
+      } catch (IOException e) {
+         throw new ModelException(e);
+      }
+
+   }
+
+}
