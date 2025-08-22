@@ -8,21 +8,22 @@ datasource db {
 }
 
 model ClientApplication {
-  client_id            Int        @id @default(autoincrement())
-  app_id               String?    @unique
+  client_id            Int              @id @default(autoincrement())
+  app_id               String?          @unique
   app_title            String?
   version              String?
   url                  String?
   api_url              String?
-  created_at           DateTime?  @db.Timestamp(6)
-  last_update          DateTime?  @db.Timestamp(6)
-  proctor_edu          Boolean?   @default(false)
-  proctorio            Boolean?   @default(false)
-  superset_apache      Boolean?   @default(false)
-  last_ping_at         DateTime?  @db.Timestamp(6)
-  last_ping_successful Boolean?   @default(false)
-  is_active            Boolean?   @default(false)
+  created_at           DateTime?        @db.Timestamp(6)
+  last_update          DateTime?        @db.Timestamp(6)
+  proctor_edu          Boolean?         @default(false)
+  proctorio            Boolean?         @default(false)
+  superset_apache      Boolean?         @default(false)
+  last_ping_at         DateTime?        @db.Timestamp(6)
+  last_ping_successful Boolean?         @default(false)
+  is_active            Boolean?         @default(false)
   services             services[]
+  statistics_logs      statistics_log[]
 
   @@map("client_applications")
 }
@@ -38,8 +39,8 @@ model services {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model statistics_log {
-  id                             String   @id(map: "pk_statistics_log")
-  recorded_at                    DateTime @db.Timestamp(6)
+  id                             String            @id(map: "pk_statistics_log")
+  recorded_at                    DateTime          @db.Timestamp(6)
   user_cnt                       Int?
   active_users                   Int?
   locked_users                   Int?
@@ -48,7 +49,7 @@ model statistics_log {
   inactive_users                 Int?
   user_group_cnt                 Int?
   root_user_group_cnt            Int?
-  avg_users_per_group            Decimal? @db.Decimal
+  avg_users_per_group            Decimal?          @db.Decimal
   admin_cnt                      Int?
   proctor_cnt                    Int?
   instructor_cnt                 Int?
@@ -57,7 +58,7 @@ model statistics_log {
   all_pools                      Int?
   all_root_pools                 Int?
   all_pools_with_questions       Int?
-  avg_questions_in_pools         Decimal? @db.Decimal
+  avg_questions_in_pools         Decimal?          @db.Decimal
   single_choice_questions        Int?
   multiple_choice_questions      Int?
   essay_questions                Int?
@@ -79,9 +80,9 @@ model statistics_log {
   all_manual_tests               Int?
   all_generated_tests            Int?
   generated_by_category_tests    Int?
-  avg_test_versions_root_tests   Decimal? @db.Decimal
+  avg_test_versions_root_tests   Decimal?          @db.Decimal
   max_test_versions_root_tests   Int?
-  avg_test_versions_root_sec     Decimal? @db.Decimal
+  avg_test_versions_root_sec     Decimal?          @db.Decimal
   max_test_versions_root_sec     Int?
   test_templates                 Int?
   limited_time_tests             Int?
@@ -109,8 +110,8 @@ model statistics_log {
   scheduled_reports              Int?
   training_courses               Int?
   pinned_courses                 Int?
-  avg_steps_per_training         Decimal? @db.Decimal
-  avg_tests_per_training         Decimal? @db.Decimal
+  avg_steps_per_training         Decimal?          @db.Decimal
+  avg_tests_per_training         Decimal?          @db.Decimal
   enabled_email_notifications    Int?
   disabled_email_notifications   Int?
   enabled_app_notifications      Int?
@@ -140,4 +141,6 @@ model statistics_log {
   has_country_defined            Int?
   total_questions                Int?
   accounting_questions           Int?
+  app_id                         String
+  client_application             ClientApplication @relation(fields: [app_id], references: [app_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_statistics_log_app_id")
 }

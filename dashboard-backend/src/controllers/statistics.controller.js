@@ -7,6 +7,7 @@ exports.receiveStatisticsInfo = async (req, res) => {
 
     if(!statsPayload.id) return res.status(400).json({ error: 'Missing id' });
     if(!statsPayload.recordedAt) return res.status(400).json({ error: 'Missing recordedAt' });
+    if(!statsPayload.appId) return res.status(400).json({ error: 'Missing appId' });
 
     const created = await statisticsModel.createStatisticsLog(statsPayload);
     return res.status(201).json(created);

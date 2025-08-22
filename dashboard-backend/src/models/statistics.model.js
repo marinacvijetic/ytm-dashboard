@@ -5,8 +5,9 @@ const prisma = new PrismaClient();
 /**
  * @param {Object} data         — camelCase payload from controller
  * @param {string|number|Date} data.recordedAt
+ * @param {string} data.appId
  * @param {number} data.userCnt
- * // … all other fields …
+
  * @param {number} data.hasCountryDefined
  */
 exports.createStatisticsLog = async (data) => {
@@ -15,6 +16,7 @@ exports.createStatisticsLog = async (data) => {
       data: {
         id:                      data.id,
         recorded_at:             new Date(data.recordedAt),
+        app_id:                  data.appId,
         user_cnt:                data.userCnt,
         active_users:            data.activeUsers,
         locked_users:            data.lockedUsers,
