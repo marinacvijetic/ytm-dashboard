@@ -138,6 +138,13 @@
   .p-toast .p-toast-icon-close {
     @apply ml-auto text-gray-400 hover:text-gray-700 cursor-pointer text-lg;
   }
+
+  .stats-details-panel {
+    @apply bg-white rounded-lg shadow p-6 grid grid-cols-2 gap-x-8 gap-y-2;
+  }
+  .stats-details-panel span {
+    @apply font-semibold text-gray-700;
+  }
 }
 
 @theme {

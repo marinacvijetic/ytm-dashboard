@@ -149,3 +149,29 @@ exports.findLogsPage = async (skip, take) => {
   }
 };
 
+exports.findDistinctAppIds = async () => {
+  try {
+    const apps = await prisma.statistics_log.findMany({
+      distinct: ['app_id'],
+      select: {app_id: true},
+    });
+    
+    return apps.map((a) => a.app_id);
+    return appIds.map(entry => entry.app_id);
+  } catch (err) {
+    console.error("[statistics.model] findDistinctAppIds error:", err);
+    throw err;
+  }
+};
+
+exports.findLatestLogByAppId = async (appId) => {
+  try {
+    return await prisma.statistics_log.findFirst({
+      where: { app_id: appId },
+      orderBy: { recorded_at: 'desc' },
+    });
+  } catch (err) {
+    console.error("[statistics.model] findLatestLogByAppId error:", err);
+    throw err;
+  }
+};

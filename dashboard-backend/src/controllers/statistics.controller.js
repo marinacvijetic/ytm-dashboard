@@ -48,3 +48,27 @@ exports.getAllLogs = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.getAppIds = async (_req, res) => {
+  try {
+    const appIds = await statisticsModel.findDistinctAppIds();
+    res.json(appIds);
+  } catch (err) {
+    console.error("Error in getAppIds:", err);
+    res.status(500).json({ error: "Internal Server Error"});
+  }
+};
+
+exports.getLatestLogByAppId = async (req, res) => {
+  try{
+    const appId = req.params.appId;
+    const log = await statisticsModel.findLatestLogByAppId(appId);
+    if(!log) {
+      return res.status(404).json({ error: "Not Found"});
+    }
+    res.json(log);
+  } catch(err) {
+    console.error("Error in getLatestLogByAppId:", err);
+    res.status(500).json({ error: "Internal Server Error"});
+  }
+}
