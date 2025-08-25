@@ -69,30 +69,33 @@
   }
 
   /* Paginator container */
-  .paginator {
+  .p-paginator {
     @apply flex justify-center items-center gap-1 mt-2 bg-gray-100 py-2 rounded-b-lg;
   }
 
   /* Page number buttons */
-  .paginator [data-pc-section="pagebutton"] {
+  .p-paginator-pages{
     @apply bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-1 mx-1 transition hover:bg-blue-100 hover:text-blue-600 cursor-pointer;
   }
 
   /* Active page button */
-  .paginator [data-pc-section="pagebutton"][aria-current="true"] {
+  .p-paginator-page .p-highlight {
     @apply bg-primary-blue text-white font-bold;
   }
 
   /* Prev/Next/First/Last buttons */
-  .paginator [data-pc-section="prevpagebutton"],
-  .paginator [data-pc-section="nextpagebutton"],
-  .paginator [data-pc-section="firstpagebutton"],
-  .paginator [data-pc-section="lastpagebutton"] {
+  .p-paginator-prev,
+  .p-paginator-next,
+  .p-paginator-first,
+  .p-paginator-last{
     @apply bg-white border border-gray-300 text-gray-700 rounded-lg px-2 py-1 mx-1 transition hover:bg-blue-100 hover:text-blue-600 cursor-pointer;
   }
 
   /* Disabled state */
-  .paginator button:disabled {
+  .p-paginator-prev.p-disabled,
+  .p-paginator-next.p-disabled,
+  .p-paginator-first.p-disabled,
+  .p-paginator-last.p-disabled{
     @apply bg-gray-200 text-gray-400 cursor-not-allowed border-gray-200;
   }
 
