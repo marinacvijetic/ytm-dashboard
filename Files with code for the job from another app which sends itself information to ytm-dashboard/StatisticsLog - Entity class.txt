@@ -1,0 +1,54 @@
+package com.mallocinc.ytm.model.entities;
+
+import java.math.BigDecimal;
+
+import org.apache.commons.lang3.NotImplementedException;
+
+import com.mallocinc.ytm.database.generated.samples.ytm.DataStatisticsLogSample;
+import com.mallocinc.ytm.database.generated.to.StatisticsLogTo;
+import com.mallocinc.ytm.model.entities.api.EntityApi;
+import com.mallocinc.ytm.model.providers.api.BaseProvider;
+import com.mallocinc.ytm.model.util.MessageException;
+
+public class StatisticsLog extends EntityApi<StatisticsLogTo> {
+
+   public StatisticsLog() {
+      super(new StatisticsLogTo());
+   }
+
+   public StatisticsLog(StatisticsLogTo to) {
+      super(to);
+   }
+
+   public String getStatisticsLogId() {
+      return getTo().getID();
+   }
+
+   public static BaseProvider<DataStatisticsLogSample, StatisticsLogTo, StatisticsLog> getBaseProviderInstance() {
+      return new BaseProvider<>(DataStatisticsLogSample.class, StatisticsLog.class);
+   }
+
+   @Override
+   public void insert(BigDecimal changeUserId) throws MessageException {
+      throw new NotImplementedException();
+
+   }
+
+   @Override
+   public void update(BigDecimal changeUserId) throws MessageException {
+      throw new NotImplementedException();
+
+   }
+
+   @Override
+   public void delete(BigDecimal changeUserId) throws MessageException {
+      throw new NotImplementedException();
+
+   }
+
+   @Override
+   public void refreshRelatedData() throws MessageException {
+      throw new NotImplementedException();
+   }
+
+}

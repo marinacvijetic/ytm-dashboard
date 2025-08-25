@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@layer tailwindcss, tailwind-base, tailwind-utilities, primereact ;
+@layer tailwind-base, primereact, tailwind-utilities ;
 
 @layer base {
   h2 {
@@ -108,49 +108,23 @@
     @apply inline-flex items-center px-4 py-2 bg-primary-blue text-white font-medium rounded hover:bg-indigo-700 transition;
   }
 
-  .p-toast{
-    @apply fixed top-6 right-6 z-50 flex flex-col gap-2;
-  }
-
-  .p-toast .p-toast-message {
-    @apply flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg bg-white border border-gray-200;
-    min-width: 300px;
-    max-width: 400px;
-  }
-
-  .p-toast .p-toast-message.p-toast-message-success {
-    @apply border-green-400 bg-green-50 text-green-800;
-  }
-
-  .p-toast .p-toast-message.p-toast-message-error {
-    @apply border-red-400 bg-red-50 text-red-800;
-  }
-
-  .p-toast .p-toast-message.p-toast-message-info{
-    @apply border-blue-400 bg-blue-50 text-blue-800;
-  }
-
-  .p-toast .p-toast-message-icon {
-    @apply text-xl mr-2;
-  }
-
-  .p-toast .p-toast-summary {
-    @apply font-semibold text-base;
-  }
-
-  .p-toast .p-toast-detail {
-    @apply text-sm text-gray-700;
-  }
-
-  .p-toast .p-toast-icon-close {
-    @apply ml-auto text-gray-400 hover:text-gray-700 cursor-pointer text-lg;
-  }
 
   .stats-details-panel {
     @apply bg-white rounded-lg shadow p-6 grid grid-cols-2 gap-x-8 gap-y-2;
   }
   .stats-details-panel span {
     @apply font-semibold text-gray-700;
+  }
+
+}
+
+@layer tailwind-utilities {
+  .p-datatable .p-datatable-tbody > tr.client-down {
+    @apply bg-red-100;
+  }
+
+  .p-datatable .p-datatable-tbody > tr.client-outdated {
+    @apply bg-yellow-100;
   }
 }
 

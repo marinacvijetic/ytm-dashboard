@@ -1,0 +1,2374 @@
+package com.mallocinc.ytm.model.providers.system;
+
+import static com.mallocinc.ytm.database.util.UtilSystemParameter.*;
+
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.apache.log4j.Logger;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.mallocinc.ytm.database.util.UtilCodeTypes.AnswerOrdinalMarkupEnum;
+import com.mallocinc.ytm.database.util.UtilSystemParameter;
+import com.mallocinc.ytm.model.entities.EntitySystemParameter;
+import com.mallocinc.ytm.model.entities.event.EventDefinition;
+import com.mallocinc.ytm.model.entities.event.EventDefinitionManager;
+import com.mallocinc.ytm.model.entities.systemConfigurationVersion.SystemConfigurationVersion;
+import com.mallocinc.ytm.model.entities.user.AddressData;
+import com.mallocinc.ytm.model.proctorio.ProctorioSettings;
+import com.mallocinc.ytm.model.providers.SystemParameterProvider;
+import com.mallocinc.ytm.model.providers.webhook.WebhookCallsProvider;
+import com.mallocinc.ytm.model.stripe.StripeCheckoutAdditionalConfig;
+import com.mallocinc.ytm.model.stripe.StripeConfig;
+import com.mallocinc.ytm.model.stripe.StripeTax;
+import com.mallocinc.ytm.model.stripe.StripeTaxConfig;
+import com.mallocinc.ytm.model.usecase.integrations.proctoring.ProctoringSettings;
+import com.mallocinc.ytm.model.usecase.integrations.stripe.StripeWebhooksEndpoint;
+import com.mallocinc.ytm.model.usecase.quiz.QuizDeliveryPreference;
+import com.mallocinc.ytm.model.user.DatatablePreferences;
+import com.mallocinc.ytm.model.user.UserDatatablePreferences;
+import com.mallocinc.ytm.model.util.MessageException;
+import com.mallocinc.ytm.model.util.MiscControl;
+import com.mallocinc.ytm.model.util.ModelException;
+import com.mallocinc.ytm.model.util.PersistenceException;
+import com.mallocinc.ytm.model.util.StringUtils;
+
+import lombok.Getter;
+
+/**
+ * Global singleton responsible for management of system parameters. All system
+ * parameters are loaded from database and stored in the memory. On every
+ * parameter value change, parameter will be updated in the database.
+ * 
+ * @author ytm
+ *
+ */
+public class SystemParametersManager {
+
+   private static final int                   DEFAULT_SESSION_TIMEOUT_MINUTES = 180;
+   private static final Logger                logger                          = Logger.getLogger(SystemParametersManager.class);
+   private static SystemParametersManager     instance;
+   @Getter
+   private static final int                   MAX_PASSWORD_LENGHT             = 100;
+
+   /**
+    * Map of system parameters, key is code of system parameter
+    */
+   private Map<String, EntitySystemParameter> systemParametersMap;
+
+   private final WebhookCallsProvider         webhookCallsProvider            = new WebhookCallsProvider();
+
+   /**
+    * Private constructor to forbid instantiation outside the class
+    */
+   private SystemParametersManager() {
+      loadSystemParameterMap();
+
+   }
+
+   /**
+    * Loads system parameters map from database.
+    */
+   private void loadSystemParameterMap() {
+      synchronized (this) {
+         systemParametersMap = new SystemParameterProvider().getSystemParametersMap();
+      }
+   }
+
+   /**
+    * Reloads system parameters from the database in the local service cache. If the system parameters are changed directly in the database 
+    * or other service in the Tomcat cluster, with this method system parameters are reloaded in the service.
+    */
+   public void reloadParameters() {
+      loadSystemParameterMap();
+   }
+
+   /**
+    * Reloads system parameters from the database in the local service cahce for this service and all other services in the tomcat cluster via webhooks.
+    */
+   public void reloadParametersSystemWide() {
+      reloadParameters();
+      webhookCallsProvider.handleSystemParameterUpdate();
+   }
+
+   /**
+    * Return instance of SystemParameterManager. Creates instance if is not created
+    * yet.
+    * 
+    * @return instance of SystemParameterManager
+    */
+   public static synchronized SystemParametersManager getInstance() {
+      if (instance == null) {
+         instance = new SystemParametersManager();
+      }
+      return instance;
+   }
+
+   /**
+    * Returns String value of parameter specified by code.
+    * 
+    * @param code system parameter code
+    * @return parameter value if exists, otherwise null
+    */
+   public String getStringParameterValue(String code) {
+      return applyFunction(EntitySystemParameter::getValue, code);
+   }
+
+   /**
+    * Returns BigDecimal value of parameter specified by code.
+    * 
+    * @param code system parameter code
+    * @return parameter value if exists, otherwise null
+    */
+   public BigDecimal getNumericParameterValue(String code) {
+      return applyFunction(EntitySystemParameter::getNumericValue, code);
+   }
+
+   /**
+    * Returns blob value of parameter specified by code.
+    * 
+    * @param code system parameter code
+    * @return parameter value if exists, otherwise null
+    */
+   public byte[] getBlobParameterValue(String code) {
+      return applyFunction(EntitySystemParameter::getBlobValue, code);
+   }
+
+   /**
+    * Returns boolean value of parameter specified by code.
+    * 
+    * @param code system parameter code
+    * @return parameter value if exists, otherwise null
+    */
+   public boolean getBooleanParameterValue(String code) {
+      return applyFunction(EntitySystemParameter::getBooleanValue, code);
+   }
+
+   /**
+    * Applies provided function on system parameter specified by code.
+    * 
+    * @param <T>      Type of result of the function.
+    * @param function function to apply
+    * @param code     system parameter code
+    * @return result of applied function
+    */
+   private <T> T applyFunction(Function<EntitySystemParameter, T> function, String code) {
+      Optional<EntitySystemParameter> systemParameterOpt = getByCode(code);
+      return systemParameterOpt.isPresent() ? function.apply(systemParameterOpt.get()) : null;
+   }
+
+   /**
+    * Changes String value of system parameter specified by code. Change will be
+    * propagated to database.
+    * 
+    * @param code  system parameter code
+    * @param value new value of system parameter
+    * @throws MessageException
+    */
+   public void updateParameterValue(String code, String value) {
+      updateParameterValue(parameter -> parameter.setValue(value), code);
+   }
+
+   /**
+    * Changes BigDecimal value of system parameter specified by code. Change will
+    * be propagated to database.
+    * 
+    * @param code  system parameter code
+    * @param value new value of system parameter
+    * @throws MessageException
+    */
+   public void updateParameterValue(String code, BigDecimal value) {
+      updateParameterValue(parameter -> parameter.setNumericValue(value), code);
+   }
+
+   /**
+    * Changes blob value of system parameter specified by code. Change will be
+    * propagated to database.
+    * 
+    * @param code  system parameter code
+    * @param value new value of system parameter
+    * @throws MessageException
+    */
+   public void updateParameterValue(String code, byte[] value) {
+      updateParameterValue(parameter -> parameter.setBlobValue(value), code);
+   }
+
+   /**
+    * Changes Boolean value of system parameter specified by code. Change will be
+    * propagated to database.
+    * 
+    * @param code  system parameter code
+    * @param value new value of system parameter
+    * @throws MessageException
+    */
+   public void updateParameterValue(String code, boolean value) {
+      updateParameterValue(parameter -> parameter.setBooleanValue(value), code);
+   }
+
+   /**
+    * Changes value of system parameter specified by code. Change will be
+    * propagated to database. Type of value to change is specified with
+    * valueChanger consumer.
+    * 
+    * @param valueChanger consumer which changes the value of system parameter
+    * @param code
+    * @throws MessageException
+    */
+   private void updateParameterValue(Consumer<EntitySystemParameter> valueChanger, String code) {
+      try {
+         synchronized (this) {
+            Optional<EntitySystemParameter> systemParameterOpt = getByCode(code);
+            if (systemParameterOpt.isPresent()) {
+               EntitySystemParameter parameter = systemParameterOpt.get();
+               valueChanger.accept(parameter);
+               parameter.update(null);
+               parameter.setDirty(false);
+               webhookCallsProvider.handleSystemParameterUpdate();
+               logger.debug(String.format("System parameter %s updated in database.", parameter.getCode()));
+            } else {
+               logger.debug(String.format("System parameter %s not found.", code));
+            }
+         }
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   /**
+    * Returns system parameter entity from system parameter map
+    * 
+    * @param code system parameter code
+    * @return
+    */
+   public Optional<EntitySystemParameter> getByCode(String code) {
+      return Optional.ofNullable(systemParametersMap.get(code));
+   }
+
+   public void setParameterValue(String code, String value) {
+      setParameterValue(parameter -> parameter.setValue(value), code);
+   }
+
+   public void setParameterValue(String code, BigDecimal value) {
+      setParameterValue(parameter -> parameter.setNumericValue(value), code);
+   }
+
+   public void setParameterValue(String code, byte[] value) {
+      setParameterValue(parameter -> parameter.setBlobValue(value), code);
+   }
+
+   public void setParameterValue(String code, boolean value) {
+      setParameterValue(parameter -> parameter.setBooleanValue(value), code);
+   }
+
+   private void setParameterValue(Consumer<EntitySystemParameter> valueChanger, String code) {
+      synchronized (this) {
+         Optional<EntitySystemParameter> systemParameterOpt = getByCode(code);
+         if (systemParameterOpt.isPresent()) {
+            EntitySystemParameter parameter = systemParameterOpt.get();
+            valueChanger.accept(parameter);
+            parameter.setDirty(true);
+            logger.debug("System parameter " + parameter.getCode() + " changed in SystemParametersMap.");
+         } else {
+            logger.debug("System parameter " + code + " not found.");
+         }
+      }
+   }
+
+   public void saveDirtyParameters() {
+      try {
+         synchronized (this) {
+            List<EntitySystemParameter> dirtyParameters = systemParametersMap.values().stream()
+                  .filter(EntitySystemParameter::isDirty).collect(Collectors.toList());
+            new SystemParameterProvider().batchEntityUpdate(dirtyParameters);
+            dirtyParameters.forEach(entity -> entity.setDirty(false));
+            webhookCallsProvider.handleSystemParameterUpdate();
+         }
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public static boolean shouldDisplayLanguage() {
+      return getInstance().getBooleanParameterValue(CODE_DISPLAY_LANGUAGE);
+   }
+
+   public static void changeDisplayLanguageValue(boolean value) {
+      getInstance().updateParameterValue(CODE_DISPLAY_LANGUAGE, value);
+   }
+
+   public static boolean isCommunityVersion() {
+      return getInstance().getBooleanParameterValue(CODE_COMMUNITY);
+   }
+
+   public static List<String> getInternalNetworkIpMasks() {
+      String internalNetworkIpMasks = getInstance().getStringParameterValue(CODE_INTERNAL_NETWORK);
+      return Optional.ofNullable(internalNetworkIpMasks).map(x -> MiscControl.getDivideStringToArray(x, ","))
+            .orElse(new ArrayList<>());
+   }
+
+   public static String getYTMSidecarProtocol() {
+      return getInstance().getStringParameterValue(CODE_YTM_SIDECAR_PROTOCOL);
+   }
+
+   public static boolean isSSLYTMSidecarProtocol() {
+      String protocol = getYTMSidecarProtocol();
+      return protocol != null && protocol.equalsIgnoreCase("https");
+   }
+
+   public static String getYTMSidecarURL() {
+      return getInstance().getStringParameterValue(CODE_YTM_SIDECAR_URL);
+   }
+
+   public static String getJWTServicePath() {
+      return getInstance().getStringParameterValue(CODE_JWT_SERVICE_PATH);
+   }
+
+   public static String getClaimsGroupProperty() {
+      return getInstance().getStringParameterValue(CODE_CLAIM_GROUP_PROPERTY);
+   }
+
+   public static String getClaimsFirstNameProperty() {
+      return getInstance().getStringParameterValue(CODE_CLAIM_FIRST_NAME_PROPERTY);
+   }
+
+   public static String getClaimsLastNameProperty() {
+      return getInstance().getStringParameterValue(CODE_CLAIM_LAST_NAME_PROPERTY);
+   }
+
+   public static String getClaimsEmailProperty() {
+      return getInstance().getStringParameterValue(CODE_CLAIM_EMAIL_PROPERTY);
+   }
+
+   public static String getClaimsServiceEndpoint() {
+      return getInstance().getStringParameterValue(CODE_CLAIM_SERVICE_ENDPOINT);
+   }
+
+   public static String getJWTServiceApiKey() {
+      return getInstance().getStringParameterValue(CODE_JWT_SERVICE_API_KEY);
+   }
+
+   public static String getYTMAdministratorsGroup() {
+      return getInstance().getStringParameterValue(CODE_YTM_ADMINISTRATORS_GROUP);
+   }
+
+   public static String getYTMInstructorsGroup() {
+      return getInstance().getStringParameterValue(CODE_YTM_INSTRUCTORS_GROUP);
+   }
+
+   public static String getYTMProctorsGroup() {
+      return getInstance().getStringParameterValue(CODE_YTM_PROCTORS_GROUP);
+   }
+
+   public static String getYTMStudentsGroup() {
+      return getInstance().getStringParameterValue(CODE_YTM_STUDENTS_GROUP);
+   }
+
+   public static String getJWTPublicKeyFilePath() {
+      return getInstance().getStringParameterValue(CODE_JWT_PUBLIC_KEY_FILE);
+   }
+
+   public static String getLogOutRedirectPage() {
+      return getInstance().getStringParameterValue(CODE_LOG_OUT_REDIRECT_PAGE);
+   }
+
+   public static String getJWTClientKeyPassphrase() {
+      return getInstance().getStringParameterValue(CODE_JWT_CLIENT_KEY_PASSPHRASE);
+   }
+
+   public static String getJWTClientKeyAlias() {
+      return getInstance().getStringParameterValue(CODE_JWT_CLINET_KEY_ALIAS);
+   }
+
+   public static String getJWTClientKeystorePath() {
+      return getInstance().getStringParameterValue(CODE_JWT_CLIENT_KEYSTORE_FILE);
+   }
+
+   public static String getJWTClientTruststorePath() {
+      return getInstance().getStringParameterValue(CODE_JWT_CLIENT_TRUSTSTORE_FILE);
+   }
+
+   public static String getJWTClientKeystorePassphrase() {
+      return getInstance().getStringParameterValue(CODE_JWT_CLINET_KEYSTORE_PASSPHRASE);
+   }
+
+   public static boolean isJWTServerHostnameVerificationEnabled() {
+      return getInstance().getBooleanParameterValue(CODE_JWT_SERVER_HOSTNAME_VERIFICATION_ENABLED);
+   }
+
+   public static String getJWTClaimsServiceURI() {
+      return getYTMSidecarProtocol() + "://" + getYTMSidecarURL() + "/" + getJWTServicePath() + "/" + getClaimsServiceEndpoint();
+   }
+
+   public static boolean isGreyMatterSSOActive() {
+      return getInstance().getBooleanParameterValue(CODE_GREY_MATTER_SSO_ACTIVE);
+   }
+
+   public static int getSessionTimeoutInSeconds() {
+      BigDecimal sessionInactiveIntervalInMinutes = getInstance().getNumericParameterValue(SESSION_TIMEOUT_IN_MINUTES);
+      return (sessionInactiveIntervalInMinutes == null
+              || sessionInactiveIntervalInMinutes.intValue() <= 0)
+                                                                   ? DEFAULT_SESSION_TIMEOUT_MINUTES * 60
+                                                                   : 60 * sessionInactiveIntervalInMinutes.intValue();
+   }
+
+   public static String getDateFormat() {
+      return getInstance().getStringParameterValue(CODE_DATE_FORMAT);
+   }
+
+   public static String getTimeFormat() {
+      return getInstance().getStringParameterValue(CODE_TIME_FORMAT);
+   }
+
+   public static String getDateAndTimeFormat() {
+      return getDateFormat() + " " + getTimeFormat();
+   }
+
+   public static TimeZone getDefaultTimeZone() {
+      return TimeZone.getTimeZone(getInstance().getStringParameterValue(DEFAULT_TIME_ZONE));
+   }
+
+   public static String getApplicationMode() {
+      return getInstance().getStringParameterValue(CODE_APPLICATION_MODE);
+   }
+
+   public static String getWhiteLabelingLoginInstructions() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_LOGIN_INSTUCTIONS);
+   }
+
+   public static String getWhiteLabelingSentEmailFrom() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_FROM_MAIL);
+   }
+
+   public static String getWhiteLabelingAppTitle() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_FOR_TITLE);
+   }
+
+   public static boolean isPrivacyPolicyEnabled() {
+      return getInstance().getBooleanParameterValue(CODE_WHITE_LABEL_FOR_PRIVACY_POLICY);
+   }
+
+   public static boolean isShowScorecard() {
+      return getInstance().getBooleanParameterValue(UtilSystemParameter.DISPLAY_SCORECARD);
+   }
+
+   public static byte[] getWhiteLabelingFavicon() {
+      return getInstance().getBlobParameterValue(CODE_WHITE_LABEL_FOR_FAVICON);
+   }
+
+   @Deprecated
+   public static String getWhiteLabelingCopyrightText() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_FOR_COPYRIGHT);
+   }
+
+   public static String getWhiteLabelingAcknowledgmentText() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_FOR_ACKNOWLEDGMENT);
+   }
+
+   public static String getApplicationUrl() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_FOR_LINK);
+   }
+
+   public static String getPrivacyPolicyLink() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_FOR_PRIVACY_POLICY_LINK);
+   }
+
+   public static BigDecimal getPasswordLockedDurationInMinutes() {
+      return getInstance().getNumericParameterValue(CODE_USER_PASSOWRD_LOCK_DURATION);
+   }
+
+   public static String getBugzillaUsername() {
+      return getInstance().getStringParameterValue(CODE_BUGZILLA_USERNAME);
+   }
+
+   public static String getBugzillaPassword() {
+      return getInstance().getStringParameterValue(CODE_BUGZILLA_PASSWORD);
+   }
+
+   public static boolean isBugzillaEnabled() {
+      return getInstance().getBooleanParameterValue(CODE_BUGZILLA_ENABLE);
+   }
+
+   public static String getApplicationId() {
+      return getInstance().getStringParameterValue(CODE_APPLICATION_ID);
+   }
+
+   public static String getDefaultSelfRegisterRoleCode() {
+      return getInstance().getStringParameterValue(CODE_DEFAULT_SELF_REGISTER_ROLE);
+   }
+
+   public static String getScoreReportPassingCriteria() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_SCORE_REPORT_PASSING_CRITERIA);
+   }
+
+   public static boolean isProctorEduEnabled() {
+      return getInstance().getBooleanParameterValue(PROCTORING_ENABLED);
+   }
+
+   private static String getProctoringApiKey() {
+      return getInstance().getStringParameterValue(PROCTORING_SECRET_KEY);
+   }
+
+   private static String getProctoringTemplate() {
+      return getInstance().getStringParameterValue(PROCTORING_TEMPLATE);
+   }
+
+   private static String getProctoringServerURL() {
+      return getInstance().getStringParameterValue(PROCTORING_SERVER_URL);
+   }
+
+   /** Returns the regex expression. If expression matches the user email than, user can use the live proctoring features.
+    * @return
+    */
+   public static String getLiveProctorsEmailRegex() {
+      return getInstance().getStringParameterValue(PROCTORING_LIVE_PROCTORS_EMAIL_REGEX);
+   }
+
+   private static boolean isProctoringVersionAbove5() {
+      return getInstance().getBooleanParameterValue(PROCTORING_VERSION_ABOVE_5);
+   }
+
+   private static boolean isProctoringFullnameAsNickname() {
+      return getInstance().getBooleanParameterValue(PROCTORING_FULL_NAME_AS_NICKNAME);
+   }
+
+   /** Returns current proctoring configuration
+    * @return
+    * @throws MessageException 
+    */
+   public static ProctoringSettings getProctoringConfiguration() {
+      return ProctoringSettings.builder().enabled(isProctorEduEnabled()).serverUrl(getProctoringServerURL())
+            .secretKey(getProctoringApiKey()).template(getProctoringTemplate())
+            .liveProctorsEmailRegex(getLiveProctorsEmailRegex()).versionAbove5(isProctoringVersionAbove5())
+            .fullNameAsNickname(isProctoringFullnameAsNickname()).build();
+   }
+
+   /** Saves new proctoring configuration
+    * @param configuration
+    */
+   public void saveProctoringConfiguration(ProctoringSettings configuration) {
+      configuration.validate();
+      setParameterValue(UtilSystemParameter.PROCTORING_SECRET_KEY, configuration.getSecretKey());
+      setParameterValue(UtilSystemParameter.PROCTORING_SERVER_URL, configuration.getServerUrl());
+      setParameterValue(UtilSystemParameter.PROCTORING_TEMPLATE, configuration.getTemplate());
+      setParameterValue(UtilSystemParameter.PROCTORING_LIVE_PROCTORS_EMAIL_REGEX, configuration.getLiveProctorsEmailRegex());
+      setParameterValue(UtilSystemParameter.PROCTORING_VERSION_ABOVE_5, configuration.isVersionAbove5());
+      setParameterValue(UtilSystemParameter.PROCTORING_FULL_NAME_AS_NICKNAME, configuration.isFullNameAsNickname());
+      saveDirtyParameters();
+   }
+
+   public static String getScoreReportWholeTestDescription() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_SCORE_REPORT_WHOLE_TEST_DESC);
+   }
+
+   public static String getScoreReportSectionsDescription() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_SCORE_REPORT_SECTIONS_DESCRIPTION);
+   }
+
+   public static String getScoreReportRetestPolicy() {
+      return getInstance().getStringParameterValue(CODE_WHITE_LABEL_SCORE_REPORT_RETEST_POLICY);
+   }
+
+   public static boolean isScoreReportShowPoolInfoEnabled() {
+      return getInstance().getBooleanParameterValue(CODE_WHITE_LABEL_SCORE_REPORT_SHOW_POOL_INFO);
+   }
+
+   public static boolean isScoreReportSectionsDiagramEnabled() {
+      return getInstance().getBooleanParameterValue(CODE_WHITE_LABEL_SCORE_REPORT_SHOW_SEC_DIAG);
+   }
+
+   public static boolean isScoreReportSectionGroupsDiagramEnabled() {
+      return getInstance().getBooleanParameterValue(CODE_WHITE_LABEL_SCORE_REPORT_SHOW_SEC_GRP_DIAG);
+   }
+
+   public static String getKnowledgeDeficiencyReportFreeFormText() {
+      return getInstance().getStringParameterValue(KNOWLEDGE_DEFICIENCY_REPORT_FREE_FORM_TEXT);
+   }
+
+   public static String getKnowledgeDeficiencyReportFreeFormReportText() {
+      return getInstance().getStringParameterValue(KNOWLEDGE_DEFICIENCY_REPORT_FREE_FORM_REPORT_EXPL);
+   }
+
+   public static String getKnowledgeDeficiencyReportFreeFormExpl() {
+      return getInstance().getStringParameterValue(KNOWLEDGE_DEFICIENCY_REPORT_FREE_FORM_EXPL);
+   }
+
+   public static String getKnowledgeDeficiencyReportHeaderText() {
+      return getInstance().getStringParameterValue(KNOWLEDGE_DEFICIENCY_REPORT_HEADER_TEXT);
+   }
+
+   public static byte[] getKnowledgeDeficiencyReportHeaderImage() {
+      return getInstance().getBlobParameterValue(KNOWLEDGE_DEFICIENCY_REPORT_HEADER_IMG);
+   }
+
+   public static boolean getKnowledgeDeficiencyReportDisplayCandidateName() {
+      return getInstance().getBooleanParameterValue(KNOWLEDGE_DEFICIENCY_REPORT_DISPLAY_CANDID_NAME);
+   }
+
+   public static boolean getKnowledgeDeficiencyReportDisplayCandidateUsername() {
+      return getInstance().getBooleanParameterValue(KNOWLEDGE_DEF_REP_DISPLAY_CANDID_USERNAME);
+   }
+
+   public static boolean getKnowledgeDeficiencyReportDisplaySessionName() {
+      return getInstance().getBooleanParameterValue(KNOWLEDGE_DEFICIENCY_REPORT_DISPLAY_SES_NAME);
+   }
+
+   public static boolean getKnowledgeDeficiencyReportDisplayAvailableTo() {
+      return getInstance().getBooleanParameterValue(KNOWLEDGE_DEF_REP_DISPLAY_AVAILABLE_TO);
+   }
+
+   public static boolean getKnowledgeDeficiencyReportDisplayAvailableFrom() {
+      return getInstance().getBooleanParameterValue(KNOWLEDGE_DEF_REP_DISPLAY_AVAILABLE_FROM);
+   }
+
+   public static boolean getKnowledgeDeficiencyReportDisplayResult() {
+      return getInstance().getBooleanParameterValue(KNOWLEDGE_DEFICIENCY_REPORT_DISPLAY_RESULT);
+   }
+
+   /** Retunrs the Proctorio settings from system parameters
+    * @return Proctorio settings
+    */
+   public static ProctorioSettings getProctorioSettings() {
+      return new ProctorioSettings(isProctorioModuleEnabled(),
+                                   getInstance().getStringParameterValue(PROCTORIO_API_ENDPOINT),
+                                   getInstance().getStringParameterValue(PROCTORIO_KEY),
+                                   getInstance().getStringParameterValue(PROCTORIO_SECRET),
+                                   Optional.ofNullable(getInstance().getStringParameterValue(PROCTORIO_EXAM_SETTINGS))
+                                         .map(x -> x.split(",")).orElse(new String[0]));
+   }
+
+   public static boolean isProctorioModuleEnabled() {
+      return getInstance().getBooleanParameterValue(PROCTORIO_MODULE_ENABLED);
+   }
+
+   public static void updateProctorioSettings(ProctorioSettings proctorioSettings) {
+      getInstance().setParameterValue(PROCTORIO_API_ENDPOINT, proctorioSettings.getProctorioApiUrl());
+      getInstance().setParameterValue(PROCTORIO_KEY, proctorioSettings.getKey());
+      getInstance().setParameterValue(PROCTORIO_SECRET, proctorioSettings.getSecret());
+      getInstance().setParameterValue(PROCTORIO_EXAM_SETTINGS, String.join(",", proctorioSettings.getExamSettings()));
+      getInstance().saveDirtyParameters();
+
+   }
+
+   public static boolean isMultipleProctoringVendors() {
+      return isProctorioModuleEnabled() && isProctorEduEnabled();
+   }
+
+   public static boolean isPrivacyModuleEnabled() {
+      return getInstance().getBooleanParameterValue(CODE_PRIVACY_FLAG);
+   }
+
+   public static boolean isLRSIntegrationEnabled() {
+      return getInstance().getBooleanParameterValue(LRS_INTEGRATION_ENABLED);
+   }
+
+   public static String getLRSEndPoint() {
+      return getInstance().getStringParameterValue(LRS_ENDPOINT);
+   }
+
+   public static String getLRSConsumerKey() {
+      return getInstance().getStringParameterValue(LRS_CONSUMER_KEY);
+   }
+
+   public static String getLRSSecretKey() {
+      return getInstance().getStringParameterValue(LRS_SECRET_KEY);
+   }
+
+   public static boolean isConfiguredAllLRSParameters() {
+      return StringUtils.nonBlank(getLRSEndPoint())
+             && StringUtils.nonBlank(getLRSConsumerKey())
+             && StringUtils.nonBlank(getLRSSecretKey());
+   }
+
+   public static boolean isOnPremiseHosting() {
+      return getHostingType() == HostingType.ON_PREMISE;
+   }
+
+   public static HostingType getHostingType() {
+      return HostingType.valueOf(getInstance().getStringParameterValue(HOSTING_TYPE));
+   }
+
+   public static boolean isCustomUserPropertiesEnabled() {
+      return getInstance().getBooleanParameterValue(CUSTOM_USER_PROPERTIES_FEATURE_ENABLED);
+   }
+
+   public static boolean isNotificationForGlobalSelfEnrollmentSessionsEnabled() {
+      return getInstance().getBooleanParameterValue(NOTIFICATION_FOR_GLOBAL_SELF_ENROLLMENT_SESSIONS_ENABLED);
+   }
+
+   public static void updateEmailNotificationForGlobalSelfEnrollmentSessionsEnabled(boolean enabled) {
+      getInstance().updateParameterValue(NOTIFICATION_FOR_GLOBAL_SELF_ENROLLMENT_SESSIONS_ENABLED, enabled);
+
+   }
+
+   /** Returns batch size of the mail job, representing the maximal number of  mails sent during one execution of the mail job.
+    * @return
+    */
+   private static int getMailJobBatchSize() {
+      return getInstance().getNumericParameterValue(MAIL_JOB_BATCH_SIZE).intValue();
+   }
+
+   /** Returns interval of the mail job, representing the number of seconds between two executions of the mail job.
+    * @return
+    */
+   private static int getMailJobInterval() {
+      return getInstance().getNumericParameterValue(MAIL_JOB_INTERVAL).intValue();
+   }
+
+   /** Returns the id of the mail job trigger.
+    * @return
+    */
+   public static String getMailJobTriggerId() {
+      return getInstance().getStringParameterValue(MAIL_JOB_TRIGGER_ID);
+   }
+
+   /** Returns the WebEx integration client ID
+    * @return
+    */
+   private static String getWebexClientId() {
+      return getInstance().getStringParameterValue(WEBEX_CLIENT_ID);
+   }
+
+   /** Returns the WebEx integration client secret
+    * @return
+    */
+   private static String getWebexClientSecret() {
+      return getInstance().getStringParameterValue(WEBEX_CLIENT_SECRET);
+   }
+
+   /** Returns the WebEx integration access token
+    * @return
+    */
+   private static String getWebexAccessToken() {
+      return getInstance().getStringParameterValue(WEBEX_ACCESS_TOKEN);
+   }
+
+   /** Returns the WebEx integration refresh token
+    * @return
+    */
+   public static String getWebexRefreshToken() {
+      return getInstance().getStringParameterValue(WEBEX_REFRESH_TOKEN);
+   }
+
+   public static MailJobConfiguration getMailJobConfiguration() {
+      return new MailJobConfiguration(getMailJobTriggerId(), getMailJobBatchSize(), getMailJobInterval());
+   }
+
+   public static void updateMailJobConfiguration(MailJobConfiguration configuration) {
+      getInstance().setParameterValue(MAIL_JOB_BATCH_SIZE, BigDecimal.valueOf(configuration.getBatchSize()));
+      getInstance().setParameterValue(MAIL_JOB_INTERVAL, BigDecimal.valueOf(configuration.getInterval()));
+      getInstance().setParameterValue(MAIL_JOB_TRIGGER_ID, configuration.getTriggerId());
+      getInstance().saveDirtyParameters();
+   }
+
+   public static WebexIntegrationConfiguration getWebexIntegrationConfiguration() {
+      return WebexIntegrationConfiguration.builder().clientId(getWebexClientId()).clientSecret(getWebexClientSecret())
+            .accessToken(getWebexAccessToken()).refreshToken(getWebexRefreshToken()).build();
+   }
+
+   public static void updateWebexIntegrationConfiguration(WebexIntegrationConfiguration configuration) {
+      getInstance().setParameterValue(WEBEX_CLIENT_ID, configuration.getClientId());
+      getInstance().setParameterValue(WEBEX_CLIENT_SECRET, configuration.getClientSecret());
+      getInstance().setParameterValue(WEBEX_ACCESS_TOKEN, configuration.getAccessToken());
+      getInstance().setParameterValue(WEBEX_REFRESH_TOKEN, configuration.getRefreshToken());
+      getInstance().saveDirtyParameters();
+   }
+
+   public static AnswerOrdinalMarkupEnum getAnswerOrdinalMarkup() {
+      return AnswerOrdinalMarkupEnum.valueOf(getInstance().getStringParameterValue(ANSWER_ORDINAL_MARKUP));
+   }
+
+   public static boolean isAllowDeleteData() {
+      return getInstance().getBooleanParameterValue(ALLOW_DELETE_DATA);
+   }
+
+   public static boolean isEnableBinaryExport() {
+      return getInstance().getBooleanParameterValue(ENABLE_BINARY_EXPORT);
+   }
+
+   public static void updateInternalNetworkIpMasks(String ipMasks) {
+      getInstance().updateParameterValue(CODE_INTERNAL_NETWORK, ipMasks);
+   }
+
+   /** Returns the Seamless integration character encoding
+    * @return
+    */
+   public static String getSeamlessCharEncode() {
+      return getInstance().getStringParameterValue(SEAMLESS_CHAR_ENCODE);
+   }
+
+   /** Returns the Seamless integration JSON datetime format
+    * @return
+    */
+   public static String getSeamlessDatetimeJsonFormat() {
+      return getInstance().getStringParameterValue(SEAMLESS_DATETIME_JSON_FORMAT);
+   }
+
+   /** Returns the Seamless integration AES key
+    * @return
+    */
+   public static String getSeamlessAESKey() {
+      return getInstance().getStringParameterValue(SEAMLESS_AES_KEY);
+   }
+
+   /** Returns the Seamless integration vector length
+    * @return
+    */
+   public static BigDecimal getSeamlessVectorLength() {
+      return getInstance().getNumericParameterValue(SEAMLESS_VECTOR_LENGTH);
+   }
+
+   /** Returns the Seamless integration crypto algorithm definition
+    * @return
+    */
+   public static String getSeamlessCryptoAlgorithm() {
+      return getInstance().getStringParameterValue(SEAMLESS_CRYPTO_ALGORITHM);
+   }
+
+   /** Returns the Seamless integration URL to redirect to at quiz end
+    * @return
+    */
+   public static String getSeamlessQuizEndRedirectURL() {
+      return getInstance().getStringParameterValue(SEAMLESS_QUIZ_END_REDIRECT);
+   }
+
+   /** Update the Seamless integration URL to redirect to at qiuz end
+    * @return
+    */
+   public static void updateSeamlessQuizEndRedirectURL(String value) {
+      getInstance().updateParameterValue(SEAMLESS_QUIZ_END_REDIRECT, value);
+   }
+
+   public static boolean isEcommerceSessionEnrollmentPriceCustom() {
+      return getInstance().getBooleanParameterValue(CODE_SECOMMERCE_SESSION_ENROLLMENT_PRICE_CUSTOM);
+   }
+
+   public static void setEcommerceSessionEnrollmentPriceCustom(boolean value) {
+      getInstance().setParameterValue(CODE_SECOMMERCE_SESSION_ENROLLMENT_PRICE_CUSTOM, value);
+      getInstance().saveDirtyParameters();
+   }
+
+   public static boolean isEcommerceTrainingEnrollmentPriceCustom() {
+      return getInstance().getBooleanParameterValue(CODE_SECOMMERCE_TRAINING_ENROLLMENT_PRICE_CUSTOM);
+   }
+
+   public static void setEcommerceTrainingEnrollmentPriceCustom(boolean value) {
+      getInstance().setParameterValue(CODE_SECOMMERCE_TRAINING_ENROLLMENT_PRICE_CUSTOM, value);
+      getInstance().saveDirtyParameters();
+   }
+
+   public static boolean isEcommerceMaskUsername() {
+      return getInstance().getBooleanParameterValue(CODE_ECOMMERCE_MASK_USERNAME);
+   }
+
+   public static void setEcommerceMaskUsername(boolean shouldMask) {
+      getInstance().updateParameterValue(CODE_ECOMMERCE_MASK_USERNAME, shouldMask);
+   }
+
+   public static SystemConfigurationVersion getSystemEdition() {
+      return SystemConfigurationVersion.valueOf(getInstance().getStringParameterValue(SYSTEM_CONFIGURATION_VERSION));
+   }
+
+   /** Returns the minimal length of the user's password
+    * @return
+    */
+   public static int getMinimalPasswordLenght() {
+      return getInstance().getNumericParameterValue(MINIMAL_PASSWORD_LENGHT).intValue();
+   }
+
+   /** Returns the minimal number of uppercase characters in the user's password
+    * @return
+    */
+   public static int getMinimalNumberPasswordUppercaseCharacters() {
+      return getInstance().getNumericParameterValue(MINIMAL_NUMBER_PASSWORD_UPPERCASE_CHARACTERS).intValue();
+   }
+
+   /** Returns the minimal number of lowercase characters in the user's password
+    * @return
+    */
+   public static int getMinimalNumberPasswordLowercaseCharacters() {
+      return getInstance().getNumericParameterValue(MINIMAL_NUMBER_PASSWORD_LOWERCASE_CHARACTERS).intValue();
+   }
+
+   /** Returns the minimal number of digit characters in the user's password
+    * @return
+    */
+   public static int getMinimalNumberPasswordDigitCharacters() {
+      return getInstance().getNumericParameterValue(MINIMAL_NUMBER_PASSWORD_DIGIT_CHARACTERS).intValue();
+   }
+
+   /** Returns the minimal number of special characters in the user's password
+    * @return
+    */
+   public static int getMinimalNumberPasswordSpecialCharacters() {
+      return getInstance().getNumericParameterValue(MINIMAL_NUMBER_PASSWORD_SPECIAL_CHARACTERS).intValue();
+   }
+
+   public static PasswordConfiguration getPasswordConfiguration() {
+      return PasswordConfiguration.builder().minimalPasswordLenght(getMinimalPasswordLenght())
+            .minimalNumberPasswordUppercaseCharacters(getMinimalNumberPasswordUppercaseCharacters())
+            .minimalNumberPasswordLowercaseCharacters(getMinimalNumberPasswordLowercaseCharacters())
+            .minimalNumberPasswordDigitCharacters(getMinimalNumberPasswordDigitCharacters())
+            .minimalNumberPasswordSpecialCharacters(getMinimalNumberPasswordSpecialCharacters()).build();
+   }
+
+   public static void updatePasswordConfiguration(PasswordConfiguration configuration) {
+      if (configuration.getMinimalPasswordLenght() <= MAX_PASSWORD_LENGHT
+          && configuration.sumOfMinimalNumberChars() <= MAX_PASSWORD_LENGHT) {
+         getInstance().setParameterValue(MINIMAL_PASSWORD_LENGHT, BigDecimal.valueOf(configuration.getMinimalPasswordLenght()));
+         getInstance().setParameterValue(MINIMAL_NUMBER_PASSWORD_UPPERCASE_CHARACTERS,
+               BigDecimal.valueOf(configuration.getMinimalNumberPasswordUppercaseCharacters()));
+         getInstance().setParameterValue(MINIMAL_NUMBER_PASSWORD_LOWERCASE_CHARACTERS,
+               BigDecimal.valueOf(configuration.getMinimalNumberPasswordLowercaseCharacters()));
+         getInstance().setParameterValue(MINIMAL_NUMBER_PASSWORD_DIGIT_CHARACTERS,
+               BigDecimal.valueOf(configuration.getMinimalNumberPasswordDigitCharacters()));
+         getInstance().setParameterValue(MINIMAL_NUMBER_PASSWORD_SPECIAL_CHARACTERS,
+               BigDecimal.valueOf(configuration.getMinimalNumberPasswordSpecialCharacters()));
+         getInstance().saveDirtyParameters();
+      } else {
+         throw new ModelException("The sum of the minimum specified number of characters for each character type is larger than the maximal password length, or the minimal password length is larger than the maximal password length.");
+      }
+   }
+
+   public static String getCatalinaLogPath() {
+      return getInstance().getStringParameterValue(CATALINA_LOG_PATH);
+   }
+
+   public static void updateCatalinaLogPath(String path) {
+      getInstance().updateParameterValue(CATALINA_LOG_PATH, path);
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with paper delivery preference.
+    * @return
+    */
+   public static BigDecimal getPaperBookingDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(PAPER_BOOKING_DEADLINE_DAYS_TO_SESSION_START);
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with online delivery preference.
+    * @return
+    */
+   public static BigDecimal getOnlineBookingDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(ONLINE_BOOKING_DEADLINE_DAYS_TO_SESSION_START);
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with pearson delivery preference.
+    * @return
+    */
+   public static BigDecimal getPearsonBookingDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(PEARSON_BOOKING_DEADLINE_DAYS_TO_SESSION_START);
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with online-proctored delivery preference.
+    * @return
+    */
+   public static BigDecimal getOnlineProctoredBookingDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(ONLINE_PRC_BOOKING_DEADLINE_DAYS_TO_SESSION_START);
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with online live-proctored delivery preference.
+    * @return
+    */
+   public static BigDecimal getOnlineLiveProctoredBookingDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(ONLINE_LIVE_PR_BOOK_DEADLINE_DAYS_TO_SESSION_START);
+   }
+
+   public static BookingDeadlineConfiguration getBookingDeadlineConfiguration() {
+      return BookingDeadlineConfiguration.builder()
+            .paperBookingDeadlineDaysToSessionStart(getPaperBookingDeadlineDaysToSessionStart())
+            .onlineBookingDeadlineDaysToSessionStart(getOnlineBookingDeadlineDaysToSessionStart())
+            .pearsonBookingDeadlineDaysToSessionStart(getPearsonBookingDeadlineDaysToSessionStart())
+            .onlineProctoredBookingDeadlineDaysToSessionStart(getOnlineProctoredBookingDeadlineDaysToSessionStart())
+            .onlineLiveProctoredBookingDeadlineDaysToSessionStart(getOnlineLiveProctoredBookingDeadlineDaysToSessionStart())
+            .build();
+   }
+
+   public static void updateBookingDeadlineConfiguration(BookingDeadlineConfiguration configuration) {
+      getInstance().setParameterValue(PAPER_BOOKING_DEADLINE_DAYS_TO_SESSION_START,
+            configuration.getPaperBookingDeadlineDaysToSessionStart());
+      getInstance().setParameterValue(ONLINE_BOOKING_DEADLINE_DAYS_TO_SESSION_START,
+            configuration.getOnlineBookingDeadlineDaysToSessionStart());
+      getInstance().setParameterValue(PEARSON_BOOKING_DEADLINE_DAYS_TO_SESSION_START,
+            configuration.getPearsonBookingDeadlineDaysToSessionStart());
+      getInstance().setParameterValue(ONLINE_PRC_BOOKING_DEADLINE_DAYS_TO_SESSION_START,
+            configuration.getOnlineProctoredBookingDeadlineDaysToSessionStart());
+      getInstance().setParameterValue(ONLINE_LIVE_PR_BOOK_DEADLINE_DAYS_TO_SESSION_START,
+            configuration.getOnlineLiveProctoredBookingDeadlineDaysToSessionStart());
+      getInstance().saveDirtyParameters();
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with paper delivery preference.
+    * @return
+    */
+   public static BigDecimal getPaperBookingCancelationDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(PAPER_CANCEL_BOOK_DEADLINE_DAYS_TO_SESSION_START);
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with online delivery preference.
+    * @return
+    */
+   public static BigDecimal getOnlineBookingCancelationDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(ONLINE_CANCEL_BOOK_DEADLINE_DAYS_TO_SESSION_START);
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with pearson delivery preference.
+    * @return
+    */
+   public static BigDecimal getPearsonBookingCancelationDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(PEARSON_CANCEL_BOOK_DEADLINE_DAYS_TO_SESSION_START);
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with online-proctored delivery preference.
+    * @return
+    */
+   public static BigDecimal getOnlineProctoredBookingCancelationDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(ONLINE_CANCEL_PRC_BOOK_DEADLINE_DAYS_TO_SESS_START);
+   }
+
+   /** Returns a number of days for which the reservation deadline is before the start of the session of the quiz with online live-proctored delivery preference.
+    * @return
+    */
+   public static BigDecimal getOnlineLiveProctoredBookingCancelationDeadlineDaysToSessionStart() {
+      return getInstance().getNumericParameterValue(ONL_CNCL_LIVE_PR_BOOK_DEADLINE_DAYS_TO_SESS_START);
+   }
+
+   public static CancelationBookingDeadlineConfiguration getCancelationBookingDeadlineConfiguration() {
+      return CancelationBookingDeadlineConfiguration.builder()
+            .paperBookingCancelationDeadlineDaysToSessionStart(getPaperBookingCancelationDeadlineDaysToSessionStart())
+            .onlineBookingCancelationDeadlineDaysToSessionStart(getOnlineBookingCancelationDeadlineDaysToSessionStart())
+            .pearsonBookingCancelationDeadlineDaysToSessionStart(getPearsonBookingCancelationDeadlineDaysToSessionStart())
+            .onlineProctoredBookingCancelationDeadlineDaysToSessionStart(
+                  getOnlineProctoredBookingCancelationDeadlineDaysToSessionStart())
+            .onlineLiveProctoredBookingCancelationDeadlineDaysToSessionStart(
+                  getOnlineLiveProctoredBookingCancelationDeadlineDaysToSessionStart())
+            .build();
+   }
+
+   public static void updateCancelationBookingDeadlineConfiguration(CancelationBookingDeadlineConfiguration configuration) {
+      getInstance().setParameterValue(PAPER_CANCEL_BOOK_DEADLINE_DAYS_TO_SESSION_START,
+            configuration.getPaperBookingCancelationDeadlineDaysToSessionStart());
+      getInstance().setParameterValue(ONLINE_CANCEL_BOOK_DEADLINE_DAYS_TO_SESSION_START,
+            configuration.getOnlineBookingCancelationDeadlineDaysToSessionStart());
+      getInstance().setParameterValue(PEARSON_CANCEL_BOOK_DEADLINE_DAYS_TO_SESSION_START,
+            configuration.getPearsonBookingCancelationDeadlineDaysToSessionStart());
+      getInstance().setParameterValue(ONLINE_CANCEL_PRC_BOOK_DEADLINE_DAYS_TO_SESS_START,
+            configuration.getOnlineProctoredBookingCancelationDeadlineDaysToSessionStart());
+      getInstance().setParameterValue(ONL_CNCL_LIVE_PR_BOOK_DEADLINE_DAYS_TO_SESS_START,
+            configuration.getOnlineLiveProctoredBookingCancelationDeadlineDaysToSessionStart());
+      getInstance().saveDirtyParameters();
+   }
+
+   /** Returns the hardcoded online testing center in PearsonVue system.
+    * @return
+    */
+   public static String getPearsonVueOnlineTestingCenter() {
+      return getInstance().getStringParameterValue(PEARSON_VUE_ONLINE_TESTING_CENTER);
+   }
+
+   /**Returns boolean value that will on the registration page, fields for the first and last name enable or disable to fill them.
+    * @return
+    */
+   public static boolean isViewRegisterFirstLastName() {
+      return getInstance().getBooleanParameterValue(VIEW_REGISTER_FIRST_LAST_NAME);
+   }
+
+   /**Returns boolean value on the registration page, field for the external id enable or disable to fill in.
+    * @return
+    */
+   public static boolean isViewRegisterExternalId() {
+      return getInstance().getBooleanParameterValue(VIEW_REGISTER_EXTERNAL_ID);
+   }
+
+   /** Returns boolean value on the registration page, field for the birthday enable or disable to fill in.
+    * @return
+    */
+   public static boolean isViewRegisterBirthday() {
+      return getInstance().getBooleanParameterValue(VIEW_REGISTER_BIRTHDAY);
+   }
+
+   public static boolean isViewRegisterBirthdayRequired() {
+      return getInstance().getBooleanParameterValue(DATE_OF_BIRTH_PROPERTIES_REQUIRED);
+   }
+
+   /** Returns boolean value on the registration page, fields for the address (street, city, state/province, country, zip code) enable or disable to fill in.
+    * @return
+    */
+   public static boolean isViewRegisterAddress() {
+      return getInstance().getBooleanParameterValue(VIEW_REGISTER_ADDRESS);
+   }
+
+   /** Returns boolean value on the registration page, field for the birthday enable or disable to fill in.
+    * @return
+    */
+   public static boolean isViewRegisterAddressRequired() {
+      return getInstance().getBooleanParameterValue(VIEW_REGISTER_ADDRESS_REQUIRED);
+   }
+
+   /** Returns set of enums on the registration page, fields for the address enable or disable to fill in.
+    * @return
+    */
+   public static Set<AddressData> isViewRegisterAddressColumns() {
+      if (getInstance().getStringParameterValue(VIEW_REGISTER_ADDRESS_COLUMNS) == null) {
+         return Collections.emptySet();
+      }
+      return Stream.of(getInstance().getStringParameterValue(VIEW_REGISTER_ADDRESS_COLUMNS).trim().split("\\s*,\\s*"))
+            .map(AddressData::valueOf).collect(Collectors.toSet());
+   }
+
+   /** Returns boolean value on the registration page, properties for the (country of residence and work experience) enable or disable to fill in.
+    * @return
+    */
+   public static boolean isRegisterCustomPropertiesDisplayed() {
+      return getInstance().getBooleanParameterValue(REGISTER_CUSTOM_PROPERTIES_DISPLAYED);
+   }
+
+   /** Returns boolean value on the registration page, custom properties enable or disable to fill in.
+    * @return
+    */
+   public static boolean isRegisterCustomPropertiesRequired() {
+      return getInstance().getBooleanParameterValue(REGISTER_CUSTOM_PROPERTIES_REQUIRED);
+   }
+
+   /**Returns boolean value on the registration page, CAPTCHA enable or disable to fill in.
+    * @return
+    */
+   public static boolean isViewRegisterCaptcha() {
+      return getInstance().getBooleanParameterValue(VIEW_REGISTER_CAPTCHA);
+   }
+
+   public static RegisterConfiguration getRegisterConfiguration() {
+      return RegisterConfiguration.builder().viewRegisterFirstLastName(isViewRegisterFirstLastName())
+            .viewRegisterExternalId(isViewRegisterExternalId()).viewRegisterBirthday(isViewRegisterBirthday())
+            .viewRegisterBirthdayRequired(isViewRegisterBirthdayRequired()).viewRegisterAddress(isViewRegisterAddress())
+            .viewRegisterAddressRequired(isViewRegisterAddressRequired())
+            .viewRegisterAddressColumns(isViewRegisterAddressColumns())
+            .registerCustomPropertiesDisplayed(isRegisterCustomPropertiesDisplayed())
+            .registerCustomPropertiesRequired(isRegisterCustomPropertiesRequired()).viewRegisterCaptcha(isViewRegisterCaptcha())
+            .build();
+   }
+
+   public static void updateRegisterConfiguration(RegisterConfiguration configuration) {
+      String addressColumnsEnabled = configuration.getViewRegisterAddressColumns().toString().replace("[", "").replace("]", "");
+      if (addressColumnsEnabled.equals("")) {
+         addressColumnsEnabled = null;
+      }
+      getInstance().setParameterValue(VIEW_REGISTER_FIRST_LAST_NAME, configuration.isViewRegisterFirstLastName());
+      getInstance().setParameterValue(VIEW_REGISTER_EXTERNAL_ID, configuration.isViewRegisterExternalId());
+      getInstance().setParameterValue(VIEW_REGISTER_BIRTHDAY, configuration.isViewRegisterBirthday());
+      getInstance().setParameterValue(DATE_OF_BIRTH_PROPERTIES_REQUIRED, configuration.isViewRegisterBirthdayRequired());
+      getInstance().setParameterValue(VIEW_REGISTER_ADDRESS, configuration.isViewRegisterAddress());
+      getInstance().setParameterValue(VIEW_REGISTER_ADDRESS_REQUIRED, configuration.isViewRegisterAddressRequired());
+      getInstance().setParameterValue(VIEW_REGISTER_ADDRESS_COLUMNS, addressColumnsEnabled);
+      getInstance().setParameterValue(REGISTER_CUSTOM_PROPERTIES_DISPLAYED, configuration.isRegisterCustomPropertiesDisplayed());
+      getInstance().setParameterValue(REGISTER_CUSTOM_PROPERTIES_REQUIRED,
+            configuration.isRegisterCustomPropertiesDisplayed() && configuration.isRegisterCustomPropertiesRequired());
+      getInstance().setParameterValue(VIEW_REGISTER_CAPTCHA, configuration.isViewRegisterCaptcha());
+
+      getInstance().saveDirtyParameters();
+   }
+
+   public static boolean isLearnMoreLinks() {
+      return getInstance().getBooleanParameterValue(VIEW_LEARN_MORE_LINKS);
+   }
+
+   public static boolean isAllowRevertVerification() {
+      return getInstance().getBooleanParameterValue(ALLOW_REVERT_VERIFICATION);
+   }
+
+   public static boolean is508Compliance() {
+      return getInstance().getBooleanParameterValue(SECTION_508_COMPLIANCE);
+   }
+
+   public static TimeZone getDefaultTimeZoneIdWhenCreatingNewUser() {
+      return Optional.ofNullable(getInstance().getStringParameterValue(DEFAULT_TIME_ZONE_ID_WHEN_CREATING_NEW_USER))
+            .map(TimeZone::getTimeZone).orElse(TimeZone.getDefault());
+   }
+
+   public static void updateDefaultTimeZoneIdWhenCreatingNewUser(TimeZone zone) {
+      getInstance().updateParameterValue(DEFAULT_TIME_ZONE_ID_WHEN_CREATING_NEW_USER,
+            Optional.ofNullable(zone).map(TimeZone::getID).orElse(TimeZone.getDefault().getID()));
+   }
+
+   public static boolean isUpdateTimeZoneOnLogIn() {
+      return getInstance().getBooleanParameterValue(TIME_ZONE_UPDATE_ON_LOGIN);
+   }
+
+   public static void updateUpdateTimeZoneOnLogIn(boolean updateTimeZoneOnLogIn) {
+      getInstance().updateParameterValue(TIME_ZONE_UPDATE_ON_LOGIN, updateTimeZoneOnLogIn);
+   }
+
+   public static boolean isAllowAssignVersionsManually() {
+      return getInstance().getBooleanParameterValue(ALLOW_ASSIGN_VERSIONS_MANUALLY);
+   }
+
+   public static boolean isShowMyAssignmentsMetadata() {
+      return getInstance().getBooleanParameterValue(SHOW_ASSIGNMENTS_METADATA);
+   }
+
+   public static boolean isUpcomingAssignmentsRoutineCheckEnabled() {
+      return getInstance().getBooleanParameterValue(UPCOMING_ASSIGNMENT_ROUTINE_CHECK_ENABLED);
+   }
+
+   public static String getUpcomingAssignmentsRoutineCheckStartDatetime() {
+      return getInstance().getStringParameterValue(UPCOMING_ASSIGNMENT_ROUTINE_CHECK_START_DATETIME);
+   }
+
+   public static TimeUnit getUpcomingAssignmentsRoutineCheckFrequency() {
+      if (getInstance().getNumericParameterValue(UPCOMING_ASSIGNMENT_ROUTINE_CHECK_FREQUENCY)
+            .equals(BigDecimal.valueOf(TimeUnit.DAYS.toMinutes(1)))) {
+         return TimeUnit.DAYS;
+      } else {
+         return TimeUnit.HOURS;
+      }
+   }
+
+   public static List<String> getUpcomingAssignmentsRoutineCheckUpcomingDaysHours() {
+      return StringUtils.toStringNumbersList(getInstance().getStringParameterValue(UPCOMING_ASSIGNMENT_ROUTINE_CHECK_DAYS_HOURS))
+            .stream().mapToInt(Integer::parseInt).sorted().mapToObj(Integer::toString).collect(Collectors.toList());
+   }
+
+   public static UpcomingAssignmentsRoutineCheckConfig getUpcomingAssignmentsRoutineCheckConfig() {
+      return UpcomingAssignmentsRoutineCheckConfig.builder().enabled(isUpcomingAssignmentsRoutineCheckEnabled())
+            .frequencyUnit(getUpcomingAssignmentsRoutineCheckFrequency())
+            .startTime(Timestamp.valueOf(getUpcomingAssignmentsRoutineCheckStartDatetime()))
+            .frequences(getUpcomingAssignmentsRoutineCheckUpcomingDaysHours().stream().distinct().map(Integer::parseInt)
+                  .collect(Collectors.toList()))
+            .build();
+   }
+
+   public static void updateUpcomingAssignmentsRoutineCheckConfig(UpcomingAssignmentsRoutineCheckConfig configuration) {
+      getInstance().setParameterValue(UPCOMING_ASSIGNMENT_ROUTINE_CHECK_ENABLED, configuration.isEnabled());
+      getInstance().setParameterValue(UPCOMING_ASSIGNMENT_ROUTINE_CHECK_START_DATETIME,
+            configuration.getStartTime().toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))); // yyyy-MM-dd HH:mm:ss
+      getInstance().setParameterValue(UPCOMING_ASSIGNMENT_ROUTINE_CHECK_FREQUENCY,
+            BigDecimal.valueOf(configuration.getFrequencyUnit().toMinutes(1)));
+      getInstance().setParameterValue(UPCOMING_ASSIGNMENT_ROUTINE_CHECK_DAYS_HOURS, "["
+            .concat(configuration.getFrequences().stream().map(Object::toString).collect(Collectors.joining(", "))).concat("]"));
+      getInstance().saveDirtyParameters();
+   }
+
+   public static boolean isExpiringAssignmentsRoutineCheckEnabled() {
+      return getInstance().getBooleanParameterValue(EXPIRING_ASSIGNMENT_ROUTINE_CHECK_ENABLED);
+   }
+
+   public static String getExpiringAssignmentsRoutineCheckStartDatetime() {
+      return getInstance().getStringParameterValue(EXPIRING_ASSIGNMENT_ROUTINE_CHECK_START_DATETIME);
+   }
+
+   public static TimeUnit getExpiringAssignmentsRoutineCheckFrequency() {
+      if (getInstance().getNumericParameterValue(EXPIRING_ASSIGNMENT_ROUTINE_CHECK_FREQUENCY)
+            .equals(BigDecimal.valueOf(TimeUnit.DAYS.toMinutes(1)))) {
+         return TimeUnit.DAYS;
+      } else {
+         return TimeUnit.HOURS;
+      }
+   }
+
+   public static List<String> getExpiringAssignmentsRoutineCheckUpcomingDaysHours() {
+      return StringUtils.toStringNumbersList(getInstance().getStringParameterValue(EXPIRING_ASSIGNMENT_ROUTINE_CHECK_DAYS_HOURS))
+            .stream().mapToInt(Integer::parseInt).sorted().mapToObj(Integer::toString).collect(Collectors.toList());
+   }
+
+   public static ExpiringAssignmentCheckConfig getExpiringAssignmentsRoutineCheckConfig() {
+      return ExpiringAssignmentCheckConfig.builder().enabled(isExpiringAssignmentsRoutineCheckEnabled())
+            .frequencyUnit(getExpiringAssignmentsRoutineCheckFrequency())
+            .startTime(Timestamp.valueOf(getExpiringAssignmentsRoutineCheckStartDatetime()))
+            .frequences(getExpiringAssignmentsRoutineCheckUpcomingDaysHours().stream().distinct().map(Integer::parseInt)
+                  .collect(Collectors.toList()))
+            .build();
+   }
+
+   public static void updateExpiringAssignmentsRoutineCheckConfig(ExpiringAssignmentCheckConfig configuration) {
+      getInstance().setParameterValue(EXPIRING_ASSIGNMENT_ROUTINE_CHECK_ENABLED, configuration.isEnabled());
+      getInstance().setParameterValue(EXPIRING_ASSIGNMENT_ROUTINE_CHECK_START_DATETIME,
+            configuration.getStartTime().toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))); // yyyy-MM-dd HH:mm:ss
+      getInstance().setParameterValue(EXPIRING_ASSIGNMENT_ROUTINE_CHECK_FREQUENCY,
+            BigDecimal.valueOf(configuration.getFrequencyUnit().toMinutes(1)));
+      getInstance().setParameterValue(EXPIRING_ASSIGNMENT_ROUTINE_CHECK_DAYS_HOURS, "["
+            .concat(configuration.getFrequences().stream().map(Object::toString).collect(Collectors.joining(", "))).concat("]"));
+      getInstance().saveDirtyParameters();
+   }
+
+   public static LocalDateTime getApplicationExpirationTime() {
+      return Optional.ofNullable(getInstance().getStringParameterValue(APPLICATION_EXPIRATION_DATE))
+            .map(x -> LocalDateTime.parse(x, DateTimeFormatter.ISO_LOCAL_DATE_TIME)).orElse(null);
+   }
+
+   public static void updateApplicationExpirationTime(LocalDateTime time) {
+      getInstance().updateParameterValue(APPLICATION_EXPIRATION_DATE,
+            Optional.ofNullable(time).map(x -> x.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).orElse(null));
+   }
+
+   public static String getSuperuserPassword() {
+      return getInstance().getStringParameterValue(SUPERUSER_PASSWORD);
+   }
+
+   public static void updateSuperuserPassword(String password) {
+      getInstance().updateParameterValue(SUPERUSER_PASSWORD, password);
+   }
+
+   public static String getSuperuserEmail() {
+      return getInstance().getStringParameterValue(SUPERUSER_EMAIL);
+   }
+
+   public static String getLiquibasePath() {
+      return getInstance().getStringParameterValue(LIQUIBASE_PATH);
+   }
+
+   public static String getMyAssignmentsView() {
+      return getInstance().getStringParameterValue(MY_ASSIGNMENTS_TEST_AND_SURVEYS_VIEW);
+   }
+
+   public static String getCalendarView() {
+      return getInstance().getStringParameterValue(CALENDAR_SESSION_DEFAULT_VIEW);
+   }
+
+   public static String getCalendarDeliveryPref() {
+      return getInstance().getStringParameterValue(CALENDAR_SESSION_DEFAULT_DELIVERY_PREFERENCE);
+   }
+
+   public static String getCandidatesAttemptsDefaultView() {
+      return getInstance().getStringParameterValue(CANDIDATES_ATTEMPTS_DEFAULT_VIEW);
+   }
+
+   public static boolean isEnableTestIntegrityCheckOnChangePoolQuestions() {
+      return getInstance().getBooleanParameterValue(TEST_INTEGRITY_CHECK_ON_CHANGE_POOL_QUESTION);
+   }
+
+   public static String getEmailWhitelist() {
+      return getInstance().getStringParameterValue(EMAIL_WHITELIST);
+   }
+
+   public static void updateEmailWhitelist(String email) {
+      getInstance().updateParameterValue(EMAIL_WHITELIST, email);
+   }
+
+   public static List<String> getFeedbackEmailNotificationRecipients() {
+      return Optional.ofNullable(getInstance().getStringParameterValue(FEEDBACK_EMAIL_NOTIFICATION_RECIPIENTS))
+            .map(x -> x.split(",")).map(Arrays::asList).orElse(new ArrayList<>());
+   }
+
+   public static void updateFeedbackEmailRecipients(List<String> emails) {
+      getInstance().updateParameterValue(FEEDBACK_EMAIL_NOTIFICATION_RECIPIENTS, String.join(",", emails));
+   }
+
+   public static List<CompatibleBrowser> getCompatibleBrowsersRegexMatchList() {
+      Type listType = new TypeToken<List<CompatibleBrowser>>() {}.getType();
+      return getCompatibilityRegexMatchList(COMPATIBLE_BROWSERS_REGEX_MATCH_LIST, listType);
+   }
+
+   public static void saveCompatibleBrowsersRegexMatchList(List<CompatibleBrowser> regexList) {
+      Type listType = new TypeToken<List<CompatibleBrowser>>() {}.getType();
+      saveCompatibilityRegexMatchList(COMPATIBLE_BROWSERS_REGEX_MATCH_LIST, regexList, listType);
+   }
+
+   public static List<CompatibleOperatingSystem> getCompatibleOperatingSystemsRegexMatchList() {
+      Type listType = new TypeToken<List<CompatibleOperatingSystem>>() {}.getType();
+      return getCompatibilityRegexMatchList(COMPATIBLE_OPERATING_SYSTEMS_REGEX_MATCH_LIST, listType);
+   }
+
+   public static void saveCompatibleOperatingSystemsRegexMatchList(List<CompatibleOperatingSystem> regexList) {
+      Type listType = new TypeToken<List<CompatibleOperatingSystem>>() {}.getType();
+      saveCompatibilityRegexMatchList(COMPATIBLE_OPERATING_SYSTEMS_REGEX_MATCH_LIST, regexList, listType);
+   }
+
+   private static <T> List<T> getCompatibilityRegexMatchList(String parameterKey, Type listType) {
+      String regexListJson = getInstance().getStringParameterValue(parameterKey);
+      if (regexListJson == null) {
+         return new ArrayList<>();
+      } else {
+         Gson gson = new Gson();
+         return gson.fromJson(regexListJson, listType);
+      }
+   }
+
+   private static <T> void saveCompatibilityRegexMatchList(String parameterKey, List<T> regexList, Type listType) {
+      Gson gson = new Gson();
+      String regexListJson = gson.toJson(regexList, listType);
+      getInstance().updateParameterValue(parameterKey, regexListJson);
+   }
+
+   public static boolean isSessionLevelProctoringEnabled() {
+      return getInstance().getBooleanParameterValue(SESSION_LEVEL_PROCTORING_ENABLED);
+   }
+
+   public static boolean isMultipleProctoringConfigurationsEnabled() {
+      return getInstance().getBooleanParameterValue(MULTIPLE_PROCTORING_CONFIGURATIONS_ENABLED);
+   }
+
+   public static void updateSelfEnrollSessionInstructMessageTemplate(BigDecimal templateId) {
+      getInstance().updateParameterValue(SELF_ENROLLMENT_SESSION_INSTRUCTIONS, templateId);
+   }
+
+   public static BigDecimal getNonSelfEnrollSessionInstructMessageTemplate() {
+      return getInstance().getNumericParameterValue(NON_SELF_ENROLLMENT_SESSION_INSTRUCTIONS);
+   }
+
+   public static BigDecimal getSelfEnrollSessionInstructMessageTemplate() {
+      return getInstance().getNumericParameterValue(SELF_ENROLLMENT_SESSION_INSTRUCTIONS);
+   }
+
+   public static void updateNonSelfEnrollSessionInstructMessageTemplate(BigDecimal templateId) {
+      getInstance().updateParameterValue(NON_SELF_ENROLLMENT_SESSION_INSTRUCTIONS, templateId);
+   }
+
+   public static String getStripeReceiptSummaryParameters() {
+      return getInstance().getStringParameterValue(CODE_ECOMMERCE_STRIPE_SUMMARY_PARAMETERS);
+   }
+
+   public static String getStripeFullCompanyInfo() {
+      return getInstance().getStringParameterValue(STRIPE_FULL_COMPANY_INFO);
+   }
+
+   public static void setStripeStripeFullCompanyInfo(String fullCompanyInfo) {
+      getInstance().updateParameterValue(STRIPE_FULL_COMPANY_INFO, fullCompanyInfo);
+   }
+
+   public static String getStripeReceiptSummary() {
+      return getInstance().getStringParameterValue(CODE_ECOMMERCE_STRIPE_SUMMARY);
+   }
+
+   public static void setStripeReceiptSummary(String summary) {
+      getInstance().updateParameterValue(CODE_ECOMMERCE_STRIPE_SUMMARY, summary);
+   }
+
+   public static WebApiParameters getWebApiParameters() {
+      return new WebApiParameters(getInstance().getBooleanParameterValue(WEB_API_ENABLED),
+                                  getInstance().getStringParameterValue(WEB_API_KEY));
+   }
+
+   public static void updateWebApiParameters(WebApiParameters parameters) {
+      getInstance().setParameterValue(WEB_API_KEY, parameters.getApiKey());
+
+      getInstance().setParameterValue(WEB_API_ENABLED, parameters.isEnabled());
+
+      getInstance().saveDirtyParameters();
+   }
+
+   public static QuestionCreateEditOptionParameters getQuestionCreateEditOptionParameters() {
+      return new QuestionCreateEditOptionParameters(getInstance().getBooleanParameterValue(CREATE_QUESTION_POPUP),
+                                                    getInstance().getBooleanParameterValue(EDIT_QUESTION_POPUP),
+                                                    getInstance().getBooleanParameterValue(ENABLE_ADDITIONAL_OPTIONS));
+   }
+
+   public static void updateQuestionCreateEditOptionParameters(QuestionCreateEditOptionParameters parameters) {
+      getInstance().setParameterValue(CREATE_QUESTION_POPUP, parameters.isCreateQuestionPopupEnabled());
+      getInstance().setParameterValue(EDIT_QUESTION_POPUP, parameters.isEditQuestionPopupEnabled());
+      getInstance().setParameterValue(ENABLE_ADDITIONAL_OPTIONS, parameters.isAdditionalOptionsEnabled());
+
+      getInstance().saveDirtyParameters();
+   }
+
+   public static Map<String, DatatablePreferences> getDefaultTablePreferences() {
+      return UserDatatablePreferences.parsePreferencesJson(getInstance().getStringParameterValue(DEFAULT_TABLE_PREFERENCES))
+            .stream().collect(Collectors.toMap(DatatablePreferences::getId, Function.identity()));
+   }
+
+   public static boolean isTrainingCoursesEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_TRAINING_COURSES);
+   }
+
+   public static boolean isETestingCenterEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_E_TESTING_CENTER);
+   }
+
+   public static boolean isTestingLocationsEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_TEST_LOCATIONS);
+   }
+
+   public static boolean isCommonSessionsEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_COMMON_SESSIONS);
+   }
+
+   public static boolean isGradeCenterEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_GRADING_CENTER);
+   }
+
+   public static boolean isAuthorizationsEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_BOOKING_AUTHORIZATIONS);
+   }
+
+   public static boolean isDeliveryPreferenceEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_DELIVERY_PREFERENCE);
+   }
+
+   public static boolean isPearsonVUEEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_PEARSONVUE);
+   }
+
+   public static boolean isChatEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_CHAT);
+   }
+
+   public ChatSettings getChatSettings() {
+      return new ChatSettings(getInstance().getStringParameterValue(CHAT_BASE_URL),
+                              getInstance().getStringParameterValue(CHAT_TOKEN));
+   }
+
+   public static void saveChatSettings(ChatSettings settings) {
+      getInstance().setParameterValue(UtilSystemParameter.CHAT_BASE_URL, settings.getBaseUrl());
+      getInstance().setParameterValue(UtilSystemParameter.CHAT_TOKEN, settings.getToken());
+      getInstance().saveDirtyParameters();
+   }
+
+   public static boolean isRolesWidgetsModuleEnabled() {
+      return getInstance().getBooleanParameterValue(ROLES_WIDGETS_MODULE_ENABLED);
+   }
+
+   public static boolean isSpecialRequestsModuleEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_SPECIAL_REQUESTS);
+   }
+
+   public static boolean isLanguageFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_LANGUAGE_FLAG);
+   }
+
+   public static boolean isUserGroupShiftModuleEnabled() {
+      return getInstance().getBooleanParameterValue(ROLES_USERGROUPSHIFT_MODULE_ENABLED);
+   }
+
+   public static boolean isOverallStatisticsReportEnabled() {
+      return getInstance().getBooleanParameterValue(OVERALL_STATISTICS_FLAG);
+   }
+
+   public static boolean isAdvancedFieldsEnabled() {
+      return getInstance().getBooleanParameterValue(ADVANCED_FIELDS_FLAG);
+   }
+
+   public static boolean isWorkspacesEnabled() {
+      return getInstance().getBooleanParameterValue(WORKSPACES);
+   }
+
+   public static boolean isThemeInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(THEME_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static boolean isLanguageSettingsInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(LANGUAGE_SETTINGS_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static boolean isEnableHelpAndDemoVideosEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_HELP_AND_DEMO_VIDEOS);
+   }
+
+   public static boolean isNotificationsInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(NOTIFICATIONS_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static boolean isJobSchedulerInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(JOB_SCHEDULER_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static boolean isAttachmentsLibraryInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(ATTACHMENTS_LIBRARY_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static boolean isCustomPropertiesInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(CUSTOM_PROPERTIES_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static boolean isDateTimeFormatInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(DATE_TIME_FORMAT_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static boolean isAdditionalModulesInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(ADDITIONAL_MODULES_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static boolean isMailServerSetupInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(MAIL_SERVER_SETUP_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static boolean isBrowserCompatibilityInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(BROWSER_COMPATIBILITY_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static BigDecimal getNumOfConcurrentUsersLimit() {
+      return getInstance().getNumericParameterValue(LIMIT_OF_CONCURRENT_USERS);
+   }
+
+   public static BigDecimal getNumOfAttemptsLimit() {
+      return getInstance().getNumericParameterValue(LIMIT_OF_ATTEMPTS);
+   }
+
+   public static BigDecimal getNumOfActiveUsersLimit() {
+      return getInstance().getNumericParameterValue(LIMIT_OF_ACTIVE_USERS);
+   }
+
+   public static BigDecimal getNumOfRegisteredUsersLimit() {
+      return getInstance().getNumericParameterValue(LIMIT_OF_REGISTERED_USERS);
+   }
+
+   public static BigDecimal getNumOfProctoringMinutesLimit() {
+      return getInstance().getNumericParameterValue(LIMIT_OF_PROCTORING_MINUTES);
+   }
+
+   public static BigDecimal getNumOfProctoringAttemptsLimit() {
+      return getInstance().getNumericParameterValue(LIMIT_OF_PROCTORING_ATTEMPTS);
+   }
+
+   public static BigDecimal getPercentageReachNotificationLimit() {
+      return getInstance().getNumericParameterValue(LIMIT_REACH_NOTIFICATION);
+   }
+
+   public static List<String> getNotificationMailLimit() {
+      if (getInstance().getStringParameterValue(LIMIT_EMAIL) == null) {
+         return new ArrayList<>();
+      }
+      return new ArrayList<>(Arrays.asList(getInstance().getStringParameterValue(LIMIT_EMAIL).split(", ")));
+   }
+
+   public static LimitationConfig getLimitationsConfig() {
+      return LimitationConfig.builder().numOfConcurrentUsers(getNumOfConcurrentUsersLimit())
+            .numOfAttempts(getNumOfAttemptsLimit()).numOfActiveUsers(getNumOfActiveUsersLimit())
+            .numOfRegisteredUsers(getNumOfRegisteredUsersLimit()).numOfProctoringMinutes(getNumOfProctoringMinutesLimit())
+            .numOfProctoringAttempts(getNumOfProctoringAttemptsLimit())
+            .notificationLimitReach(getPercentageReachNotificationLimit()).notificationEmail(getNotificationMailLimit()).build();
+   }
+
+   public static void updateLimitationsConfig(LimitationConfig configuration) {
+      getInstance().setParameterValue(LIMIT_OF_CONCURRENT_USERS, configuration.getNumOfConcurrentUsers());
+      getInstance().setParameterValue(LIMIT_OF_ATTEMPTS, configuration.getNumOfAttempts());
+      getInstance().setParameterValue(LIMIT_OF_ACTIVE_USERS, configuration.getNumOfActiveUsers());
+      getInstance().setParameterValue(LIMIT_OF_REGISTERED_USERS, configuration.getNumOfRegisteredUsers());
+      getInstance().setParameterValue(LIMIT_OF_PROCTORING_MINUTES, configuration.getNumOfProctoringMinutes());
+      getInstance().setParameterValue(LIMIT_OF_PROCTORING_ATTEMPTS, configuration.getNumOfProctoringAttempts());
+      getInstance().setParameterValue(LIMIT_REACH_NOTIFICATION, configuration.getNotificationLimitReach());
+      getInstance().setParameterValue(LIMIT_EMAIL, String.join(", ", configuration.getNotificationEmail()));
+      getInstance().saveDirtyParameters();
+   }
+
+   public static boolean isShowPassFailInfo() {
+      return getInstance().getBooleanParameterValue(CODE_SHOW_PASSFAIL_INFO);
+   }
+
+   /** If true the continue option is always enabled disregarding the test/survey settings if the attempt is started and not finished, but within the availability period.
+    * @return
+    */
+   public static boolean isNotFinishedAttemptContinuationEnabled() {
+      return getInstance().getBooleanParameterValue(NOT_FINISHED_ATTEMPT_CONTINUATION_ENABLED);
+   }
+
+   /** Represents the max time in minutes since last attempt synchronization to continue the disconnected attempt. If null the time is unlimited.
+    * @return
+    */
+   public static Optional<Duration> getMaxTimeToContinueAttempt() {
+      return Optional.ofNullable(getInstance().getNumericParameterValue(ALLOWED_CONTINUATION_PERIOD)).map(BigDecimal::longValue)
+            .map(Duration::ofMinutes);
+   }
+
+   public static void updateAttemptContinuationSettings(boolean notFinishedAttemptContinuationEnabled,
+         Optional<Duration> allowedContinuationPeriod) {
+      getInstance().setParameterValue(NOT_FINISHED_ATTEMPT_CONTINUATION_ENABLED, notFinishedAttemptContinuationEnabled);
+      getInstance().setParameterValue(ALLOWED_CONTINUATION_PERIOD,
+            allowedContinuationPeriod.map(Duration::toMinutes).map(BigDecimal::valueOf).orElse(null));
+      getInstance().saveDirtyParameters();
+   }
+
+   /** If true the pause/resume/add time attempt events are transmitted to the client via websockets, otherwise the polling is used.
+    * @return
+    */
+   public static boolean isWebsocketEnabled() {
+      return getInstance().getBooleanParameterValue(WEBSOCKETS_ENABLED);
+   }
+
+   /** If true the polling is enabled.
+    * @return
+    */
+   public static boolean isPollingEnabled() {
+      return getInstance().getBooleanParameterValue(POLLING_ENABLED);
+   }
+
+   /** The interval of the polling is enabled in seconds.
+    * @return
+    */
+   public static long getPollingInterval() {
+      return Optional.ofNullable(getInstance().getNumericParameterValue(POLLING_INTERVAL)).map(BigDecimal::longValue)
+            .orElse((long) 30);
+   }
+
+   private static boolean isConnectionLostDialogEnabled() {
+      return getInstance().getBooleanParameterValue(CONNECTION_LOST_DIALOG_ENABLED);
+   }
+
+   public static GlobalAttemptSettings getGlobalAttemptSettings() {
+      return new GlobalAttemptSettings(isWebsocketEnabled(),
+                                       isPollingEnabled(),
+                                       getPollingInterval(),
+                                       isConnectionLostDialogEnabled());
+   }
+
+   public static void updateGlobalAttemptSettings(GlobalAttemptSettings settings) {
+      getInstance().setParameterValue(WEBSOCKETS_ENABLED, settings.isWebsocketsEnabled());
+      getInstance().setParameterValue(POLLING_ENABLED, settings.isPollingEnabled());
+      getInstance().setParameterValue(POLLING_INTERVAL, new BigDecimal(settings.getPollingInterval()));
+      getInstance().setParameterValue(CONNECTION_LOST_DIALOG_ENABLED, settings.isConnectionLostDialogEnabled());
+      getInstance().saveDirtyParameters();
+   }
+
+   public static String getBackupApplicationLink() {
+      return getInstance().getStringParameterValue(BACKUP_APPLICATION_LINK);
+   }
+
+   public static boolean isAccommodationStatusInSettingsWidgetEnabled() {
+      return getInstance().getBooleanParameterValue(ACCOMMODATION_STATUS_IN_SETTINGS_WIDGET_ENABLED);
+   }
+
+   public static void updateBackupApplicationLink(String backupApplicationLink) {
+      getInstance().updateParameterValue(BACKUP_APPLICATION_LINK, backupApplicationLink);
+   }
+
+   public static boolean isECommerceSubmoduleSessionTestRetakeFlag() {
+      return getInstance().getBooleanParameterValue(CODE_SUBMODULE_ECOMMERCE_SESSION_TEST_RETAKE);
+   }
+
+   public static boolean isECommerceEnabled() {
+      return getInstance().getBooleanParameterValue(MODULE_CODE_ECOMMERCE);
+   }
+
+   public static StripeConfig loadStripeConfiguration() {
+      return StripeConfig.builder().publicKey(getInstance().getStringParameterValue(CODE_ECOMMERCE_STRIPE_PUBLIC_KEY))
+            .secretKey(getInstance().getStringParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_SECRET_KEY))
+            .connectedAccountId(
+                  getInstance().getStringParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_CONNECTED_ACCCOUNT_ID))
+            .applicationFeeCoeficient(
+                  getInstance().getNumericParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_APPLICATION_FEE_COEFICIENT))
+            .build();
+   }
+
+   public static StripeTaxConfig loadStripeTaxConfiguration() {
+      StripeTax taxType = StripeTax.valueOf(getInstance().getStringParameterValue(TAX_TYPE));
+
+      return new StripeTaxConfig(taxType,
+                                 getInstance().getStringParameterValue(CODE_ECOMMERCE_STRIPE_TAX_NAME),
+                                 getInstance().getStringParameterValue(CODE_ECOMMERCE_STRIPE_TAX_DESCRIPTION),
+                                 getInstance().getNumericParameterValue(CODE_ECOMMERCE_STRIPE_TAX_PERCENTAGE),
+                                 getInstance().getBooleanParameterValue(CODE_ECOMMERCE_STRIPE_TAX_INCLUSIVE));
+   }
+
+   public static void saveStripeConfiguration(StripeConfig stripeConfig) {
+      getInstance().setParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_PUBLIC_KEY, stripeConfig.getPublicKey());
+      getInstance().setParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_SECRET_KEY, stripeConfig.getSecretKey());
+      getInstance().setParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_CONNECTED_ACCCOUNT_ID,
+            stripeConfig.getConnectedAccountId());
+      getInstance().saveDirtyParameters();
+   }
+
+   public static void saveStripeTaxConfiguration(StripeTaxConfig stripeTaxConfig) {
+      getInstance().setParameterValue(UtilSystemParameter.TAX_TYPE, stripeTaxConfig.getTaxType().name());
+      getInstance().setParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_TAX_NAME, stripeTaxConfig.getName());
+      getInstance().setParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_TAX_DESCRIPTION,
+            stripeTaxConfig.getDescription());
+      getInstance().setParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_TAX_PERCENTAGE, stripeTaxConfig.getPercentage());
+      getInstance().setParameterValue(UtilSystemParameter.CODE_ECOMMERCE_STRIPE_TAX_INCLUSIVE, stripeTaxConfig.isInclusive());
+      getInstance().saveDirtyParameters();
+   }
+
+   public static StripeCheckoutAdditionalConfig loadStripeCheckoutAdditionalConfig() {
+      return StripeCheckoutAdditionalConfig.builder()
+            .serviceTermsRequired(getInstance().getBooleanParameterValue(ACCEPT_SERVICE_TERMS_REQUIRED))
+            .customServiceTerms(getInstance().getStringParameterValue(CUSTOM_SERVICE_TERMS))
+            .billingAddressRequired(getInstance().getBooleanParameterValue(BILLING_ADDRESS_REQUIRED))
+            .taxIdRequired(getInstance().getBooleanParameterValue(TAX_ID_REQUIRED)).build();
+   }
+
+   public static void saveStripeCheckoutAdditionalConfig(StripeCheckoutAdditionalConfig config) {
+      getInstance().setParameterValue(ACCEPT_SERVICE_TERMS_REQUIRED, config.isServiceTermsRequired());
+      getInstance().setParameterValue(CUSTOM_SERVICE_TERMS, config.getCustomServiceTerms());
+      getInstance().setParameterValue(BILLING_ADDRESS_REQUIRED, config.isBillingAddressRequired());
+      getInstance().setParameterValue(TAX_ID_REQUIRED, config.isTaxIdRequired());
+      getInstance().saveDirtyParameters();
+   }
+
+   public static void saveStripeWebhooksEndpoint(StripeWebhooksEndpoint endpoint) {
+      getInstance().updateParameterValue(STRIPE_WEBHOOKS_ENDPOINT, new Gson().toJson(endpoint));
+   }
+
+   public static StripeWebhooksEndpoint getStripeWebhooksEndpoint() {
+      return new Gson().fromJson(getInstance().getStringParameterValue(STRIPE_WEBHOOKS_ENDPOINT), StripeWebhooksEndpoint.class);
+   }
+
+   public static boolean isTestGeneratorFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_TEST_GENERATOR);
+   }
+
+   public static boolean isAdvancedReportingFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_ADVANCED_REPORTING);
+   }
+
+   public static boolean isAdvancedGradingFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_ADVANCED_GRADING);
+   }
+
+   public static boolean isMultiLingualExaminationFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_MULTI_LINGUAL_EXAMINATION);
+   }
+
+   public static boolean isCUstomRolesAndPermissionsFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_CUSTOM_ROLES_AND_PERMISSIONS);
+   }
+
+   public static boolean isSurveysFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_SURVEYS);
+   }
+
+   public static boolean isCertificatesFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_CERTIFICATES);
+   }
+
+   public static boolean isAdvancedTestConfigurationFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_ADVANCED_TEST_CONFIGURATION);
+   }
+
+   public static boolean isTestingWorkflowFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_TESTING_WORKFLOW);
+   }
+
+   public static boolean isWhiteLabelingFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_WHITE_LABELING);
+   }
+
+   public static boolean isBasicRandomizationFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_BASIC_RANDOMISATION);
+   }
+
+   public static boolean isIntegrationsFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_INTEGRATIONS);
+   }
+
+   public static boolean isAdvancedTestStructuresFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_ADVANCED_TEST_STRUCTURES);
+   }
+
+   public static boolean isCustomizableTestReportsFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_CUSTOMIZABLE_TEST_REPORTS);
+   }
+
+   public static boolean isQuestionPoolsFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_QUESTION_POOLS);
+   }
+
+   public static boolean isUserGroupsFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_USER_GROUPS);
+   }
+
+   public static boolean isBookingFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_BOOKING);
+   }
+
+   public static boolean isCheatingPreventionsFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_CHEATING_PREVENTIONS);
+   }
+
+   public static boolean isExtendedDataFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_EXTENDED_DATA);
+   }
+
+   public static boolean isSelfRegisterFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_SELF_REGISTER);
+   }
+
+   public static boolean isAlreadyPaidCheckboxFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_ALREADY_PAID_CHECKBOX);
+   }
+
+   public static boolean isAllQuestionTypeFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_DATA_IMPORT_EXPORT);
+   }
+
+   public static boolean isAllModulesFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_ALL_MODULES);
+   }
+
+   public static boolean isDataImportExportFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_ALL_QUESTION_TYPE);
+   }
+
+   public static boolean isTestSessionCourseRequiredFlagEnabled() {
+      return getInstance().getBooleanParameterValue(TEST_SESSION_COURSE_REQUIRED);
+   }
+
+   public static Optional<String> getDemoUserAcountsUsernames() {
+      return Optional.ofNullable(getInstance().getStringParameterValue(DEMO_USER_ACCOUNTS_USERNAMES));
+   }
+
+   public static void setDemoUserAcountsUsernames(String usernames) {
+      getInstance().updateParameterValue(DEMO_USER_ACCOUNTS_USERNAMES, usernames);
+   }
+
+   public static BigDecimal getTestAuthorizationDefaultLimit() {
+      return getInstance().getNumericParameterValue(DEFAULT_TEST_AUTHORIZATION_LIMIT);
+   }
+
+   public static void setTestAuthorizationDefaultLimit(BigDecimal authorizationLimit) {
+      getInstance().updateParameterValue(DEFAULT_TEST_AUTHORIZATION_LIMIT, authorizationLimit);
+   }
+
+   public SsoLinkDefaultConfiguration getSsoLinkDefaultConfiguration() {
+      return new SsoLinkDefaultConfiguration(getInstance().getNumericParameterValue(SSO_DEFAULT_DURATION),
+                                             getInstance().getStringParameterValue(SSO_DEFAULT_REFERER));
+
+   }
+
+   public static void setSsoLinkDefaultConfiguration(SsoLinkDefaultConfiguration settings) {
+      getInstance().setParameterValue(SSO_DEFAULT_DURATION, settings.getDuration());
+      getInstance().setParameterValue(SSO_DEFAULT_REFERER, settings.getReferer());
+      getInstance().saveDirtyParameters();
+   }
+
+   public static boolean isUsernameCaseSensitive() {
+      return getInstance().getBooleanParameterValue(USERNAME_CASE_SENSITIVE);
+   }
+
+   public static boolean isFirstTimePopEnabledFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_FIRST_TIME_POP);
+   }
+
+   public static boolean isSetupWizardFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_SETUP_WIZARD);
+   }
+
+   public static boolean isChatGPTTrainingFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_CHATGPT_TRAINING);
+   }
+
+   public static boolean isUsingNonCompatibleBrowserForbidden() {
+      return getInstance().getBooleanParameterValue(NOT_COMPATIBLE_BROWSER_FORBIDDEN);
+   }
+
+   public static boolean isUsingNonCompatibleOperatingSystemForbidden() {
+      return getInstance().getBooleanParameterValue(NOT_COMPATIBLE_OPERATING_SYSTEM_FORBIDDEN);
+   }
+
+   public static boolean isChatGPTQuestionsFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_CHATGPT_QUESTIONS);
+   }
+
+   public static boolean isLockdownBrowserViolationKickOut() {
+      return getInstance().getBooleanParameterValue(BROWSER_LOCKDOWN_VIOLATION_KICK_OUT);
+   }
+
+   public static boolean isChatGPTLocalLibraryFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_LOCAL_LIBRARY);
+   }
+
+   public static boolean isAutoMarkingFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_AUTO_MARKING);
+   }
+
+   public static String getSalesEmailLink() {
+      return getInstance().getStringParameterValue(SALES_EMAIL_LINK);
+   }
+
+   public static void updateSalesEmailLink(String salesEmailLink) {
+      getInstance().updateParameterValue(SALES_EMAIL_LINK, salesEmailLink);
+   }
+
+   public static boolean isTrialNotificationsFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_TRIAL_NOTIFICATIONS);
+   }
+
+   public static boolean isSpecialAcommodationFlagEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_SPECIAL_ACCOMODATION);
+   }
+
+   public static boolean isFreeTrialWidgetFlagEnabled() {
+      return getInstance().getBooleanParameterValue(FREE_TRIAL_WIDGET);
+   }
+
+   public static void updateTrialNotification(boolean trialNotification) {
+      getInstance().updateParameterValue(ENABLE_TRIAL_NOTIFICATIONS, trialNotification);
+   }
+
+   public static void updateFreeTrialWidget(boolean freeTrialWidget) {
+      getInstance().updateParameterValue(FREE_TRIAL_WIDGET, freeTrialWidget);
+   }
+
+   public static RestApiParameters getRestApiParameters() {
+      return new RestApiParameters(getInstance().getStringParameterValue(REST_API_BASE_URL), getRestApiEnabledResources());
+   }
+
+   private static Set<RestApiResource> getRestApiEnabledResources() {
+      String enabledResourcesJson = getInstance().getStringParameterValue(REST_API_ENABLED_RESOURCES);
+      Gson gson = new Gson();
+      Type listType = new TypeToken<Set<RestApiResource>>() {}.getType();
+      return gson.fromJson(enabledResourcesJson, listType);
+   }
+
+   public static RestApiParameters updateRestApiParameters(RestApiParameters parameters) {
+      getInstance().setParameterValue(REST_API_BASE_URL, parameters.isEnabled() ? parameters.getApiUrl() : null);
+      getInstance().setParameterValue(REST_API_ENABLED_RESOURCES, new Gson().toJson(parameters.getEnabledResources()));
+      getInstance().saveDirtyParameters();
+      return new RestApiParameters(parameters.isEnabled() ? parameters.getApiUrl() : null, parameters.getEnabledResources());
+   }
+
+   public static void setUsingNonCompatibleBrowserForbidden(boolean usingNonCompatibleBrowserForbidden) {
+      getInstance().updateParameterValue(NOT_COMPATIBLE_BROWSER_FORBIDDEN, usingNonCompatibleBrowserForbidden);
+   }
+
+   public static void setUsingNonCompatibleOperatingSystemForbidden(boolean usingNonCompatibleOperatingSystemForbidden) {
+      getInstance().updateParameterValue(NOT_COMPATIBLE_OPERATING_SYSTEM_FORBIDDEN, usingNonCompatibleOperatingSystemForbidden);
+   }
+
+   public static boolean isGreenhouseIntegrationEnabled() {
+      return getInstance().getBooleanParameterValue(GREENHOUSE_INTEGRATION_ENABLED);
+   }
+
+   public static String getGreenhouseApiKey() {
+      return getInstance().getStringParameterValue(GREENHOUSE_INTEGRATION_API_KEY);
+   }
+
+   public static boolean isGreenhouseIntegrationWebhookEnabled() {
+      return getInstance().getBooleanParameterValue(GREENHOUSE_INTEGRATION_WEBHOOK_ENABLED);
+   }
+
+   public static String getGreenhouseWebhookUsername() {
+      return getInstance().getStringParameterValue(GREENHOUSE_INTEGRATION_WEBHOOK_USERNAME);
+   }
+
+   public static String getGreenhouseWebhookPassword() {
+      return getInstance().getStringParameterValue(GREENHOUSE_INTEGRATION_WEBHOOK_PASSWORD);
+   }
+
+   public static QuizDeliveryPreference getGreenhouseDeliveryPreference() {
+      return Optional.ofNullable(getInstance().getStringParameterValue(GREENHOUSE_INTEGRATION_TEST_DELIVERY_PREFERENCE))
+            .map(QuizDeliveryPreference::valueOf).orElse(null);
+   }
+
+   public static Timestamp getGreenhouseGradeAttemptExpiration() {
+      return Optional.ofNullable(getInstance().getStringParameterValue(GREENHOUSE_INTEGRATION_GRADE_ATTEMPT_EXPIRATION))
+            .map(Timestamp::valueOf).orElse(null);
+   }
+
+   public static GreenhouseIntegrationParameters getGreenhouseIntegrationParameters() {
+      return new GreenhouseIntegrationParameters(getRestApiParameters(),
+                                                 isGreenhouseIntegrationEnabled(),
+                                                 getGreenhouseApiKey(),
+                                                 isGreenhouseIntegrationWebhookEnabled(),
+                                                 getGreenhouseWebhookUsername(),
+                                                 getGreenhouseWebhookPassword(),
+                                                 getGreenhouseDeliveryPreference(),
+                                                 getGreenhouseGradeAttemptExpiration());
+   }
+
+   public static GreenhouseIntegrationParameters updateGreenhouseIntegrationParameters(
+         GreenhouseIntegrationParameters parameters) {
+      getInstance().setParameterValue(GREENHOUSE_INTEGRATION_ENABLED, parameters.isEnabled());
+      getInstance().setParameterValue(GREENHOUSE_INTEGRATION_API_KEY, parameters.getApiKey());
+      getInstance().setParameterValue(GREENHOUSE_INTEGRATION_WEBHOOK_ENABLED, parameters.isWebhookEnabled());
+      getInstance().setParameterValue(GREENHOUSE_INTEGRATION_WEBHOOK_USERNAME, parameters.getWebhookUsername());
+      getInstance().setParameterValue(GREENHOUSE_INTEGRATION_WEBHOOK_PASSWORD, parameters.getWebhookPassword());
+      getInstance().setParameterValue(GREENHOUSE_INTEGRATION_TEST_DELIVERY_PREFERENCE,
+            Optional.ofNullable(parameters.getDeliveryPreference()).map(QuizDeliveryPreference::name).orElse(null));
+      getInstance().setParameterValue(GREENHOUSE_INTEGRATION_GRADE_ATTEMPT_EXPIRATION,
+            Optional.ofNullable(parameters.getGradeAttemptExpirationTime()).map(Timestamp::toString).orElse(null));
+      getInstance().saveDirtyParameters();
+      EventDefinition eventDefinition = EventDefinitionManager.getGreenhouseIntegrationErrorEvent();
+      eventDefinition.setNotificationEnabled(parameters.isEnabled());
+      EventDefinitionManager.getInstance().updateEventDefinition(eventDefinition);
+      return getGreenhouseIntegrationParameters();
+   }
+
+   public static boolean isTestTakingNewDesign() {
+      return getInstance().getBooleanParameterValue(TEST_TAKING_NEW_DESIGN);
+   }
+
+   public static boolean isDisableEssayPdfUpload() {
+      return getInstance().getBooleanParameterValue(DISABLE_ESSAY_PDF_UPLOAD);
+   }
+
+   public static boolean isDirectEditQuestionOptionEnabled() {
+      return getInstance().getBooleanParameterValue(DIRECT_EDIT_QUESTION_OPTION);
+   }
+
+   public static boolean isEnableGlobalSearch() {
+      return getInstance().getBooleanParameterValue(ENABLE_GLOBAL_SEARCH);
+   }
+
+   public static boolean isDisableDownloadQuizAttachments() {
+      return getInstance().getBooleanParameterValue(DISABLE_DOWNLOAD_QUIZ_ATTACHMENTS);
+   }
+
+   public static boolean isDisableDownloadTrainingCourseAttachments() {
+      return getInstance().getBooleanParameterValue(DISABLE_DOWNLOAD_TRAINING_COURSE_ATTACHMENTS);
+   }
+
+   public static boolean isLoadingSpinnerEnabled() {
+      return getInstance().getBooleanParameterValue(LOADING_SPINNER_ANIMATION);
+   }
+
+   public static boolean isAssignmentsAutoRefreshEnabled() {
+      return getInstance().getBooleanParameterValue(ASSIGNMENTS_AUTO_REFRESH);
+   }
+
+   public static boolean isPersonalReportFirstAndLastNameEnabled() {
+      return getInstance().getBooleanParameterValue(PERSONAL_REPORT_FIRST_AND_LAST_NAME);
+   }
+
+   public static boolean isUserImpersonationEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_USER_IMPERSONATION);
+   }
+
+   /** 
+    * @return True if email is used as username for new users.
+    */
+   public static boolean isEmailUsedAsUsername() {
+      return getInstance().getBooleanParameterValue(EMAIL_AS_USERNAME);
+   }
+
+   /** 
+    * @return True if users with Guest role should be deleted upon session termination.
+    */
+   public static boolean isDeleteGuestUsers() {
+      return getInstance().getBooleanParameterValue(DELETE_GUEST_USERS);
+   }
+
+   public static UserAccountSettings getUserAccountSettings() {
+      return new UserAccountSettings(isUsernameCaseSensitive(), isEmailUsedAsUsername(), isDeleteGuestUsers());
+   }
+
+   public static void updateUserAccountSettings(UserAccountSettings settings) {
+      getInstance().setParameterValue(USERNAME_CASE_SENSITIVE, settings.isUsernameCaseSensitive());
+      getInstance().setParameterValue(EMAIL_AS_USERNAME, settings.isEmailUsedAsUsername());
+      getInstance().setParameterValue(DELETE_GUEST_USERS, settings.isDeleteGuestUsers());
+      getInstance().saveDirtyParameters();
+   }
+
+   public static boolean isTrainingStepsMenuDisabled() {
+      return getInstance().getBooleanParameterValue(DISABLE_TRAINING_STEPS_MENU);
+   }
+
+   public static boolean isAssignmentsCategoriesColumnsEnabled() {
+      return getInstance().getBooleanParameterValue(ASSIGNMENTS_CATEGORIES_COLUMNS);
+   }
+
+   public static boolean isModifyPublishedQuizConfigurationEnabled() {
+      return getInstance().getBooleanParameterValue(MODIFY_PUBLISHED_QUIZ_CONFIGURATION);
+   }
+
+   public static boolean isRcdsoIntegrationEnabled() {
+      return getInstance().getBooleanParameterValue(RCDSO_INTEGRATION_MODULE_ENABLED);
+   }
+
+   public static String getRcdsoOpenIdSettings() {
+      return getInstance().getStringParameterValue(RCDSO_OPEN_ID_SETTINGS);
+   }
+
+   public static String getRcdsoAppId() {
+      return getInstance().getStringParameterValue(RCDSO_APP_ID);
+   }
+
+   public static String getRcdsoAppSecretKey() {
+      return getInstance().getStringParameterValue(RCDSO_APP_SECRET_KEY);
+   }
+
+   public static String getRcdsoTokenEndpoint() {
+      return getInstance().getStringParameterValue(RCDSO_TOKEN_ENDPOINT);
+   }
+
+   public static String getRcdsoAssessmentEndpoint() {
+      return getInstance().getStringParameterValue(RCDSO_ASSESSMENT_ENDPOINT);
+   }
+
+   public static String getRcdsoContactEndpoint() {
+      return getInstance().getStringParameterValue(RCDSO_CONTACT_ENDPOINT);
+   }
+
+   public static String getRcdsoAssessmentWebhookEndpoint() {
+      return getInstance().getStringParameterValue(RCDSO_ASSESSMENT_WEBHOOK_ENDPOINT);
+   }
+
+   public static boolean isQuizPageFormatConfigurationEnabled() {
+      return getInstance().getBooleanParameterValue(QUIZ_PAGE_FORMAT_CONFIGURATION_ENABLED);
+   }
+
+   public static RcdsoIntegrationParameters getRcdsoIntegrationParameters() {
+      return new RcdsoIntegrationParameters(getRcdsoOpenIdSettings(),
+                                            getRcdsoAppId(),
+                                            getRcdsoAppSecretKey(),
+                                            getRcdsoTokenEndpoint(),
+                                            getRcdsoAssessmentEndpoint(),
+                                            getRcdsoContactEndpoint(),
+                                            getRcdsoAssessmentWebhookEndpoint());
+
+   }
+
+   public static RcdsoIntegrationParameters updateRcdsoIntegrationParameters(RcdsoIntegrationParameters configuration) {
+      getInstance().setParameterValue(RCDSO_OPEN_ID_SETTINGS, configuration.getOpenIdSettingsId());
+      getInstance().setParameterValue(RCDSO_APP_ID, configuration.getAppId());
+      getInstance().setParameterValue(RCDSO_APP_SECRET_KEY, configuration.getAppSecretKey());
+      getInstance().setParameterValue(RCDSO_TOKEN_ENDPOINT, configuration.getTokenEndpoint());
+      getInstance().setParameterValue(RCDSO_ASSESSMENT_ENDPOINT, configuration.getAssessmentEndpoint());
+      getInstance().setParameterValue(RCDSO_CONTACT_ENDPOINT, configuration.getContactEndpoint());
+      getInstance().setParameterValue(RCDSO_ASSESSMENT_WEBHOOK_ENDPOINT, configuration.getAssessmentWebhookEndpoint());
+      getInstance().saveDirtyParameters();
+      return configuration;
+   }
+
+   public static Optional<String> getRcdsoToken() {
+      return Optional.ofNullable(getInstance().getStringParameterValue(RCDSO_ACCESS_TOKEN));
+   }
+
+   public static Optional<BigDecimal> getRcdsoTokenExpiresAt() {
+      return Optional.ofNullable(getInstance().getNumericParameterValue(RCDSO_TOKEN_EXPIRY));
+   }
+
+   public static Optional<RcdsoAccessToken> getRcdsoAccessToken() {
+      return getRcdsoToken()
+            .flatMap(token -> getRcdsoTokenExpiresAt().map(expiresAt -> new RcdsoAccessToken(token, expiresAt.longValue())));
+   }
+
+   public static void updateRcdsoAccessToken(RcdsoAccessToken accessToken) {
+      getInstance().setParameterValue(RCDSO_ACCESS_TOKEN, accessToken.getToken());
+      getInstance().setParameterValue(RCDSO_TOKEN_EXPIRY, BigDecimal.valueOf(accessToken.getExpiresAt()));
+      getInstance().saveDirtyParameters();
+   }
+
+   /**
+    * Checks if the RCDSO integration module is enabled and configured and throws exception if not. 
+    * All parameters are required so it is sufficient to check if any is null.
+    */
+   public static void validateRcdsoModule() {
+      if (!isRcdsoIntegrationEnabled()) {
+         throw new ModelException("The RCDSO integration module is not enabled.");
+      }
+      if (getRcdsoAppId() == null) {
+         throw new ModelException("The RCDSO integration module is not configured. The integration parameters should be configured under System -> Integrations -> RCDSO integration settings.");
+      }
+   }
+
+   public static boolean isRcdsoIntegrationEnabledAndConfigured() {
+      return isRcdsoIntegrationEnabled() && getRcdsoAppId() != null;
+   }
+
+   public static boolean isRegistrationLinksPageLayoutConfigurationEnabled() {
+      return getInstance().getBooleanParameterValue(REG_LINKS_PAGE_LAYOUT_CONFIGURATION_ENABLED);
+   }
+
+   public static boolean isHideLogoutButton() {
+      return getInstance().getBooleanParameterValue(HIDE_LOGOUT_BUTTON);
+   }
+
+   public static String getTranslateAPIKey() {
+      return getInstance().getStringParameterValue(TRANSLATE_API_KEY);
+   }
+
+   public static String getSupersetUsername() {
+      return getInstance().getStringParameterValue(SUPERSET_USERNAME);
+   }
+
+   public static String getSupersetDbUsername() {
+      return getInstance().getStringParameterValue(SUPERSET_DB_USERNAME);
+   }
+
+   public static String getSupersetDbPassword() {
+      return getInstance().getStringParameterValue(SUPERSET_DB_PASSWORD);
+   }
+
+   public static String getSupersetDbHost() {
+      return getInstance().getStringParameterValue(SUPERSET_DB_HOST);
+   }
+
+   public static String getSupersetDbPort() {
+      return getInstance().getStringParameterValue(SUPERSET_DB_PORT);
+   }
+
+   public static String getSupersetDbName() {
+      return getInstance().getStringParameterValue(SUPERSET_DB_NAME);
+   }
+
+   public static String getSupersetDbSchema() {
+      return getInstance().getStringParameterValue(SUPERSET_DB_SCHEMA);
+   }
+
+   public static String getSupersetSecretKey() {
+      return getInstance().getStringParameterValue(SUPERSET_SECRET_KEY);
+   }
+
+   public static String getSupersetBaseURL() {
+      return getInstance().getStringParameterValue(SUPERSET_BASE_URL);
+   }
+
+   public static boolean isSupersetAdvancedReportingEnabled() {
+      return getInstance().getBooleanParameterValue(ENABLE_SUPERSET_ADVANCED_REPORTING);
+   }
+
+   public static SupersetIntegrationConfiguration getSupersetIntegrationConfiguration() {
+      return SupersetIntegrationConfiguration.builder().enabled(isSupersetAdvancedReportingEnabled())
+            .username(getSupersetUsername()).dbUsername(getSupersetDbUsername()).dbName(getSupersetDbName())
+            .dbPort(getSupersetDbPort()).dbHost(getSupersetDbHost()).dbPassword(getSupersetDbPassword())
+            .dbSchema(getSupersetDbSchema()).secretKey(getSupersetSecretKey()).baseURL(getSupersetBaseURL()).build();
+   }
+
+   public static void updateSupersetIntegrationConfiguration(SupersetIntegrationConfiguration configuration) {
+      getInstance().setParameterValue(SUPERSET_USERNAME, configuration.getUsername());
+      getInstance().setParameterValue(SUPERSET_DB_USERNAME, configuration.getDbUsername());
+      getInstance().setParameterValue(SUPERSET_DB_PASSWORD, configuration.getDbPassword());
+      getInstance().setParameterValue(SUPERSET_DB_HOST, configuration.getDbHost());
+      getInstance().setParameterValue(SUPERSET_DB_PORT, configuration.getDbPort());
+      getInstance().setParameterValue(SUPERSET_DB_NAME, configuration.getDbName());
+      getInstance().setParameterValue(SUPERSET_DB_SCHEMA, configuration.getDbSchema());
+      getInstance().setParameterValue(SUPERSET_BASE_URL, configuration.getBaseURL());
+      getInstance().setParameterValue(ENABLE_SUPERSET_ADVANCED_REPORTING, configuration.isEnabled());
+      getInstance().saveDirtyParameters();
+      getInstance().reloadParameters();
+   }
+
+   public static String getOpenAIToken() {
+      return getInstance().getStringParameterValue(OPEN_AI_TOKEN);
+   }
+
+   public static void updateOpenAIToken(String openAIToken) {
+      getInstance().updateParameterValue(OPEN_AI_TOKEN, openAIToken);
+   }
+
+   public static String getOpenAIUrl() {
+      return getInstance().getStringParameterValue(OPEN_AI_URL);
+   }
+
+   public static void updateOpenAIUrl(String openAIUrl) {
+      getInstance().updateParameterValue(OPEN_AI_URL, openAIUrl);
+   }
+
+   public static String getOpenAIModel() {
+      return getInstance().getStringParameterValue(OPEN_AI_MODEL);
+   }
+
+   public static void updateOpenAIModel(String openAIModel) {
+      getInstance().updateParameterValue(OPEN_AI_MODEL, openAIModel);
+   }
+
+   public static boolean isQuestionLinking() {
+      return getInstance().getBooleanParameterValue(QUESTION_LINKING);
+   }
+
+   public static String getPdfAutoSaveFrequency() {
+      return getInstance().getStringParameterValue(PDF_AUTO_SAVE_FREQUENCY);
+   }
+
+   public static void updatePdfAutoSaveFrequency(String frequency) {
+      getInstance().updateParameterValue(PDF_AUTO_SAVE_FREQUENCY, frequency);
+   }
+
+   public static boolean isDisplayAnsweredQuestionsOnFinish() {
+      return getInstance().getBooleanParameterValue(SHOW_SECTION_ANSWERED_Q_ON_FINISH);
+   }
+
+}

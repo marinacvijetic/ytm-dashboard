@@ -1,0 +1,389 @@
+package com.mallocinc.ytm.model.providers.api;
+
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.swing.SortOrder;
+
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.log4j.Logger;
+
+import com.mallocinc.codegenerator.exceptions.GDAOException;
+import com.mallocinc.codegenerator.superclasses.BaseToClass;
+import com.mallocinc.querybuilder.GdaoPagingStatement;
+import com.mallocinc.querybuilder.GdaoSnippetStatement;
+import com.mallocinc.querybuilder.GdaoStatement;
+import com.mallocinc.querybuilder.OrderCriteria;
+import com.mallocinc.ytm.database.generated.samples.ytm.DataYtmSample;
+import com.mallocinc.ytm.model.entities.api.Entity;
+import com.mallocinc.ytm.model.usecase.ListInput;
+import com.mallocinc.ytm.model.usecase.ListOutput;
+import com.mallocinc.ytm.model.usecase.filters.EqualFilter;
+import com.mallocinc.ytm.model.usecase.filters.GreaterOrEqualFilter;
+import com.mallocinc.ytm.model.usecase.filters.InFilter;
+import com.mallocinc.ytm.model.usecase.filters.LessOrEqualFilter;
+import com.mallocinc.ytm.model.usecase.filters.NotEqualFilter;
+import com.mallocinc.ytm.model.usecase.filters.NullFilter;
+import com.mallocinc.ytm.model.util.Connect;
+import com.mallocinc.ytm.model.util.MessageException;
+import com.mallocinc.ytm.model.util.PersistenceException;
+
+public abstract class Provider {
+   public static final String  SOMETHING_WENT_WRONG = "somethingWentWrong";
+   private static final Logger logger               = Logger.getLogger(Provider.class);
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> BigDecimal insertEntity(E entity,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      Connection connection = null;
+      try {
+         connection = Connect.obtainConn(connection);
+         return insertEntity(entity, connection, dataClass, mapper);
+      } finally {
+         Connect.returnConn(connection);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> BigDecimal insertEntity(E entity,
+         Connection connection,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      try {
+         return getInstanceOfData(dataClass).insertTo(connection, mapper.apply(entity));
+      } catch (GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException(SOMETHING_WENT_WRONG);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> List<T> batchEntityInsert(
+         List<E> listOfEntities,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      Connection connection = null;
+      try {
+         connection = Connect.obtainConn(connection);
+         return batchEntityInsert(listOfEntities, connection, dataClass, mapper);
+      } finally {
+         Connect.returnConn(connection);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> List<T> batchEntityInsert(
+         List<E> listOfEntities,
+         Connection connection,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      try {
+         D data = getInstanceOfData(dataClass);
+         List<T> batch = listOfEntities.stream().map(mapper).collect(Collectors.toList());
+         data.batchInsert(connection, batch);
+         return batch;
+      } catch (GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException(SOMETHING_WENT_WRONG);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> List<T> batchEntityUpdate(
+         List<E> listOfEntities,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      Connection connection = null;
+      try {
+         connection = Connect.obtainConn(connection);
+         return batchEntityUpdate(listOfEntities, connection, dataClass, mapper);
+      } finally {
+         Connect.returnConn(connection);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> List<T> batchEntityUpdate(
+         List<E> listOfEntities,
+         Connection connection,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      try {
+         D data = getInstanceOfData(dataClass);
+         List<T> batch = listOfEntities.stream().map(mapper).collect(Collectors.toList());
+         data.batchUpdateTo(connection, batch);
+         return batch;
+      } catch (GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException(SOMETHING_WENT_WRONG);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> List<E> selectUsingGdaoStatement(
+         GdaoStatement gdaoStatement,
+         Class<D> dataClass,
+         Function<T, E> mapper) throws MessageException {
+      Connection connection = null;
+      try {
+         connection = Connect.obtainConn(connection);
+         return selectUsingGdaoStatement(gdaoStatement, connection, dataClass, mapper);
+      } finally {
+         Connect.returnConn(connection);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> List<E> selectUsingGdaoStatement(
+         GdaoStatement gdaoStatement,
+         Connection connection,
+         Class<D> dataClass,
+         Function<T, E> mapper) throws MessageException {
+      try {
+         logger.debug("Select query: " + gdaoStatement.getQuery());
+         logger.debug("Select prepared query: " + gdaoStatement.getPreparedStatementQuery());
+         D data = getInstanceOfData(dataClass);
+
+         List<T> resultTo = data.selectUsingQuery(connection, gdaoStatement.getPreparedStatementQuery(),
+               gdaoStatement.getParameters());
+
+         return resultTo.stream().map(mapper).collect(Collectors.toList());
+      } catch (GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException(SOMETHING_WENT_WRONG);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> List<E> selectAll(Class<D> dataClass,
+         Function<T, E> mapper) throws MessageException {
+      return this.selectUsingGdaoStatement(new GdaoStatement(), dataClass, mapper);
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> E selectSingleUsingGdaoStatement(
+         GdaoStatement gdaoStatement,
+         Class<D> dataClass,
+         Function<T, E> mapper) throws MessageException {
+      Connection connection = null;
+      try {
+         connection = Connect.obtainConn(connection);
+         return selectSingleUsingGdaoStatement(gdaoStatement, connection, dataClass, mapper);
+      } finally {
+         Connect.returnConn(connection);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> E selectSingleUsingGdaoStatement(
+         GdaoStatement gdaoStatement,
+         Connection connection,
+         Class<D> dataClass,
+         Function<T, E> mapper) throws MessageException {
+      try {
+         logger.debug("Select query: " + gdaoStatement.getQuery());
+         logger.debug("Select prepared query: " + gdaoStatement.getPreparedStatementQuery());
+         D data = getInstanceOfData(dataClass);
+
+         T resultTo = data.selectSingleUsingQuery(connection, gdaoStatement.getPreparedStatementQuery(),
+               gdaoStatement.getParameters());
+
+         return resultTo != null ? mapper.apply(resultTo) : null;
+      } catch (GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException(SOMETHING_WENT_WRONG);
+      }
+   }
+
+   protected <T> T getInstanceOfData(Class<T> dataClass) {
+      try {
+         return dataClass.newInstance();
+      } catch (Exception e) {
+         logger.error("Unabel to create instance of Data class " + dataClass.getName(), e);
+         throw new RuntimeException(e);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> void deleteEntity(E entity,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      Connection connection = null;
+      try {
+         connection = Connect.obtainConn(connection);
+         deleteEntity(entity, connection, dataClass, mapper);
+      } finally {
+         Connect.returnConn(connection);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> void deleteEntity(E entity,
+         Connection connection,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      try {
+         getInstanceOfData(dataClass).deleteTo(connection, mapper.apply(entity));
+      } catch (GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException(SOMETHING_WENT_WRONG);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass> void deleteGdaoStatement(GdaoStatement gdaoStatement,
+         Class<D> dataClass) throws MessageException {
+      Connection connection = null;
+      try {
+         connection = Connect.obtainConn(connection);
+         deleteGdaoStatement(gdaoStatement, connection, dataClass);
+      } finally {
+         Connect.returnConn(connection);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass> void deleteGdaoStatement(GdaoStatement gdaoStatement,
+         Connection connection,
+         Class<D> dataClass) throws MessageException {
+      try {
+         logger.debug("Delete query: " + gdaoStatement.getQuery());
+         logger.debug("Delete prepared query: " + gdaoStatement.getPreparedStatementQuery());
+         getInstanceOfData(dataClass).deleteUsingQuery(connection, gdaoStatement.getPreparedStatementQuery(),
+               gdaoStatement.getParameters());
+      } catch (GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException(SOMETHING_WENT_WRONG);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> void updateEntity(E entity,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      Connection connection = null;
+      try {
+         connection = Connect.obtainConn(connection);
+         updateEntity(entity, connection, dataClass, mapper);
+      } finally {
+         Connect.returnConn(connection);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> void updateEntity(E entity,
+         Connection connection,
+         Class<D> dataClass,
+         Function<E, T> mapper) throws MessageException {
+      try {
+         getInstanceOfData(dataClass).updateTo(connection, mapper.apply(entity));
+      } catch (GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException(SOMETHING_WENT_WRONG);
+      }
+   }
+
+   /**Returns the number of the records that match the where clause from gdaoStatement.
+    * @param gdaoStatement GdaoStatement object
+    * @return number of the records that match the where clause
+    * @throws MessageException encapsulated GdaoException in MessageException
+    */
+   protected <D extends DataYtmSample<T>, T extends BaseToClass> long selectCountGdaoStatement(GdaoStatement gdaoStatement,
+         Class<D> dataClass) throws MessageException {
+      Connection connection = null;
+      try {
+         connection = Connect.obtainConn(connection);
+         return selectCountGdaoStatement(gdaoStatement, connection, dataClass);
+      } finally {
+         Connect.returnConn(connection);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass> long selectCountGdaoStatement(GdaoStatement gdaoStatement,
+         Connection connection,
+         Class<D> dataClass) throws MessageException {
+      try {
+         logger.debug("Select count query: " + gdaoStatement.getQuery());
+         return getInstanceOfData(dataClass).countUsingQuery(connection, gdaoStatement.getPreparedStatementQuery(),
+               gdaoStatement.getParameters());
+      } catch (GDAOException e) {
+         throw new MessageException(SOMETHING_WENT_WRONG);
+      }
+   }
+
+   protected <D extends DataYtmSample<T>, T extends BaseToClass, E extends Entity> ListOutput<E> list(ListInput input,
+         Map<String, String> columnsMapping,
+         Class<D> dataClass,
+         Function<T, E> mapper) {
+      try {
+         GdaoStatement filterStatement = createFilterStatement(input, columnsMapping);
+         GdaoPagingStatement listStatement = new GdaoPagingStatement(input.getFirst(), input.getPageSize());
+         if (input.getSortBy() != null && !input.getSortBy().isEmpty()) {
+            Optional<Entry<String, javax.swing.SortOrder>> sort = input.getSortBy().entrySet().stream().findFirst();
+            String sortField = sort.isPresent() ? columnsMapping.get(sort.get().getKey()) : null;
+            SortOrder sortOrder = sort.isPresent() ? sort.get().getValue() : null;
+            listStatement.setOrder(sortField, convertSortOrder(sortOrder));
+         }
+         listStatement.and(filterStatement);
+         List<E> list = selectUsingGdaoStatement(listStatement, dataClass, mapper);
+         //This line is not needed since the count is done before the data load - review required by @adis
+         //long total = selectCountGdaoStatement(filterStatement, dataClass);
+         long total = list.size();
+
+         return new ListOutput<>(list, total);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   protected GdaoStatement createFilterStatement(ListInput input, Map<String, String> columnsMapping) {
+      if (input.getFilterBy() == null) {
+         return new GdaoStatement();
+      }
+      Set<Entry<String, Object>> entrySet = input.getFilterBy().entrySet();
+      List<GdaoStatement> filterStatements = entrySet.stream().map(entry -> createTerm(entry, columnsMapping))
+            .collect(Collectors.toList());
+      return filterStatements.stream().reduce(new GdaoStatement(), GdaoStatement::and);
+   }
+
+   protected OrderCriteria convertSortOrder(SortOrder sortOrder) {
+      return (sortOrder != null && sortOrder == SortOrder.DESCENDING) ? OrderCriteria.DESCENDING : OrderCriteria.ASCENDING;
+   }
+
+   protected GdaoStatement createTerm(Map.Entry<String, Object> entry, Map<String, String> columnsMapping) {
+      final String dbColumnName = Optional.ofNullable(columnsMapping.get(entry.getKey())).orElse(entry.getKey());
+
+      if (entry.getValue() instanceof NullFilter) {
+         return new GdaoStatement().is(columnsMapping.get(entry.getKey()), null);
+      }
+      if (entry.getValue() instanceof Boolean) {
+         return new GdaoStatement().equal(dbColumnName, entry.getValue());
+      }
+      if (entry.getValue() instanceof BigDecimal) {
+         return new GdaoStatement().equal(dbColumnName, entry.getValue());
+      }
+      if (entry.getValue() instanceof String && BooleanUtils.toBooleanObject((String) entry.getValue()) != null) {
+         return new GdaoStatement().equal(dbColumnName, BooleanUtils.toBooleanObject((String) entry.getValue()));
+      }
+      if (entry.getValue() instanceof NotEqualFilter) {
+         return new GdaoStatement().notEqual(dbColumnName, ((NotEqualFilter) entry.getValue()).getFilterValue());
+      }
+      if (entry.getValue() instanceof EqualFilter) {
+         return new GdaoStatement().equal(dbColumnName, ((EqualFilter) entry.getValue()).getFilterValue());
+      }
+      if (entry.getValue() instanceof InFilter) {
+         List<Object> filterValues = ((InFilter) entry.getValue()).getFilterValues();
+         if (filterValues.isEmpty()) {
+            return new GdaoStatement().snippet(new GdaoSnippetStatement("FALSE"));
+         } else {
+            return new GdaoStatement().leftParen()
+                  .concat(filterValues.stream()
+                        .map(value -> value == null
+                                                    ? new GdaoStatement().is(dbColumnName, value)
+                                                    : new GdaoStatement().equal(dbColumnName, value))
+                        .reduce(new GdaoStatement(), GdaoStatement::or))
+                  .rightParen();
+         }
+      }
+      if (entry.getValue() instanceof GreaterOrEqualFilter) {
+         return new GdaoStatement().greaterOrEqual(dbColumnName, ((GreaterOrEqualFilter) entry.getValue()).getFilterValue());
+      }
+      if (entry.getValue() instanceof LessOrEqualFilter) {
+         return new GdaoStatement().lessOrEqual(dbColumnName, ((LessOrEqualFilter) entry.getValue()).getFilterValue());
+      }
+
+      return new GdaoStatement().like(dbColumnName, entry.getValue());
+   }
+
+}

@@ -1,0 +1,119 @@
+package com.mallocinc.ytm.model.usecase.jobs.pojo;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class StatisticsLog implements Serializable {
+
+   private static final long serialVersionUID = 1L;
+
+   private String            id;
+   private Timestamp         recordedAt;
+   private String            appId;
+   private BigDecimal        userCnt;
+   private BigDecimal        activeUsers;
+   private BigDecimal        lockedUsers;
+   private BigDecimal        suspendedUsers;
+   private BigDecimal        pendingUsers;
+   private BigDecimal        inactiveUsers;
+   private BigDecimal        userGroupCnt;
+   private BigDecimal        rootUserGroupCnt;
+   private BigDecimal        avgUsersPerGroup;
+   private BigDecimal        adminCnt;
+   private BigDecimal        proctorCnt;
+   private BigDecimal        instructorCnt;
+   private BigDecimal        studentCnt;
+   private BigDecimal        customRoleCnt;
+   private BigDecimal        allPools;
+   private BigDecimal        allRootPools;
+   private BigDecimal        allPoolsWithQuestions;
+   private BigDecimal        totalQuestions;
+   private BigDecimal        avgQuestionsInPools;
+   private BigDecimal        singleChoiceQuestions;
+   private BigDecimal        multipleChoiceQuestions;
+   private BigDecimal        essayQuestions;
+   private BigDecimal        trueFalseQuestions;
+   private BigDecimal        matrixQuestions;
+   private BigDecimal        matchingQuestions;
+   private BigDecimal        fillInBlanksQuestions;
+   private BigDecimal        orderingQuestions;
+   private BigDecimal        hotspotQuestions;
+   private BigDecimal        openEndedQuestions;
+   private BigDecimal        accountingQuestions;
+   private BigDecimal        defCorrectincorrectScoring;
+   private BigDecimal        byAnswerWeightScoring;
+   private BigDecimal        manualScoring;
+   private BigDecimal        byCombinationScoring;
+   private BigDecimal        byRulesScoring;
+   private BigDecimal        customQuestionProperties;
+   private BigDecimal        defaultTests;
+   private BigDecimal        onlyTestsWithSections;
+   private BigDecimal        allManualTests;
+   private BigDecimal        allGeneratedTests;
+   private BigDecimal        generatedByCategoryTests;
+   private BigDecimal        avgTestVersionsRootTests;
+   private BigDecimal        maxTestVersionsRootTests;
+   private BigDecimal        avgTestVersionsRootSec;
+   private BigDecimal        maxTestVersionsRootSec;
+   private BigDecimal        testTemplates;
+   private BigDecimal        limitedTimeTests;
+   private BigDecimal        unlimitedTimeTests;
+   private BigDecimal        durationPerQuestionTests;
+   private BigDecimal        durationPerQuizTests;
+   private BigDecimal        deadlinePerQuizTests;
+   private BigDecimal        testOnePage;
+   private BigDecimal        testPagePerQuestion;
+   private BigDecimal        afterTestReport;
+   private BigDecimal        afterGradingReport;
+   private BigDecimal        afterVerificationReport;
+   private BigDecimal        onManagerApprovalReport;
+   private BigDecimal        realtimeGrading;
+   private BigDecimal        scoreDetails;
+   private BigDecimal        onlyScore;
+   private BigDecimal        testCertificates;
+   private BigDecimal        surveys;
+   private BigDecimal        selfEnrollmentGlobal;
+   private BigDecimal        sessionUserGroups;
+   private BigDecimal        sessionTraining;
+   private BigDecimal        proctoredu;
+   private BigDecimal        proctorio;
+   private BigDecimal        favoriteReports;
+   private BigDecimal        scheduledReports;
+   private BigDecimal        trainingCourses;
+   private BigDecimal        pinnedCourses;
+   private BigDecimal        avgStepsPerTraining;
+   private BigDecimal        avgTestsPerTraining;
+   private BigDecimal        enabledEmailNotifications;
+   private BigDecimal        disabledEmailNotifications;
+   private BigDecimal        enabledAppNotifications;
+   private BigDecimal        disabledAppNotifications;
+   private BigDecimal        languageBundles;
+   private BigDecimal        usersLoggedAllTime;
+   private BigDecimal        usersLoggedLastMonth;
+   private BigDecimal        usersCreatedLastMonth;
+   private BigDecimal        totalAttempts;
+   private BigDecimal        totalTestAttempts;
+   private BigDecimal        totalSurveyAttempts;
+   private BigDecimal        maxConcurrentUsersEver;
+   private BigDecimal        maxConcurrentUsersLastMont;
+   private BigDecimal        failedLoginsLastMonth;
+   private BigDecimal        failedEmails;
+   private BigDecimal        unfinishedAttempts;
+   private BigDecimal        unfinishedDisconnectedAttemp;
+   private BigDecimal        unfinishedInProgressAttemp;
+   private BigDecimal        unfinishedAvbContinueAttemp;
+   private BigDecimal        unfinishedSuspendedAttemp;
+   private BigDecimal        hasStateDefined;
+   private BigDecimal        hasCountryDefined;
+
+}

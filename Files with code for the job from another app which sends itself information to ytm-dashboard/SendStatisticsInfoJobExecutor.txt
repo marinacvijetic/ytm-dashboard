@@ -1,0 +1,110 @@
+package com.mallocinc.ytm.model.usecase.jobs;
+
+import java.io.IOException;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mallocinc.ytm.database.generated.to.StatisticsLogTo;
+import com.mallocinc.ytm.model.entities.job.Job;
+import com.mallocinc.ytm.model.providers.StatisticsLogProvider;
+import com.mallocinc.ytm.model.usecase.appInfo.StatisticsLogMapper;
+import com.mallocinc.ytm.model.usecase.jobs.pojo.StatisticsLog;
+import com.mallocinc.ytm.model.util.Connect;
+import com.mallocinc.ytm.model.util.MessageException;
+import com.mallocinc.ytm.model.util.ModelException;
+import com.mallocinc.ytm.model.util.PersistenceException;
+
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
+public class SendStatisticsInfoJobExecutor extends JobExecutor {
+
+   private final StatisticsLogMapper   statsMapper        = new StatisticsLogMapper();
+   private final String                endpointUrl;
+   private final StatisticsLogProvider statisticsProvider = new StatisticsLogProvider();
+
+   public SendStatisticsInfoJobExecutor(Job job) {
+      super(job);
+
+      this.endpointUrl = getJob().getData().get("endpointUrl").toString();
+   }
+
+   @Override
+   protected void executeImpl() {
+      try {
+
+         String logId = getLogId();
+         StatisticsLogTo to = statisticsProvider.getById(logId);
+
+         StatisticsLog report = statsMapper.buildReport(to);
+         this.postStatisticsInfo(report);
+
+      } catch (Exception e) {
+         log.error("Failed to send statistics", e);
+      }
+   }
+
+   private void postStatisticsInfo(StatisticsLog statisticsReport) {
+      log.info("Post Statistics Info - Started");
+      try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+         HttpPost httpPost = new HttpPost(this.endpointUrl);
+         httpPost.setHeader("Content-Type", "application/json");
+         //         httpPost.setHeader("Authorization", "Bearer " + accessToken.getToken());
+
+         ObjectMapper objectMapper = new ObjectMapper();
+         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+         String jsonInputString = objectMapper.writeValueAsString(statisticsReport);
+         httpPost.setEntity(new StringEntity(jsonInputString));
+
+         try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            String responseBody = EntityUtils.toString(response.getEntity());
+            if (statusCode != 201) {
+               throw new ModelException("Post Statistics Info request returned unexpected status %s and response body %s.",
+                                        statusCode,
+                                        responseBody);
+            }
+            log.info("Post Statistics Info - Finished");
+
+         }
+      } catch (IOException e) {
+         throw new ModelException(e);
+      }
+
+   }
+
+   public String getLogId() {
+      Connection conn = null;
+      try {
+
+         String logId = null;
+
+         conn = Connect.obtainConn(conn);
+
+         try (CallableStatement cs = conn.prepareCall("{ ? = call f_extract_statistics() }")) {
+            cs.registerOutParameter(1, java.sql.Types.VARCHAR);
+            cs.execute();
+            logId = cs.getString(1);
+         }
+
+         return logId;
+
+      } catch (MessageException | SQLException e) {
+         throw new PersistenceException(e.getMessage(), e);
+      } finally {
+         Connect.returnConn(conn);
+      }
+
+   }
+
+}

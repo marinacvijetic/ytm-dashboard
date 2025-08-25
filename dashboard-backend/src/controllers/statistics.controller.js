@@ -54,8 +54,8 @@ exports.getAllLogs = async (req, res) => {
 
 exports.getAppIds = async (_req, res) => {
   try {
-    const appIds = await statisticsModel.findDistinctAppIds();
-    res.json(appIds);
+    const apps = await statisticsModel.findDistinctAppIds();
+    res.json(apps);
   } catch (err) {
     console.error("Error in getAppIds:", err);
     res.status(500).json({ error: "Internal Server Error" });

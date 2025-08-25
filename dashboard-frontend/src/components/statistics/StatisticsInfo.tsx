@@ -3,7 +3,7 @@ import { DataTable, type DataTablePageEvent } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 export type StatisticsLog = {
   id: string;
@@ -111,6 +111,11 @@ export type StatisticsLog = {
   has_country_defined?: number;
 };
 
+type AppInfo = {
+  app_id: string;
+  app_title: string | null;
+};
+
 type PaginatedResponse = {
     data: StatisticsLog[];
     page: number;
@@ -128,10 +133,37 @@ export const StatisticsInfo: React.FC = () => {
   const [totalCount, setTotalCount] = useState<number>(0);
   const [searchParams] = useSearchParams();
   const appId = searchParams.get("appId") ?? undefined;
+  const [apps, setApps] = useState<AppInfo[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchData(page);
+    if(appId) {
+      fetchData(page);
+    }
   }, [page, appId]);
+
+  useEffect(() => {
+    if(!appId) {
+      fetchApps();
+    } else {
+      setApps([]);
+      setPage(1);
+    }
+  }, [appId]);
+
+  const fetchApps = () => {
+    setLoading(true);
+    fetch(`${import.meta.env.VITE_BASE_URL}/statistics/apps`)
+    .then((res) => {
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((json: AppInfo[]) => setApps(json))
+    .catch((err) => {
+      console.error("Failed to fetch applications", err);
+    })
+    .finally(() => setLoading(false));
+  };
 
   const fetchData = async (pageToLoad: number=1) => {
     setLoading(true);
@@ -155,14 +187,67 @@ export const StatisticsInfo: React.FC = () => {
     setPage(e.page! + 1);
   };
 
-const filteredStats = filter
-  ? stats.filter((record) =>
-      new Date(record.recorded_at)
-        .toLocaleString()
-        .toLowerCase()
-        .includes(filter.toLowerCase())
-    )
-  : stats;
+  const filteredApps = filter
+    ? apps.filter((a) =>
+        (a.app_title || a.app_id)
+          .toLowerCase()
+          .includes(filter.toLowerCase())
+      )
+    : apps;
+
+  const filteredStats = filter
+    ? stats.filter((record) =>
+        new Date(record.recorded_at)
+          .toLocaleString()
+          .toLowerCase()
+          .includes(filter.toLowerCase())
+      )
+    : stats;
+
+  if (!appId) {
+    return (
+      <div className="p-4 w-full">
+        <div className="flex justify-between items-center mb-4">
+          <InputText
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Search by client name..."
+            className="px-3 py-2 border border-gray-400 rounded text-sm text-black"
+          />
+          <div className="flex gap-2 items-center">
+            <Button label="Refresh" icon="pi pi-refresh" onClick={fetchApps} />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <DataTable
+            value={filteredApps}
+            loading={loading}
+            className="client-table"
+            showGridlines
+            emptyMessage="No available applications"
+          >
+            <Column field="app_title" header="Client" className="column" />
+            <Column field="app_id" header="APP ID" className="column" />
+            <Column
+              header="Actions"
+              className="column text-center"
+              body={(row: AppInfo) => (
+                <button
+                  onClick={() => navigate(`/statistics?appId=${row.app_id}`)}
+                  className="stats-button"
+                  title="Statistic"
+                  aria-label="Statistic"
+                >
+                  <i className="pi pi-chart-bar" />
+                </button>
+              )}
+            />
+          </DataTable>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 w-full">

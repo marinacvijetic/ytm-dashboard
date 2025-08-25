@@ -1,0 +1,1837 @@
+package com.mallocinc.ytm.database.generated.to;
+
+import com.mallocinc.codegenerator.superclasses.postgres.*;
+
+import java.io.*;
+
+import org.apache.logging.log4j.*;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+
+/****************************************************************
+ *  <pre>
+ *
+ *  Generated Class: StatisticsLogTo.java
+ *
+ *  TO (Transfer Object) Class  
+ * 
+ *  This lightweight class is used to hold and transfer data between 
+ *  modules, threads, processes and applications.
+ *  It is also suitable for data export and import.
+ *
+ *  Template version: 3.1
+ *  Template date:    NLS missing message: template_date in: templates.gdao
+ *  Template file:    /templates/Postgres/ToPostgresTemplate.txt
+ *  Target database:  <DATABASE_POSTGRES>
+ *
+ *  @author Malloc Inc.
+ *
+ *  This code is generated on: 2025-August-13 05:55:43 PM CEST
+ *
+ *  Copyright (C) 2018 Malloc Inc.
+ *
+ *  </pre>
+ ****************************************************************/
+public class StatisticsLogTo extends BasePostgresToClass implements Serializable {
+
+   private static final long serialVersionUID = 1L;
+   public static final String workingClassName ="StatisticsLogTab";
+   final static Logger logger = LogManager.getLogger(StatisticsLogTo.class);
+	
+
+   /**********************************************************************
+    *
+    * Database Variables declarations
+    *
+    **********************************************************************/
+   private java.lang.String ID = null;
+   private java.sql.Timestamp RECORDED_AT = null;
+   private java.math.BigDecimal USER_CNT = null;
+   private java.math.BigDecimal ACTIVE_USERS = null;
+   private java.math.BigDecimal LOCKED_USERS = null;
+   private java.math.BigDecimal SUSPENDED_USERS = null;
+   private java.math.BigDecimal PENDING_USERS = null;
+   private java.math.BigDecimal INACTIVE_USERS = null;
+   private java.math.BigDecimal USER_GROUP_CNT = null;
+   private java.math.BigDecimal ROOT_USER_GROUP_CNT = null;
+   private java.math.BigDecimal AVG_USERS_PER_GROUP = null;
+   private java.math.BigDecimal ADMIN_CNT = null;
+   private java.math.BigDecimal PROCTOR_CNT = null;
+   private java.math.BigDecimal INSTRUCTOR_CNT = null;
+   private java.math.BigDecimal STUDENT_CNT = null;
+   private java.math.BigDecimal CUSTOM_ROLE_CNT = null;
+   private java.math.BigDecimal ALL_POOLS = null;
+   private java.math.BigDecimal ALL_ROOT_POOLS = null;
+   private java.math.BigDecimal ALL_POOLS_WITH_QUESTIONS = null;
+   private java.math.BigDecimal AVG_QUESTIONS_IN_POOLS = null;
+   private java.math.BigDecimal SINGLE_CHOICE_QUESTIONS = null;
+   private java.math.BigDecimal MULTIPLE_CHOICE_QUESTIONS = null;
+   private java.math.BigDecimal ESSAY_QUESTIONS = null;
+   private java.math.BigDecimal TRUE_FALSE_QUESTIONS = null;
+   private java.math.BigDecimal MATRIX_QUESTIONS = null;
+   private java.math.BigDecimal MATCHING_QUESTIONS = null;
+   private java.math.BigDecimal FILL_IN_BLANKS_QUESTIONS = null;
+   private java.math.BigDecimal ORDERING_QUESTIONS = null;
+   private java.math.BigDecimal HOTSPOT_QUESTIONS = null;
+   private java.math.BigDecimal OPEN_ENDED_QUESTIONS = null;
+   private java.math.BigDecimal DEF_CORRECTINCORRECT_SCORING = null;
+   private java.math.BigDecimal BY_ANSWER_WEIGHT_SCORING = null;
+   private java.math.BigDecimal MANUAL_SCORING = null;
+   private java.math.BigDecimal BY_COMBINATION_SCORING = null;
+   private java.math.BigDecimal BY_RULES_SCORING = null;
+   private java.math.BigDecimal CUSTOM_QUESTION_PROPERTIES = null;
+   private java.math.BigDecimal DEFAULT_TESTS = null;
+   private java.math.BigDecimal ONLY_TESTS_WITH_SECTIONS = null;
+   private java.math.BigDecimal ALL_MANUAL_TESTS = null;
+   private java.math.BigDecimal ALL_GENERATED_TESTS = null;
+   private java.math.BigDecimal GENERATED_BY_CATEGORY_TESTS = null;
+   private java.math.BigDecimal AVG_TEST_VERSIONS_ROOT_TESTS = null;
+   private java.math.BigDecimal MAX_TEST_VERSIONS_ROOT_TESTS = null;
+   private java.math.BigDecimal AVG_TEST_VERSIONS_ROOT_SEC = null;
+   private java.math.BigDecimal MAX_TEST_VERSIONS_ROOT_SEC = null;
+   private java.math.BigDecimal TEST_TEMPLATES = null;
+   private java.math.BigDecimal LIMITED_TIME_TESTS = null;
+   private java.math.BigDecimal UNLIMITED_TIME_TESTS = null;
+   private java.math.BigDecimal DURATION_PER_QUESTION_TESTS = null;
+   private java.math.BigDecimal DURATION_PER_QUIZ_TESTS = null;
+   private java.math.BigDecimal DEADLINE_PER_QUIZ_TESTS = null;
+   private java.math.BigDecimal TEST_ONE_PAGE = null;
+   private java.math.BigDecimal TEST_PAGE_PER_QUESTION = null;
+   private java.math.BigDecimal AFTER_TEST_REPORT = null;
+   private java.math.BigDecimal AFTER_GRADING_REPORT = null;
+   private java.math.BigDecimal AFTER_VERIFICATION_REPORT = null;
+   private java.math.BigDecimal ON_MANAGER_APPROVAL_REPORT = null;
+   private java.math.BigDecimal REALTIME_GRADING = null;
+   private java.math.BigDecimal SCORE_DETAILS = null;
+   private java.math.BigDecimal ONLY_SCORE = null;
+   private java.math.BigDecimal TEST_CERTIFICATES = null;
+   private java.math.BigDecimal SURVEYS = null;
+   private java.math.BigDecimal SELF_ENROLLMENT_GLOBAL = null;
+   private java.math.BigDecimal SESSION_USER_GROUPS = null;
+   private java.math.BigDecimal SESSION_TRAINING = null;
+   private java.math.BigDecimal PROCTOREDU = null;
+   private java.math.BigDecimal PROCTORIO = null;
+   private java.math.BigDecimal FAVORITE_REPORTS = null;
+   private java.math.BigDecimal SCHEDULED_REPORTS = null;
+   private java.math.BigDecimal TRAINING_COURSES = null;
+   private java.math.BigDecimal PINNED_COURSES = null;
+   private java.math.BigDecimal AVG_STEPS_PER_TRAINING = null;
+   private java.math.BigDecimal AVG_TESTS_PER_TRAINING = null;
+   private java.math.BigDecimal ENABLED_EMAIL_NOTIFICATIONS = null;
+   private java.math.BigDecimal DISABLED_EMAIL_NOTIFICATIONS = null;
+   private java.math.BigDecimal ENABLED_APP_NOTIFICATIONS = null;
+   private java.math.BigDecimal DISABLED_APP_NOTIFICATIONS = null;
+   private java.math.BigDecimal LANGUAGE_BUNDLES = null;
+   private java.math.BigDecimal USERS_LOGGED_ALL_TIME = null;
+   private java.math.BigDecimal USERS_LOGGED_LAST_MONTH = null;
+   private java.math.BigDecimal USERS_CREATED_LAST_MONTH = null;
+   private java.math.BigDecimal TOTAL_ATTEMPTS = null;
+   private java.math.BigDecimal TOTAL_TEST_ATTEMPTS = null;
+   private java.math.BigDecimal TOTAL_SURVEY_ATTEMPTS = null;
+   private java.math.BigDecimal MAX_CONCURRENT_USERS_EVER = null;
+   private java.math.BigDecimal MAX_CONCURRENT_USERS_LAST_MONT = null;
+   private java.math.BigDecimal FAILED_LOGINS_LAST_MONTH = null;
+   private java.math.BigDecimal FAILED_EMAILS = null;
+   private java.math.BigDecimal UNFINISHED_ATTEMPTS = null;
+   private java.math.BigDecimal UNFINISHED_DISCONNECTED_ATTEMP = null;
+   private java.math.BigDecimal UNFINISHED_IN_PROGRESS_ATTEMP = null;
+   private java.math.BigDecimal UNFINISHED_AVB_CONTINUE_ATTEMP = null;
+   private java.math.BigDecimal UNFINISHED_SUSPENDED_ATTEMP = null;
+   private java.math.BigDecimal HAS_STATE_DEFINED = null;
+   private java.math.BigDecimal HAS_COUNTRY_DEFINED = null;
+   private java.math.BigDecimal ACCOUNTING_QUESTIONS = null;
+   private java.math.BigDecimal TOTAL_QUESTIONS = null;
+   
+
+   /**********************************************************************
+    *
+    * Setters
+    *
+    **********************************************************************/   
+   public void setID( java.lang.String value ) {
+      this.ID = value;
+   }
+
+   public void setRECORDED_AT( java.sql.Timestamp value ) {
+      this.RECORDED_AT = value;
+   }
+
+   public void setUSER_CNT( java.math.BigDecimal value ) {
+      this.USER_CNT = value;
+   }
+
+   public void setACTIVE_USERS( java.math.BigDecimal value ) {
+      this.ACTIVE_USERS = value;
+   }
+
+   public void setLOCKED_USERS( java.math.BigDecimal value ) {
+      this.LOCKED_USERS = value;
+   }
+
+   public void setSUSPENDED_USERS( java.math.BigDecimal value ) {
+      this.SUSPENDED_USERS = value;
+   }
+
+   public void setPENDING_USERS( java.math.BigDecimal value ) {
+      this.PENDING_USERS = value;
+   }
+
+   public void setINACTIVE_USERS( java.math.BigDecimal value ) {
+      this.INACTIVE_USERS = value;
+   }
+
+   public void setUSER_GROUP_CNT( java.math.BigDecimal value ) {
+      this.USER_GROUP_CNT = value;
+   }
+
+   public void setROOT_USER_GROUP_CNT( java.math.BigDecimal value ) {
+      this.ROOT_USER_GROUP_CNT = value;
+   }
+
+   public void setAVG_USERS_PER_GROUP( java.math.BigDecimal value ) {
+      this.AVG_USERS_PER_GROUP = value;
+   }
+
+   public void setADMIN_CNT( java.math.BigDecimal value ) {
+      this.ADMIN_CNT = value;
+   }
+
+   public void setPROCTOR_CNT( java.math.BigDecimal value ) {
+      this.PROCTOR_CNT = value;
+   }
+
+   public void setINSTRUCTOR_CNT( java.math.BigDecimal value ) {
+      this.INSTRUCTOR_CNT = value;
+   }
+
+   public void setSTUDENT_CNT( java.math.BigDecimal value ) {
+      this.STUDENT_CNT = value;
+   }
+
+   public void setCUSTOM_ROLE_CNT( java.math.BigDecimal value ) {
+      this.CUSTOM_ROLE_CNT = value;
+   }
+
+   public void setALL_POOLS( java.math.BigDecimal value ) {
+      this.ALL_POOLS = value;
+   }
+
+   public void setALL_ROOT_POOLS( java.math.BigDecimal value ) {
+      this.ALL_ROOT_POOLS = value;
+   }
+
+   public void setALL_POOLS_WITH_QUESTIONS( java.math.BigDecimal value ) {
+      this.ALL_POOLS_WITH_QUESTIONS = value;
+   }
+
+   public void setAVG_QUESTIONS_IN_POOLS( java.math.BigDecimal value ) {
+      this.AVG_QUESTIONS_IN_POOLS = value;
+   }
+
+   public void setSINGLE_CHOICE_QUESTIONS( java.math.BigDecimal value ) {
+      this.SINGLE_CHOICE_QUESTIONS = value;
+   }
+
+   public void setMULTIPLE_CHOICE_QUESTIONS( java.math.BigDecimal value ) {
+      this.MULTIPLE_CHOICE_QUESTIONS = value;
+   }
+
+   public void setESSAY_QUESTIONS( java.math.BigDecimal value ) {
+      this.ESSAY_QUESTIONS = value;
+   }
+
+   public void setTRUE_FALSE_QUESTIONS( java.math.BigDecimal value ) {
+      this.TRUE_FALSE_QUESTIONS = value;
+   }
+
+   public void setMATRIX_QUESTIONS( java.math.BigDecimal value ) {
+      this.MATRIX_QUESTIONS = value;
+   }
+
+   public void setMATCHING_QUESTIONS( java.math.BigDecimal value ) {
+      this.MATCHING_QUESTIONS = value;
+   }
+
+   public void setFILL_IN_BLANKS_QUESTIONS( java.math.BigDecimal value ) {
+      this.FILL_IN_BLANKS_QUESTIONS = value;
+   }
+
+   public void setORDERING_QUESTIONS( java.math.BigDecimal value ) {
+      this.ORDERING_QUESTIONS = value;
+   }
+
+   public void setHOTSPOT_QUESTIONS( java.math.BigDecimal value ) {
+      this.HOTSPOT_QUESTIONS = value;
+   }
+
+   public void setOPEN_ENDED_QUESTIONS( java.math.BigDecimal value ) {
+      this.OPEN_ENDED_QUESTIONS = value;
+   }
+
+   public void setDEF_CORRECTINCORRECT_SCORING( java.math.BigDecimal value ) {
+      this.DEF_CORRECTINCORRECT_SCORING = value;
+   }
+
+   public void setBY_ANSWER_WEIGHT_SCORING( java.math.BigDecimal value ) {
+      this.BY_ANSWER_WEIGHT_SCORING = value;
+   }
+
+   public void setMANUAL_SCORING( java.math.BigDecimal value ) {
+      this.MANUAL_SCORING = value;
+   }
+
+   public void setBY_COMBINATION_SCORING( java.math.BigDecimal value ) {
+      this.BY_COMBINATION_SCORING = value;
+   }
+
+   public void setBY_RULES_SCORING( java.math.BigDecimal value ) {
+      this.BY_RULES_SCORING = value;
+   }
+
+   public void setCUSTOM_QUESTION_PROPERTIES( java.math.BigDecimal value ) {
+      this.CUSTOM_QUESTION_PROPERTIES = value;
+   }
+
+   public void setDEFAULT_TESTS( java.math.BigDecimal value ) {
+      this.DEFAULT_TESTS = value;
+   }
+
+   public void setONLY_TESTS_WITH_SECTIONS( java.math.BigDecimal value ) {
+      this.ONLY_TESTS_WITH_SECTIONS = value;
+   }
+
+   public void setALL_MANUAL_TESTS( java.math.BigDecimal value ) {
+      this.ALL_MANUAL_TESTS = value;
+   }
+
+   public void setALL_GENERATED_TESTS( java.math.BigDecimal value ) {
+      this.ALL_GENERATED_TESTS = value;
+   }
+
+   public void setGENERATED_BY_CATEGORY_TESTS( java.math.BigDecimal value ) {
+      this.GENERATED_BY_CATEGORY_TESTS = value;
+   }
+
+   public void setAVG_TEST_VERSIONS_ROOT_TESTS( java.math.BigDecimal value ) {
+      this.AVG_TEST_VERSIONS_ROOT_TESTS = value;
+   }
+
+   public void setMAX_TEST_VERSIONS_ROOT_TESTS( java.math.BigDecimal value ) {
+      this.MAX_TEST_VERSIONS_ROOT_TESTS = value;
+   }
+
+   public void setAVG_TEST_VERSIONS_ROOT_SEC( java.math.BigDecimal value ) {
+      this.AVG_TEST_VERSIONS_ROOT_SEC = value;
+   }
+
+   public void setMAX_TEST_VERSIONS_ROOT_SEC( java.math.BigDecimal value ) {
+      this.MAX_TEST_VERSIONS_ROOT_SEC = value;
+   }
+
+   public void setTEST_TEMPLATES( java.math.BigDecimal value ) {
+      this.TEST_TEMPLATES = value;
+   }
+
+   public void setLIMITED_TIME_TESTS( java.math.BigDecimal value ) {
+      this.LIMITED_TIME_TESTS = value;
+   }
+
+   public void setUNLIMITED_TIME_TESTS( java.math.BigDecimal value ) {
+      this.UNLIMITED_TIME_TESTS = value;
+   }
+
+   public void setDURATION_PER_QUESTION_TESTS( java.math.BigDecimal value ) {
+      this.DURATION_PER_QUESTION_TESTS = value;
+   }
+
+   public void setDURATION_PER_QUIZ_TESTS( java.math.BigDecimal value ) {
+      this.DURATION_PER_QUIZ_TESTS = value;
+   }
+
+   public void setDEADLINE_PER_QUIZ_TESTS( java.math.BigDecimal value ) {
+      this.DEADLINE_PER_QUIZ_TESTS = value;
+   }
+
+   public void setTEST_ONE_PAGE( java.math.BigDecimal value ) {
+      this.TEST_ONE_PAGE = value;
+   }
+
+   public void setTEST_PAGE_PER_QUESTION( java.math.BigDecimal value ) {
+      this.TEST_PAGE_PER_QUESTION = value;
+   }
+
+   public void setAFTER_TEST_REPORT( java.math.BigDecimal value ) {
+      this.AFTER_TEST_REPORT = value;
+   }
+
+   public void setAFTER_GRADING_REPORT( java.math.BigDecimal value ) {
+      this.AFTER_GRADING_REPORT = value;
+   }
+
+   public void setAFTER_VERIFICATION_REPORT( java.math.BigDecimal value ) {
+      this.AFTER_VERIFICATION_REPORT = value;
+   }
+
+   public void setON_MANAGER_APPROVAL_REPORT( java.math.BigDecimal value ) {
+      this.ON_MANAGER_APPROVAL_REPORT = value;
+   }
+
+   public void setREALTIME_GRADING( java.math.BigDecimal value ) {
+      this.REALTIME_GRADING = value;
+   }
+
+   public void setSCORE_DETAILS( java.math.BigDecimal value ) {
+      this.SCORE_DETAILS = value;
+   }
+
+   public void setONLY_SCORE( java.math.BigDecimal value ) {
+      this.ONLY_SCORE = value;
+   }
+
+   public void setTEST_CERTIFICATES( java.math.BigDecimal value ) {
+      this.TEST_CERTIFICATES = value;
+   }
+
+   public void setSURVEYS( java.math.BigDecimal value ) {
+      this.SURVEYS = value;
+   }
+
+   public void setSELF_ENROLLMENT_GLOBAL( java.math.BigDecimal value ) {
+      this.SELF_ENROLLMENT_GLOBAL = value;
+   }
+
+   public void setSESSION_USER_GROUPS( java.math.BigDecimal value ) {
+      this.SESSION_USER_GROUPS = value;
+   }
+
+   public void setSESSION_TRAINING( java.math.BigDecimal value ) {
+      this.SESSION_TRAINING = value;
+   }
+
+   public void setPROCTOREDU( java.math.BigDecimal value ) {
+      this.PROCTOREDU = value;
+   }
+
+   public void setPROCTORIO( java.math.BigDecimal value ) {
+      this.PROCTORIO = value;
+   }
+
+   public void setFAVORITE_REPORTS( java.math.BigDecimal value ) {
+      this.FAVORITE_REPORTS = value;
+   }
+
+   public void setSCHEDULED_REPORTS( java.math.BigDecimal value ) {
+      this.SCHEDULED_REPORTS = value;
+   }
+
+   public void setTRAINING_COURSES( java.math.BigDecimal value ) {
+      this.TRAINING_COURSES = value;
+   }
+
+   public void setPINNED_COURSES( java.math.BigDecimal value ) {
+      this.PINNED_COURSES = value;
+   }
+
+   public void setAVG_STEPS_PER_TRAINING( java.math.BigDecimal value ) {
+      this.AVG_STEPS_PER_TRAINING = value;
+   }
+
+   public void setAVG_TESTS_PER_TRAINING( java.math.BigDecimal value ) {
+      this.AVG_TESTS_PER_TRAINING = value;
+   }
+
+   public void setENABLED_EMAIL_NOTIFICATIONS( java.math.BigDecimal value ) {
+      this.ENABLED_EMAIL_NOTIFICATIONS = value;
+   }
+
+   public void setDISABLED_EMAIL_NOTIFICATIONS( java.math.BigDecimal value ) {
+      this.DISABLED_EMAIL_NOTIFICATIONS = value;
+   }
+
+   public void setENABLED_APP_NOTIFICATIONS( java.math.BigDecimal value ) {
+      this.ENABLED_APP_NOTIFICATIONS = value;
+   }
+
+   public void setDISABLED_APP_NOTIFICATIONS( java.math.BigDecimal value ) {
+      this.DISABLED_APP_NOTIFICATIONS = value;
+   }
+
+   public void setLANGUAGE_BUNDLES( java.math.BigDecimal value ) {
+      this.LANGUAGE_BUNDLES = value;
+   }
+
+   public void setUSERS_LOGGED_ALL_TIME( java.math.BigDecimal value ) {
+      this.USERS_LOGGED_ALL_TIME = value;
+   }
+
+   public void setUSERS_LOGGED_LAST_MONTH( java.math.BigDecimal value ) {
+      this.USERS_LOGGED_LAST_MONTH = value;
+   }
+
+   public void setUSERS_CREATED_LAST_MONTH( java.math.BigDecimal value ) {
+      this.USERS_CREATED_LAST_MONTH = value;
+   }
+
+   public void setTOTAL_ATTEMPTS( java.math.BigDecimal value ) {
+      this.TOTAL_ATTEMPTS = value;
+   }
+
+   public void setTOTAL_TEST_ATTEMPTS( java.math.BigDecimal value ) {
+      this.TOTAL_TEST_ATTEMPTS = value;
+   }
+
+   public void setTOTAL_SURVEY_ATTEMPTS( java.math.BigDecimal value ) {
+      this.TOTAL_SURVEY_ATTEMPTS = value;
+   }
+
+   public void setMAX_CONCURRENT_USERS_EVER( java.math.BigDecimal value ) {
+      this.MAX_CONCURRENT_USERS_EVER = value;
+   }
+
+   public void setMAX_CONCURRENT_USERS_LAST_MONT( java.math.BigDecimal value ) {
+      this.MAX_CONCURRENT_USERS_LAST_MONT = value;
+   }
+
+   public void setFAILED_LOGINS_LAST_MONTH( java.math.BigDecimal value ) {
+      this.FAILED_LOGINS_LAST_MONTH = value;
+   }
+
+   public void setFAILED_EMAILS( java.math.BigDecimal value ) {
+      this.FAILED_EMAILS = value;
+   }
+
+   public void setUNFINISHED_ATTEMPTS( java.math.BigDecimal value ) {
+      this.UNFINISHED_ATTEMPTS = value;
+   }
+
+   public void setUNFINISHED_DISCONNECTED_ATTEMP( java.math.BigDecimal value ) {
+      this.UNFINISHED_DISCONNECTED_ATTEMP = value;
+   }
+
+   public void setUNFINISHED_IN_PROGRESS_ATTEMP( java.math.BigDecimal value ) {
+      this.UNFINISHED_IN_PROGRESS_ATTEMP = value;
+   }
+
+   public void setUNFINISHED_AVB_CONTINUE_ATTEMP( java.math.BigDecimal value ) {
+      this.UNFINISHED_AVB_CONTINUE_ATTEMP = value;
+   }
+
+   public void setUNFINISHED_SUSPENDED_ATTEMP( java.math.BigDecimal value ) {
+      this.UNFINISHED_SUSPENDED_ATTEMP = value;
+   }
+
+   public void setHAS_STATE_DEFINED( java.math.BigDecimal value ) {
+      this.HAS_STATE_DEFINED = value;
+   }
+
+   public void setHAS_COUNTRY_DEFINED( java.math.BigDecimal value ) {
+      this.HAS_COUNTRY_DEFINED = value;
+   }
+
+   public void setACCOUNTING_QUESTIONS( java.math.BigDecimal value ) {
+      this.ACCOUNTING_QUESTIONS = value;
+   }
+
+   public void setTOTAL_QUESTIONS( java.math.BigDecimal value ) {
+      this.TOTAL_QUESTIONS = value;
+   }
+
+
+   /**********************************************************************
+    *
+    * Getters
+    *
+    **********************************************************************/   
+   @JsonProperty("ID")
+   public java.lang.String getID( ) {
+      return this.ID;
+   }
+   @JsonProperty("RECORDED_AT")
+   public java.sql.Timestamp getRECORDED_AT( ) {
+      return this.RECORDED_AT;
+   }
+   @JsonProperty("USER_CNT")
+   public java.math.BigDecimal getUSER_CNT( ) {
+      return this.USER_CNT;
+   }
+   @JsonProperty("ACTIVE_USERS")
+   public java.math.BigDecimal getACTIVE_USERS( ) {
+      return this.ACTIVE_USERS;
+   }
+   @JsonProperty("LOCKED_USERS")
+   public java.math.BigDecimal getLOCKED_USERS( ) {
+      return this.LOCKED_USERS;
+   }
+   @JsonProperty("SUSPENDED_USERS")
+   public java.math.BigDecimal getSUSPENDED_USERS( ) {
+      return this.SUSPENDED_USERS;
+   }
+   @JsonProperty("PENDING_USERS")
+   public java.math.BigDecimal getPENDING_USERS( ) {
+      return this.PENDING_USERS;
+   }
+   @JsonProperty("INACTIVE_USERS")
+   public java.math.BigDecimal getINACTIVE_USERS( ) {
+      return this.INACTIVE_USERS;
+   }
+   @JsonProperty("USER_GROUP_CNT")
+   public java.math.BigDecimal getUSER_GROUP_CNT( ) {
+      return this.USER_GROUP_CNT;
+   }
+   @JsonProperty("ROOT_USER_GROUP_CNT")
+   public java.math.BigDecimal getROOT_USER_GROUP_CNT( ) {
+      return this.ROOT_USER_GROUP_CNT;
+   }
+   @JsonProperty("AVG_USERS_PER_GROUP")
+   public java.math.BigDecimal getAVG_USERS_PER_GROUP( ) {
+      return this.AVG_USERS_PER_GROUP;
+   }
+   @JsonProperty("ADMIN_CNT")
+   public java.math.BigDecimal getADMIN_CNT( ) {
+      return this.ADMIN_CNT;
+   }
+   @JsonProperty("PROCTOR_CNT")
+   public java.math.BigDecimal getPROCTOR_CNT( ) {
+      return this.PROCTOR_CNT;
+   }
+   @JsonProperty("INSTRUCTOR_CNT")
+   public java.math.BigDecimal getINSTRUCTOR_CNT( ) {
+      return this.INSTRUCTOR_CNT;
+   }
+   @JsonProperty("STUDENT_CNT")
+   public java.math.BigDecimal getSTUDENT_CNT( ) {
+      return this.STUDENT_CNT;
+   }
+   @JsonProperty("CUSTOM_ROLE_CNT")
+   public java.math.BigDecimal getCUSTOM_ROLE_CNT( ) {
+      return this.CUSTOM_ROLE_CNT;
+   }
+   @JsonProperty("ALL_POOLS")
+   public java.math.BigDecimal getALL_POOLS( ) {
+      return this.ALL_POOLS;
+   }
+   @JsonProperty("ALL_ROOT_POOLS")
+   public java.math.BigDecimal getALL_ROOT_POOLS( ) {
+      return this.ALL_ROOT_POOLS;
+   }
+   @JsonProperty("ALL_POOLS_WITH_QUESTIONS")
+   public java.math.BigDecimal getALL_POOLS_WITH_QUESTIONS( ) {
+      return this.ALL_POOLS_WITH_QUESTIONS;
+   }
+   @JsonProperty("AVG_QUESTIONS_IN_POOLS")
+   public java.math.BigDecimal getAVG_QUESTIONS_IN_POOLS( ) {
+      return this.AVG_QUESTIONS_IN_POOLS;
+   }
+   @JsonProperty("SINGLE_CHOICE_QUESTIONS")
+   public java.math.BigDecimal getSINGLE_CHOICE_QUESTIONS( ) {
+      return this.SINGLE_CHOICE_QUESTIONS;
+   }
+   @JsonProperty("MULTIPLE_CHOICE_QUESTIONS")
+   public java.math.BigDecimal getMULTIPLE_CHOICE_QUESTIONS( ) {
+      return this.MULTIPLE_CHOICE_QUESTIONS;
+   }
+   @JsonProperty("ESSAY_QUESTIONS")
+   public java.math.BigDecimal getESSAY_QUESTIONS( ) {
+      return this.ESSAY_QUESTIONS;
+   }
+   @JsonProperty("TRUE_FALSE_QUESTIONS")
+   public java.math.BigDecimal getTRUE_FALSE_QUESTIONS( ) {
+      return this.TRUE_FALSE_QUESTIONS;
+   }
+   @JsonProperty("MATRIX_QUESTIONS")
+   public java.math.BigDecimal getMATRIX_QUESTIONS( ) {
+      return this.MATRIX_QUESTIONS;
+   }
+   @JsonProperty("MATCHING_QUESTIONS")
+   public java.math.BigDecimal getMATCHING_QUESTIONS( ) {
+      return this.MATCHING_QUESTIONS;
+   }
+   @JsonProperty("FILL_IN_BLANKS_QUESTIONS")
+   public java.math.BigDecimal getFILL_IN_BLANKS_QUESTIONS( ) {
+      return this.FILL_IN_BLANKS_QUESTIONS;
+   }
+   @JsonProperty("ORDERING_QUESTIONS")
+   public java.math.BigDecimal getORDERING_QUESTIONS( ) {
+      return this.ORDERING_QUESTIONS;
+   }
+   @JsonProperty("HOTSPOT_QUESTIONS")
+   public java.math.BigDecimal getHOTSPOT_QUESTIONS( ) {
+      return this.HOTSPOT_QUESTIONS;
+   }
+   @JsonProperty("OPEN_ENDED_QUESTIONS")
+   public java.math.BigDecimal getOPEN_ENDED_QUESTIONS( ) {
+      return this.OPEN_ENDED_QUESTIONS;
+   }
+   @JsonProperty("DEF_CORRECTINCORRECT_SCORING")
+   public java.math.BigDecimal getDEF_CORRECTINCORRECT_SCORING( ) {
+      return this.DEF_CORRECTINCORRECT_SCORING;
+   }
+   @JsonProperty("BY_ANSWER_WEIGHT_SCORING")
+   public java.math.BigDecimal getBY_ANSWER_WEIGHT_SCORING( ) {
+      return this.BY_ANSWER_WEIGHT_SCORING;
+   }
+   @JsonProperty("MANUAL_SCORING")
+   public java.math.BigDecimal getMANUAL_SCORING( ) {
+      return this.MANUAL_SCORING;
+   }
+   @JsonProperty("BY_COMBINATION_SCORING")
+   public java.math.BigDecimal getBY_COMBINATION_SCORING( ) {
+      return this.BY_COMBINATION_SCORING;
+   }
+   @JsonProperty("BY_RULES_SCORING")
+   public java.math.BigDecimal getBY_RULES_SCORING( ) {
+      return this.BY_RULES_SCORING;
+   }
+   @JsonProperty("CUSTOM_QUESTION_PROPERTIES")
+   public java.math.BigDecimal getCUSTOM_QUESTION_PROPERTIES( ) {
+      return this.CUSTOM_QUESTION_PROPERTIES;
+   }
+   @JsonProperty("DEFAULT_TESTS")
+   public java.math.BigDecimal getDEFAULT_TESTS( ) {
+      return this.DEFAULT_TESTS;
+   }
+   @JsonProperty("ONLY_TESTS_WITH_SECTIONS")
+   public java.math.BigDecimal getONLY_TESTS_WITH_SECTIONS( ) {
+      return this.ONLY_TESTS_WITH_SECTIONS;
+   }
+   @JsonProperty("ALL_MANUAL_TESTS")
+   public java.math.BigDecimal getALL_MANUAL_TESTS( ) {
+      return this.ALL_MANUAL_TESTS;
+   }
+   @JsonProperty("ALL_GENERATED_TESTS")
+   public java.math.BigDecimal getALL_GENERATED_TESTS( ) {
+      return this.ALL_GENERATED_TESTS;
+   }
+   @JsonProperty("GENERATED_BY_CATEGORY_TESTS")
+   public java.math.BigDecimal getGENERATED_BY_CATEGORY_TESTS( ) {
+      return this.GENERATED_BY_CATEGORY_TESTS;
+   }
+   @JsonProperty("AVG_TEST_VERSIONS_ROOT_TESTS")
+   public java.math.BigDecimal getAVG_TEST_VERSIONS_ROOT_TESTS( ) {
+      return this.AVG_TEST_VERSIONS_ROOT_TESTS;
+   }
+   @JsonProperty("MAX_TEST_VERSIONS_ROOT_TESTS")
+   public java.math.BigDecimal getMAX_TEST_VERSIONS_ROOT_TESTS( ) {
+      return this.MAX_TEST_VERSIONS_ROOT_TESTS;
+   }
+   @JsonProperty("AVG_TEST_VERSIONS_ROOT_SEC")
+   public java.math.BigDecimal getAVG_TEST_VERSIONS_ROOT_SEC( ) {
+      return this.AVG_TEST_VERSIONS_ROOT_SEC;
+   }
+   @JsonProperty("MAX_TEST_VERSIONS_ROOT_SEC")
+   public java.math.BigDecimal getMAX_TEST_VERSIONS_ROOT_SEC( ) {
+      return this.MAX_TEST_VERSIONS_ROOT_SEC;
+   }
+   @JsonProperty("TEST_TEMPLATES")
+   public java.math.BigDecimal getTEST_TEMPLATES( ) {
+      return this.TEST_TEMPLATES;
+   }
+   @JsonProperty("LIMITED_TIME_TESTS")
+   public java.math.BigDecimal getLIMITED_TIME_TESTS( ) {
+      return this.LIMITED_TIME_TESTS;
+   }
+   @JsonProperty("UNLIMITED_TIME_TESTS")
+   public java.math.BigDecimal getUNLIMITED_TIME_TESTS( ) {
+      return this.UNLIMITED_TIME_TESTS;
+   }
+   @JsonProperty("DURATION_PER_QUESTION_TESTS")
+   public java.math.BigDecimal getDURATION_PER_QUESTION_TESTS( ) {
+      return this.DURATION_PER_QUESTION_TESTS;
+   }
+   @JsonProperty("DURATION_PER_QUIZ_TESTS")
+   public java.math.BigDecimal getDURATION_PER_QUIZ_TESTS( ) {
+      return this.DURATION_PER_QUIZ_TESTS;
+   }
+   @JsonProperty("DEADLINE_PER_QUIZ_TESTS")
+   public java.math.BigDecimal getDEADLINE_PER_QUIZ_TESTS( ) {
+      return this.DEADLINE_PER_QUIZ_TESTS;
+   }
+   @JsonProperty("TEST_ONE_PAGE")
+   public java.math.BigDecimal getTEST_ONE_PAGE( ) {
+      return this.TEST_ONE_PAGE;
+   }
+   @JsonProperty("TEST_PAGE_PER_QUESTION")
+   public java.math.BigDecimal getTEST_PAGE_PER_QUESTION( ) {
+      return this.TEST_PAGE_PER_QUESTION;
+   }
+   @JsonProperty("AFTER_TEST_REPORT")
+   public java.math.BigDecimal getAFTER_TEST_REPORT( ) {
+      return this.AFTER_TEST_REPORT;
+   }
+   @JsonProperty("AFTER_GRADING_REPORT")
+   public java.math.BigDecimal getAFTER_GRADING_REPORT( ) {
+      return this.AFTER_GRADING_REPORT;
+   }
+   @JsonProperty("AFTER_VERIFICATION_REPORT")
+   public java.math.BigDecimal getAFTER_VERIFICATION_REPORT( ) {
+      return this.AFTER_VERIFICATION_REPORT;
+   }
+   @JsonProperty("ON_MANAGER_APPROVAL_REPORT")
+   public java.math.BigDecimal getON_MANAGER_APPROVAL_REPORT( ) {
+      return this.ON_MANAGER_APPROVAL_REPORT;
+   }
+   @JsonProperty("REALTIME_GRADING")
+   public java.math.BigDecimal getREALTIME_GRADING( ) {
+      return this.REALTIME_GRADING;
+   }
+   @JsonProperty("SCORE_DETAILS")
+   public java.math.BigDecimal getSCORE_DETAILS( ) {
+      return this.SCORE_DETAILS;
+   }
+   @JsonProperty("ONLY_SCORE")
+   public java.math.BigDecimal getONLY_SCORE( ) {
+      return this.ONLY_SCORE;
+   }
+   @JsonProperty("TEST_CERTIFICATES")
+   public java.math.BigDecimal getTEST_CERTIFICATES( ) {
+      return this.TEST_CERTIFICATES;
+   }
+   @JsonProperty("SURVEYS")
+   public java.math.BigDecimal getSURVEYS( ) {
+      return this.SURVEYS;
+   }
+   @JsonProperty("SELF_ENROLLMENT_GLOBAL")
+   public java.math.BigDecimal getSELF_ENROLLMENT_GLOBAL( ) {
+      return this.SELF_ENROLLMENT_GLOBAL;
+   }
+   @JsonProperty("SESSION_USER_GROUPS")
+   public java.math.BigDecimal getSESSION_USER_GROUPS( ) {
+      return this.SESSION_USER_GROUPS;
+   }
+   @JsonProperty("SESSION_TRAINING")
+   public java.math.BigDecimal getSESSION_TRAINING( ) {
+      return this.SESSION_TRAINING;
+   }
+   @JsonProperty("PROCTOREDU")
+   public java.math.BigDecimal getPROCTOREDU( ) {
+      return this.PROCTOREDU;
+   }
+   @JsonProperty("PROCTORIO")
+   public java.math.BigDecimal getPROCTORIO( ) {
+      return this.PROCTORIO;
+   }
+   @JsonProperty("FAVORITE_REPORTS")
+   public java.math.BigDecimal getFAVORITE_REPORTS( ) {
+      return this.FAVORITE_REPORTS;
+   }
+   @JsonProperty("SCHEDULED_REPORTS")
+   public java.math.BigDecimal getSCHEDULED_REPORTS( ) {
+      return this.SCHEDULED_REPORTS;
+   }
+   @JsonProperty("TRAINING_COURSES")
+   public java.math.BigDecimal getTRAINING_COURSES( ) {
+      return this.TRAINING_COURSES;
+   }
+   @JsonProperty("PINNED_COURSES")
+   public java.math.BigDecimal getPINNED_COURSES( ) {
+      return this.PINNED_COURSES;
+   }
+   @JsonProperty("AVG_STEPS_PER_TRAINING")
+   public java.math.BigDecimal getAVG_STEPS_PER_TRAINING( ) {
+      return this.AVG_STEPS_PER_TRAINING;
+   }
+   @JsonProperty("AVG_TESTS_PER_TRAINING")
+   public java.math.BigDecimal getAVG_TESTS_PER_TRAINING( ) {
+      return this.AVG_TESTS_PER_TRAINING;
+   }
+   @JsonProperty("ENABLED_EMAIL_NOTIFICATIONS")
+   public java.math.BigDecimal getENABLED_EMAIL_NOTIFICATIONS( ) {
+      return this.ENABLED_EMAIL_NOTIFICATIONS;
+   }
+   @JsonProperty("DISABLED_EMAIL_NOTIFICATIONS")
+   public java.math.BigDecimal getDISABLED_EMAIL_NOTIFICATIONS( ) {
+      return this.DISABLED_EMAIL_NOTIFICATIONS;
+   }
+   @JsonProperty("ENABLED_APP_NOTIFICATIONS")
+   public java.math.BigDecimal getENABLED_APP_NOTIFICATIONS( ) {
+      return this.ENABLED_APP_NOTIFICATIONS;
+   }
+   @JsonProperty("DISABLED_APP_NOTIFICATIONS")
+   public java.math.BigDecimal getDISABLED_APP_NOTIFICATIONS( ) {
+      return this.DISABLED_APP_NOTIFICATIONS;
+   }
+   @JsonProperty("LANGUAGE_BUNDLES")
+   public java.math.BigDecimal getLANGUAGE_BUNDLES( ) {
+      return this.LANGUAGE_BUNDLES;
+   }
+   @JsonProperty("USERS_LOGGED_ALL_TIME")
+   public java.math.BigDecimal getUSERS_LOGGED_ALL_TIME( ) {
+      return this.USERS_LOGGED_ALL_TIME;
+   }
+   @JsonProperty("USERS_LOGGED_LAST_MONTH")
+   public java.math.BigDecimal getUSERS_LOGGED_LAST_MONTH( ) {
+      return this.USERS_LOGGED_LAST_MONTH;
+   }
+   @JsonProperty("USERS_CREATED_LAST_MONTH")
+   public java.math.BigDecimal getUSERS_CREATED_LAST_MONTH( ) {
+      return this.USERS_CREATED_LAST_MONTH;
+   }
+   @JsonProperty("TOTAL_ATTEMPTS")
+   public java.math.BigDecimal getTOTAL_ATTEMPTS( ) {
+      return this.TOTAL_ATTEMPTS;
+   }
+   @JsonProperty("TOTAL_TEST_ATTEMPTS")
+   public java.math.BigDecimal getTOTAL_TEST_ATTEMPTS( ) {
+      return this.TOTAL_TEST_ATTEMPTS;
+   }
+   @JsonProperty("TOTAL_SURVEY_ATTEMPTS")
+   public java.math.BigDecimal getTOTAL_SURVEY_ATTEMPTS( ) {
+      return this.TOTAL_SURVEY_ATTEMPTS;
+   }
+   @JsonProperty("MAX_CONCURRENT_USERS_EVER")
+   public java.math.BigDecimal getMAX_CONCURRENT_USERS_EVER( ) {
+      return this.MAX_CONCURRENT_USERS_EVER;
+   }
+   @JsonProperty("MAX_CONCURRENT_USERS_LAST_MONT")
+   public java.math.BigDecimal getMAX_CONCURRENT_USERS_LAST_MONT( ) {
+      return this.MAX_CONCURRENT_USERS_LAST_MONT;
+   }
+   @JsonProperty("FAILED_LOGINS_LAST_MONTH")
+   public java.math.BigDecimal getFAILED_LOGINS_LAST_MONTH( ) {
+      return this.FAILED_LOGINS_LAST_MONTH;
+   }
+   @JsonProperty("FAILED_EMAILS")
+   public java.math.BigDecimal getFAILED_EMAILS( ) {
+      return this.FAILED_EMAILS;
+   }
+   @JsonProperty("UNFINISHED_ATTEMPTS")
+   public java.math.BigDecimal getUNFINISHED_ATTEMPTS( ) {
+      return this.UNFINISHED_ATTEMPTS;
+   }
+   @JsonProperty("UNFINISHED_DISCONNECTED_ATTEMP")
+   public java.math.BigDecimal getUNFINISHED_DISCONNECTED_ATTEMP( ) {
+      return this.UNFINISHED_DISCONNECTED_ATTEMP;
+   }
+   @JsonProperty("UNFINISHED_IN_PROGRESS_ATTEMP")
+   public java.math.BigDecimal getUNFINISHED_IN_PROGRESS_ATTEMP( ) {
+      return this.UNFINISHED_IN_PROGRESS_ATTEMP;
+   }
+   @JsonProperty("UNFINISHED_AVB_CONTINUE_ATTEMP")
+   public java.math.BigDecimal getUNFINISHED_AVB_CONTINUE_ATTEMP( ) {
+      return this.UNFINISHED_AVB_CONTINUE_ATTEMP;
+   }
+   @JsonProperty("UNFINISHED_SUSPENDED_ATTEMP")
+   public java.math.BigDecimal getUNFINISHED_SUSPENDED_ATTEMP( ) {
+      return this.UNFINISHED_SUSPENDED_ATTEMP;
+   }
+   @JsonProperty("HAS_STATE_DEFINED")
+   public java.math.BigDecimal getHAS_STATE_DEFINED( ) {
+      return this.HAS_STATE_DEFINED;
+   }
+   @JsonProperty("HAS_COUNTRY_DEFINED")
+   public java.math.BigDecimal getHAS_COUNTRY_DEFINED( ) {
+      return this.HAS_COUNTRY_DEFINED;
+   }
+   @JsonProperty("ACCOUNTING_QUESTIONS")
+   public java.math.BigDecimal getACCOUNTING_QUESTIONS( ) {
+      return this.ACCOUNTING_QUESTIONS;
+   }
+   @JsonProperty("TOTAL_QUESTIONS")
+   public java.math.BigDecimal getTOTAL_QUESTIONS( ) {
+      return this.TOTAL_QUESTIONS;
+   }
+   
+   /**********************************************************
+    * 
+    * This print() method is used for debugging.
+    * 
+    ***********************************************************/
+   public void print() {
+      logger.debug("Transfer object - Begins:");
+      logger.debug(String.format("1.\t%-30s -> [%s]\n", "ID",  this.getID()));
+      logger.debug(String.format("2.\t%-30s -> [%s]\n", "RECORDED_AT",  this.getRECORDED_AT()));
+      logger.debug(String.format("3.\t%-30s -> [%s]\n", "USER_CNT",  this.getUSER_CNT()));
+      logger.debug(String.format("4.\t%-30s -> [%s]\n", "ACTIVE_USERS",  this.getACTIVE_USERS()));
+      logger.debug(String.format("5.\t%-30s -> [%s]\n", "LOCKED_USERS",  this.getLOCKED_USERS()));
+      logger.debug(String.format("6.\t%-30s -> [%s]\n", "SUSPENDED_USERS",  this.getSUSPENDED_USERS()));
+      logger.debug(String.format("7.\t%-30s -> [%s]\n", "PENDING_USERS",  this.getPENDING_USERS()));
+      logger.debug(String.format("8.\t%-30s -> [%s]\n", "INACTIVE_USERS",  this.getINACTIVE_USERS()));
+      logger.debug(String.format("9.\t%-30s -> [%s]\n", "USER_GROUP_CNT",  this.getUSER_GROUP_CNT()));
+      logger.debug(String.format("10.\t%-30s -> [%s]\n", "ROOT_USER_GROUP_CNT",  this.getROOT_USER_GROUP_CNT()));
+      logger.debug(String.format("11.\t%-30s -> [%s]\n", "AVG_USERS_PER_GROUP",  this.getAVG_USERS_PER_GROUP()));
+      logger.debug(String.format("12.\t%-30s -> [%s]\n", "ADMIN_CNT",  this.getADMIN_CNT()));
+      logger.debug(String.format("13.\t%-30s -> [%s]\n", "PROCTOR_CNT",  this.getPROCTOR_CNT()));
+      logger.debug(String.format("14.\t%-30s -> [%s]\n", "INSTRUCTOR_CNT",  this.getINSTRUCTOR_CNT()));
+      logger.debug(String.format("15.\t%-30s -> [%s]\n", "STUDENT_CNT",  this.getSTUDENT_CNT()));
+      logger.debug(String.format("16.\t%-30s -> [%s]\n", "CUSTOM_ROLE_CNT",  this.getCUSTOM_ROLE_CNT()));
+      logger.debug(String.format("17.\t%-30s -> [%s]\n", "ALL_POOLS",  this.getALL_POOLS()));
+      logger.debug(String.format("18.\t%-30s -> [%s]\n", "ALL_ROOT_POOLS",  this.getALL_ROOT_POOLS()));
+      logger.debug(String.format("19.\t%-30s -> [%s]\n", "ALL_POOLS_WITH_QUESTIONS",  this.getALL_POOLS_WITH_QUESTIONS()));
+      logger.debug(String.format("20.\t%-30s -> [%s]\n", "AVG_QUESTIONS_IN_POOLS",  this.getAVG_QUESTIONS_IN_POOLS()));
+      logger.debug(String.format("21.\t%-30s -> [%s]\n", "SINGLE_CHOICE_QUESTIONS",  this.getSINGLE_CHOICE_QUESTIONS()));
+      logger.debug(String.format("22.\t%-30s -> [%s]\n", "MULTIPLE_CHOICE_QUESTIONS",  this.getMULTIPLE_CHOICE_QUESTIONS()));
+      logger.debug(String.format("23.\t%-30s -> [%s]\n", "ESSAY_QUESTIONS",  this.getESSAY_QUESTIONS()));
+      logger.debug(String.format("24.\t%-30s -> [%s]\n", "TRUE_FALSE_QUESTIONS",  this.getTRUE_FALSE_QUESTIONS()));
+      logger.debug(String.format("25.\t%-30s -> [%s]\n", "MATRIX_QUESTIONS",  this.getMATRIX_QUESTIONS()));
+      logger.debug(String.format("26.\t%-30s -> [%s]\n", "MATCHING_QUESTIONS",  this.getMATCHING_QUESTIONS()));
+      logger.debug(String.format("27.\t%-30s -> [%s]\n", "FILL_IN_BLANKS_QUESTIONS",  this.getFILL_IN_BLANKS_QUESTIONS()));
+      logger.debug(String.format("28.\t%-30s -> [%s]\n", "ORDERING_QUESTIONS",  this.getORDERING_QUESTIONS()));
+      logger.debug(String.format("29.\t%-30s -> [%s]\n", "HOTSPOT_QUESTIONS",  this.getHOTSPOT_QUESTIONS()));
+      logger.debug(String.format("30.\t%-30s -> [%s]\n", "OPEN_ENDED_QUESTIONS",  this.getOPEN_ENDED_QUESTIONS()));
+      logger.debug(String.format("31.\t%-30s -> [%s]\n", "DEF_CORRECTINCORRECT_SCORING",  this.getDEF_CORRECTINCORRECT_SCORING()));
+      logger.debug(String.format("32.\t%-30s -> [%s]\n", "BY_ANSWER_WEIGHT_SCORING",  this.getBY_ANSWER_WEIGHT_SCORING()));
+      logger.debug(String.format("33.\t%-30s -> [%s]\n", "MANUAL_SCORING",  this.getMANUAL_SCORING()));
+      logger.debug(String.format("34.\t%-30s -> [%s]\n", "BY_COMBINATION_SCORING",  this.getBY_COMBINATION_SCORING()));
+      logger.debug(String.format("35.\t%-30s -> [%s]\n", "BY_RULES_SCORING",  this.getBY_RULES_SCORING()));
+      logger.debug(String.format("36.\t%-30s -> [%s]\n", "CUSTOM_QUESTION_PROPERTIES",  this.getCUSTOM_QUESTION_PROPERTIES()));
+      logger.debug(String.format("37.\t%-30s -> [%s]\n", "DEFAULT_TESTS",  this.getDEFAULT_TESTS()));
+      logger.debug(String.format("38.\t%-30s -> [%s]\n", "ONLY_TESTS_WITH_SECTIONS",  this.getONLY_TESTS_WITH_SECTIONS()));
+      logger.debug(String.format("39.\t%-30s -> [%s]\n", "ALL_MANUAL_TESTS",  this.getALL_MANUAL_TESTS()));
+      logger.debug(String.format("40.\t%-30s -> [%s]\n", "ALL_GENERATED_TESTS",  this.getALL_GENERATED_TESTS()));
+      logger.debug(String.format("41.\t%-30s -> [%s]\n", "GENERATED_BY_CATEGORY_TESTS",  this.getGENERATED_BY_CATEGORY_TESTS()));
+      logger.debug(String.format("42.\t%-30s -> [%s]\n", "AVG_TEST_VERSIONS_ROOT_TESTS",  this.getAVG_TEST_VERSIONS_ROOT_TESTS()));
+      logger.debug(String.format("43.\t%-30s -> [%s]\n", "MAX_TEST_VERSIONS_ROOT_TESTS",  this.getMAX_TEST_VERSIONS_ROOT_TESTS()));
+      logger.debug(String.format("44.\t%-30s -> [%s]\n", "AVG_TEST_VERSIONS_ROOT_SEC",  this.getAVG_TEST_VERSIONS_ROOT_SEC()));
+      logger.debug(String.format("45.\t%-30s -> [%s]\n", "MAX_TEST_VERSIONS_ROOT_SEC",  this.getMAX_TEST_VERSIONS_ROOT_SEC()));
+      logger.debug(String.format("46.\t%-30s -> [%s]\n", "TEST_TEMPLATES",  this.getTEST_TEMPLATES()));
+      logger.debug(String.format("47.\t%-30s -> [%s]\n", "LIMITED_TIME_TESTS",  this.getLIMITED_TIME_TESTS()));
+      logger.debug(String.format("48.\t%-30s -> [%s]\n", "UNLIMITED_TIME_TESTS",  this.getUNLIMITED_TIME_TESTS()));
+      logger.debug(String.format("49.\t%-30s -> [%s]\n", "DURATION_PER_QUESTION_TESTS",  this.getDURATION_PER_QUESTION_TESTS()));
+      logger.debug(String.format("50.\t%-30s -> [%s]\n", "DURATION_PER_QUIZ_TESTS",  this.getDURATION_PER_QUIZ_TESTS()));
+      logger.debug(String.format("51.\t%-30s -> [%s]\n", "DEADLINE_PER_QUIZ_TESTS",  this.getDEADLINE_PER_QUIZ_TESTS()));
+      logger.debug(String.format("52.\t%-30s -> [%s]\n", "TEST_ONE_PAGE",  this.getTEST_ONE_PAGE()));
+      logger.debug(String.format("53.\t%-30s -> [%s]\n", "TEST_PAGE_PER_QUESTION",  this.getTEST_PAGE_PER_QUESTION()));
+      logger.debug(String.format("54.\t%-30s -> [%s]\n", "AFTER_TEST_REPORT",  this.getAFTER_TEST_REPORT()));
+      logger.debug(String.format("55.\t%-30s -> [%s]\n", "AFTER_GRADING_REPORT",  this.getAFTER_GRADING_REPORT()));
+      logger.debug(String.format("56.\t%-30s -> [%s]\n", "AFTER_VERIFICATION_REPORT",  this.getAFTER_VERIFICATION_REPORT()));
+      logger.debug(String.format("57.\t%-30s -> [%s]\n", "ON_MANAGER_APPROVAL_REPORT",  this.getON_MANAGER_APPROVAL_REPORT()));
+      logger.debug(String.format("58.\t%-30s -> [%s]\n", "REALTIME_GRADING",  this.getREALTIME_GRADING()));
+      logger.debug(String.format("59.\t%-30s -> [%s]\n", "SCORE_DETAILS",  this.getSCORE_DETAILS()));
+      logger.debug(String.format("60.\t%-30s -> [%s]\n", "ONLY_SCORE",  this.getONLY_SCORE()));
+      logger.debug(String.format("61.\t%-30s -> [%s]\n", "TEST_CERTIFICATES",  this.getTEST_CERTIFICATES()));
+      logger.debug(String.format("62.\t%-30s -> [%s]\n", "SURVEYS",  this.getSURVEYS()));
+      logger.debug(String.format("63.\t%-30s -> [%s]\n", "SELF_ENROLLMENT_GLOBAL",  this.getSELF_ENROLLMENT_GLOBAL()));
+      logger.debug(String.format("64.\t%-30s -> [%s]\n", "SESSION_USER_GROUPS",  this.getSESSION_USER_GROUPS()));
+      logger.debug(String.format("65.\t%-30s -> [%s]\n", "SESSION_TRAINING",  this.getSESSION_TRAINING()));
+      logger.debug(String.format("66.\t%-30s -> [%s]\n", "PROCTOREDU",  this.getPROCTOREDU()));
+      logger.debug(String.format("67.\t%-30s -> [%s]\n", "PROCTORIO",  this.getPROCTORIO()));
+      logger.debug(String.format("68.\t%-30s -> [%s]\n", "FAVORITE_REPORTS",  this.getFAVORITE_REPORTS()));
+      logger.debug(String.format("69.\t%-30s -> [%s]\n", "SCHEDULED_REPORTS",  this.getSCHEDULED_REPORTS()));
+      logger.debug(String.format("70.\t%-30s -> [%s]\n", "TRAINING_COURSES",  this.getTRAINING_COURSES()));
+      logger.debug(String.format("71.\t%-30s -> [%s]\n", "PINNED_COURSES",  this.getPINNED_COURSES()));
+      logger.debug(String.format("72.\t%-30s -> [%s]\n", "AVG_STEPS_PER_TRAINING",  this.getAVG_STEPS_PER_TRAINING()));
+      logger.debug(String.format("73.\t%-30s -> [%s]\n", "AVG_TESTS_PER_TRAINING",  this.getAVG_TESTS_PER_TRAINING()));
+      logger.debug(String.format("74.\t%-30s -> [%s]\n", "ENABLED_EMAIL_NOTIFICATIONS",  this.getENABLED_EMAIL_NOTIFICATIONS()));
+      logger.debug(String.format("75.\t%-30s -> [%s]\n", "DISABLED_EMAIL_NOTIFICATIONS",  this.getDISABLED_EMAIL_NOTIFICATIONS()));
+      logger.debug(String.format("76.\t%-30s -> [%s]\n", "ENABLED_APP_NOTIFICATIONS",  this.getENABLED_APP_NOTIFICATIONS()));
+      logger.debug(String.format("77.\t%-30s -> [%s]\n", "DISABLED_APP_NOTIFICATIONS",  this.getDISABLED_APP_NOTIFICATIONS()));
+      logger.debug(String.format("78.\t%-30s -> [%s]\n", "LANGUAGE_BUNDLES",  this.getLANGUAGE_BUNDLES()));
+      logger.debug(String.format("79.\t%-30s -> [%s]\n", "USERS_LOGGED_ALL_TIME",  this.getUSERS_LOGGED_ALL_TIME()));
+      logger.debug(String.format("80.\t%-30s -> [%s]\n", "USERS_LOGGED_LAST_MONTH",  this.getUSERS_LOGGED_LAST_MONTH()));
+      logger.debug(String.format("81.\t%-30s -> [%s]\n", "USERS_CREATED_LAST_MONTH",  this.getUSERS_CREATED_LAST_MONTH()));
+      logger.debug(String.format("82.\t%-30s -> [%s]\n", "TOTAL_ATTEMPTS",  this.getTOTAL_ATTEMPTS()));
+      logger.debug(String.format("83.\t%-30s -> [%s]\n", "TOTAL_TEST_ATTEMPTS",  this.getTOTAL_TEST_ATTEMPTS()));
+      logger.debug(String.format("84.\t%-30s -> [%s]\n", "TOTAL_SURVEY_ATTEMPTS",  this.getTOTAL_SURVEY_ATTEMPTS()));
+      logger.debug(String.format("85.\t%-30s -> [%s]\n", "MAX_CONCURRENT_USERS_EVER",  this.getMAX_CONCURRENT_USERS_EVER()));
+      logger.debug(String.format("86.\t%-30s -> [%s]\n", "MAX_CONCURRENT_USERS_LAST_MONT",  this.getMAX_CONCURRENT_USERS_LAST_MONT()));
+      logger.debug(String.format("87.\t%-30s -> [%s]\n", "FAILED_LOGINS_LAST_MONTH",  this.getFAILED_LOGINS_LAST_MONTH()));
+      logger.debug(String.format("88.\t%-30s -> [%s]\n", "FAILED_EMAILS",  this.getFAILED_EMAILS()));
+      logger.debug(String.format("89.\t%-30s -> [%s]\n", "UNFINISHED_ATTEMPTS",  this.getUNFINISHED_ATTEMPTS()));
+      logger.debug(String.format("90.\t%-30s -> [%s]\n", "UNFINISHED_DISCONNECTED_ATTEMP",  this.getUNFINISHED_DISCONNECTED_ATTEMP()));
+      logger.debug(String.format("91.\t%-30s -> [%s]\n", "UNFINISHED_IN_PROGRESS_ATTEMP",  this.getUNFINISHED_IN_PROGRESS_ATTEMP()));
+      logger.debug(String.format("92.\t%-30s -> [%s]\n", "UNFINISHED_AVB_CONTINUE_ATTEMP",  this.getUNFINISHED_AVB_CONTINUE_ATTEMP()));
+      logger.debug(String.format("93.\t%-30s -> [%s]\n", "UNFINISHED_SUSPENDED_ATTEMP",  this.getUNFINISHED_SUSPENDED_ATTEMP()));
+      logger.debug(String.format("94.\t%-30s -> [%s]\n", "HAS_STATE_DEFINED",  this.getHAS_STATE_DEFINED()));
+      logger.debug(String.format("95.\t%-30s -> [%s]\n", "HAS_COUNTRY_DEFINED",  this.getHAS_COUNTRY_DEFINED()));
+      logger.debug(String.format("96.\t%-30s -> [%s]\n", "ACCOUNTING_QUESTIONS",  this.getACCOUNTING_QUESTIONS()));
+      logger.debug(String.format("97.\t%-30s -> [%s]\n", "TOTAL_QUESTIONS",  this.getTOTAL_QUESTIONS()));
+
+      logger.debug("Transfer object - Ends.");
+   }
+   
+   public enum Columns {
+   	  ID , RECORDED_AT , USER_CNT , ACTIVE_USERS , LOCKED_USERS , SUSPENDED_USERS , PENDING_USERS , INACTIVE_USERS , USER_GROUP_CNT , ROOT_USER_GROUP_CNT , AVG_USERS_PER_GROUP , ADMIN_CNT , PROCTOR_CNT , INSTRUCTOR_CNT , STUDENT_CNT , CUSTOM_ROLE_CNT , ALL_POOLS , ALL_ROOT_POOLS , ALL_POOLS_WITH_QUESTIONS , AVG_QUESTIONS_IN_POOLS , SINGLE_CHOICE_QUESTIONS , MULTIPLE_CHOICE_QUESTIONS , ESSAY_QUESTIONS , TRUE_FALSE_QUESTIONS , MATRIX_QUESTIONS , MATCHING_QUESTIONS , FILL_IN_BLANKS_QUESTIONS , ORDERING_QUESTIONS , HOTSPOT_QUESTIONS , OPEN_ENDED_QUESTIONS , DEF_CORRECTINCORRECT_SCORING , BY_ANSWER_WEIGHT_SCORING , MANUAL_SCORING , BY_COMBINATION_SCORING , BY_RULES_SCORING , CUSTOM_QUESTION_PROPERTIES , DEFAULT_TESTS , ONLY_TESTS_WITH_SECTIONS , ALL_MANUAL_TESTS , ALL_GENERATED_TESTS , GENERATED_BY_CATEGORY_TESTS , AVG_TEST_VERSIONS_ROOT_TESTS , MAX_TEST_VERSIONS_ROOT_TESTS , AVG_TEST_VERSIONS_ROOT_SEC , MAX_TEST_VERSIONS_ROOT_SEC , TEST_TEMPLATES , LIMITED_TIME_TESTS , UNLIMITED_TIME_TESTS , DURATION_PER_QUESTION_TESTS , DURATION_PER_QUIZ_TESTS , DEADLINE_PER_QUIZ_TESTS , TEST_ONE_PAGE , TEST_PAGE_PER_QUESTION , AFTER_TEST_REPORT , AFTER_GRADING_REPORT , AFTER_VERIFICATION_REPORT , ON_MANAGER_APPROVAL_REPORT , REALTIME_GRADING , SCORE_DETAILS , ONLY_SCORE , TEST_CERTIFICATES , SURVEYS , SELF_ENROLLMENT_GLOBAL , SESSION_USER_GROUPS , SESSION_TRAINING , PROCTOREDU , PROCTORIO , FAVORITE_REPORTS , SCHEDULED_REPORTS , TRAINING_COURSES , PINNED_COURSES , AVG_STEPS_PER_TRAINING , AVG_TESTS_PER_TRAINING , ENABLED_EMAIL_NOTIFICATIONS , DISABLED_EMAIL_NOTIFICATIONS , ENABLED_APP_NOTIFICATIONS , DISABLED_APP_NOTIFICATIONS , LANGUAGE_BUNDLES , USERS_LOGGED_ALL_TIME , USERS_LOGGED_LAST_MONTH , USERS_CREATED_LAST_MONTH , TOTAL_ATTEMPTS , TOTAL_TEST_ATTEMPTS , TOTAL_SURVEY_ATTEMPTS , MAX_CONCURRENT_USERS_EVER , MAX_CONCURRENT_USERS_LAST_MONT , FAILED_LOGINS_LAST_MONTH , FAILED_EMAILS , UNFINISHED_ATTEMPTS , UNFINISHED_DISCONNECTED_ATTEMP , UNFINISHED_IN_PROGRESS_ATTEMP , UNFINISHED_AVB_CONTINUE_ATTEMP , UNFINISHED_SUSPENDED_ATTEMP , HAS_STATE_DEFINED , HAS_COUNTRY_DEFINED , ACCOUNTING_QUESTIONS , TOTAL_QUESTIONS
+   }
+   
+   public static StatisticsLogTo copy(StatisticsLogTo instanceToCopy) {
+      StatisticsLogTo instance = new StatisticsLogTo();
+     
+      instance.setID(instanceToCopy.getID());
+      instance.setRECORDED_AT(instanceToCopy.getRECORDED_AT());
+      instance.setUSER_CNT(instanceToCopy.getUSER_CNT());
+      instance.setACTIVE_USERS(instanceToCopy.getACTIVE_USERS());
+      instance.setLOCKED_USERS(instanceToCopy.getLOCKED_USERS());
+      instance.setSUSPENDED_USERS(instanceToCopy.getSUSPENDED_USERS());
+      instance.setPENDING_USERS(instanceToCopy.getPENDING_USERS());
+      instance.setINACTIVE_USERS(instanceToCopy.getINACTIVE_USERS());
+      instance.setUSER_GROUP_CNT(instanceToCopy.getUSER_GROUP_CNT());
+      instance.setROOT_USER_GROUP_CNT(instanceToCopy.getROOT_USER_GROUP_CNT());
+      instance.setAVG_USERS_PER_GROUP(instanceToCopy.getAVG_USERS_PER_GROUP());
+      instance.setADMIN_CNT(instanceToCopy.getADMIN_CNT());
+      instance.setPROCTOR_CNT(instanceToCopy.getPROCTOR_CNT());
+      instance.setINSTRUCTOR_CNT(instanceToCopy.getINSTRUCTOR_CNT());
+      instance.setSTUDENT_CNT(instanceToCopy.getSTUDENT_CNT());
+      instance.setCUSTOM_ROLE_CNT(instanceToCopy.getCUSTOM_ROLE_CNT());
+      instance.setALL_POOLS(instanceToCopy.getALL_POOLS());
+      instance.setALL_ROOT_POOLS(instanceToCopy.getALL_ROOT_POOLS());
+      instance.setALL_POOLS_WITH_QUESTIONS(instanceToCopy.getALL_POOLS_WITH_QUESTIONS());
+      instance.setAVG_QUESTIONS_IN_POOLS(instanceToCopy.getAVG_QUESTIONS_IN_POOLS());
+      instance.setSINGLE_CHOICE_QUESTIONS(instanceToCopy.getSINGLE_CHOICE_QUESTIONS());
+      instance.setMULTIPLE_CHOICE_QUESTIONS(instanceToCopy.getMULTIPLE_CHOICE_QUESTIONS());
+      instance.setESSAY_QUESTIONS(instanceToCopy.getESSAY_QUESTIONS());
+      instance.setTRUE_FALSE_QUESTIONS(instanceToCopy.getTRUE_FALSE_QUESTIONS());
+      instance.setMATRIX_QUESTIONS(instanceToCopy.getMATRIX_QUESTIONS());
+      instance.setMATCHING_QUESTIONS(instanceToCopy.getMATCHING_QUESTIONS());
+      instance.setFILL_IN_BLANKS_QUESTIONS(instanceToCopy.getFILL_IN_BLANKS_QUESTIONS());
+      instance.setORDERING_QUESTIONS(instanceToCopy.getORDERING_QUESTIONS());
+      instance.setHOTSPOT_QUESTIONS(instanceToCopy.getHOTSPOT_QUESTIONS());
+      instance.setOPEN_ENDED_QUESTIONS(instanceToCopy.getOPEN_ENDED_QUESTIONS());
+      instance.setDEF_CORRECTINCORRECT_SCORING(instanceToCopy.getDEF_CORRECTINCORRECT_SCORING());
+      instance.setBY_ANSWER_WEIGHT_SCORING(instanceToCopy.getBY_ANSWER_WEIGHT_SCORING());
+      instance.setMANUAL_SCORING(instanceToCopy.getMANUAL_SCORING());
+      instance.setBY_COMBINATION_SCORING(instanceToCopy.getBY_COMBINATION_SCORING());
+      instance.setBY_RULES_SCORING(instanceToCopy.getBY_RULES_SCORING());
+      instance.setCUSTOM_QUESTION_PROPERTIES(instanceToCopy.getCUSTOM_QUESTION_PROPERTIES());
+      instance.setDEFAULT_TESTS(instanceToCopy.getDEFAULT_TESTS());
+      instance.setONLY_TESTS_WITH_SECTIONS(instanceToCopy.getONLY_TESTS_WITH_SECTIONS());
+      instance.setALL_MANUAL_TESTS(instanceToCopy.getALL_MANUAL_TESTS());
+      instance.setALL_GENERATED_TESTS(instanceToCopy.getALL_GENERATED_TESTS());
+      instance.setGENERATED_BY_CATEGORY_TESTS(instanceToCopy.getGENERATED_BY_CATEGORY_TESTS());
+      instance.setAVG_TEST_VERSIONS_ROOT_TESTS(instanceToCopy.getAVG_TEST_VERSIONS_ROOT_TESTS());
+      instance.setMAX_TEST_VERSIONS_ROOT_TESTS(instanceToCopy.getMAX_TEST_VERSIONS_ROOT_TESTS());
+      instance.setAVG_TEST_VERSIONS_ROOT_SEC(instanceToCopy.getAVG_TEST_VERSIONS_ROOT_SEC());
+      instance.setMAX_TEST_VERSIONS_ROOT_SEC(instanceToCopy.getMAX_TEST_VERSIONS_ROOT_SEC());
+      instance.setTEST_TEMPLATES(instanceToCopy.getTEST_TEMPLATES());
+      instance.setLIMITED_TIME_TESTS(instanceToCopy.getLIMITED_TIME_TESTS());
+      instance.setUNLIMITED_TIME_TESTS(instanceToCopy.getUNLIMITED_TIME_TESTS());
+      instance.setDURATION_PER_QUESTION_TESTS(instanceToCopy.getDURATION_PER_QUESTION_TESTS());
+      instance.setDURATION_PER_QUIZ_TESTS(instanceToCopy.getDURATION_PER_QUIZ_TESTS());
+      instance.setDEADLINE_PER_QUIZ_TESTS(instanceToCopy.getDEADLINE_PER_QUIZ_TESTS());
+      instance.setTEST_ONE_PAGE(instanceToCopy.getTEST_ONE_PAGE());
+      instance.setTEST_PAGE_PER_QUESTION(instanceToCopy.getTEST_PAGE_PER_QUESTION());
+      instance.setAFTER_TEST_REPORT(instanceToCopy.getAFTER_TEST_REPORT());
+      instance.setAFTER_GRADING_REPORT(instanceToCopy.getAFTER_GRADING_REPORT());
+      instance.setAFTER_VERIFICATION_REPORT(instanceToCopy.getAFTER_VERIFICATION_REPORT());
+      instance.setON_MANAGER_APPROVAL_REPORT(instanceToCopy.getON_MANAGER_APPROVAL_REPORT());
+      instance.setREALTIME_GRADING(instanceToCopy.getREALTIME_GRADING());
+      instance.setSCORE_DETAILS(instanceToCopy.getSCORE_DETAILS());
+      instance.setONLY_SCORE(instanceToCopy.getONLY_SCORE());
+      instance.setTEST_CERTIFICATES(instanceToCopy.getTEST_CERTIFICATES());
+      instance.setSURVEYS(instanceToCopy.getSURVEYS());
+      instance.setSELF_ENROLLMENT_GLOBAL(instanceToCopy.getSELF_ENROLLMENT_GLOBAL());
+      instance.setSESSION_USER_GROUPS(instanceToCopy.getSESSION_USER_GROUPS());
+      instance.setSESSION_TRAINING(instanceToCopy.getSESSION_TRAINING());
+      instance.setPROCTOREDU(instanceToCopy.getPROCTOREDU());
+      instance.setPROCTORIO(instanceToCopy.getPROCTORIO());
+      instance.setFAVORITE_REPORTS(instanceToCopy.getFAVORITE_REPORTS());
+      instance.setSCHEDULED_REPORTS(instanceToCopy.getSCHEDULED_REPORTS());
+      instance.setTRAINING_COURSES(instanceToCopy.getTRAINING_COURSES());
+      instance.setPINNED_COURSES(instanceToCopy.getPINNED_COURSES());
+      instance.setAVG_STEPS_PER_TRAINING(instanceToCopy.getAVG_STEPS_PER_TRAINING());
+      instance.setAVG_TESTS_PER_TRAINING(instanceToCopy.getAVG_TESTS_PER_TRAINING());
+      instance.setENABLED_EMAIL_NOTIFICATIONS(instanceToCopy.getENABLED_EMAIL_NOTIFICATIONS());
+      instance.setDISABLED_EMAIL_NOTIFICATIONS(instanceToCopy.getDISABLED_EMAIL_NOTIFICATIONS());
+      instance.setENABLED_APP_NOTIFICATIONS(instanceToCopy.getENABLED_APP_NOTIFICATIONS());
+      instance.setDISABLED_APP_NOTIFICATIONS(instanceToCopy.getDISABLED_APP_NOTIFICATIONS());
+      instance.setLANGUAGE_BUNDLES(instanceToCopy.getLANGUAGE_BUNDLES());
+      instance.setUSERS_LOGGED_ALL_TIME(instanceToCopy.getUSERS_LOGGED_ALL_TIME());
+      instance.setUSERS_LOGGED_LAST_MONTH(instanceToCopy.getUSERS_LOGGED_LAST_MONTH());
+      instance.setUSERS_CREATED_LAST_MONTH(instanceToCopy.getUSERS_CREATED_LAST_MONTH());
+      instance.setTOTAL_ATTEMPTS(instanceToCopy.getTOTAL_ATTEMPTS());
+      instance.setTOTAL_TEST_ATTEMPTS(instanceToCopy.getTOTAL_TEST_ATTEMPTS());
+      instance.setTOTAL_SURVEY_ATTEMPTS(instanceToCopy.getTOTAL_SURVEY_ATTEMPTS());
+      instance.setMAX_CONCURRENT_USERS_EVER(instanceToCopy.getMAX_CONCURRENT_USERS_EVER());
+      instance.setMAX_CONCURRENT_USERS_LAST_MONT(instanceToCopy.getMAX_CONCURRENT_USERS_LAST_MONT());
+      instance.setFAILED_LOGINS_LAST_MONTH(instanceToCopy.getFAILED_LOGINS_LAST_MONTH());
+      instance.setFAILED_EMAILS(instanceToCopy.getFAILED_EMAILS());
+      instance.setUNFINISHED_ATTEMPTS(instanceToCopy.getUNFINISHED_ATTEMPTS());
+      instance.setUNFINISHED_DISCONNECTED_ATTEMP(instanceToCopy.getUNFINISHED_DISCONNECTED_ATTEMP());
+      instance.setUNFINISHED_IN_PROGRESS_ATTEMP(instanceToCopy.getUNFINISHED_IN_PROGRESS_ATTEMP());
+      instance.setUNFINISHED_AVB_CONTINUE_ATTEMP(instanceToCopy.getUNFINISHED_AVB_CONTINUE_ATTEMP());
+      instance.setUNFINISHED_SUSPENDED_ATTEMP(instanceToCopy.getUNFINISHED_SUSPENDED_ATTEMP());
+      instance.setHAS_STATE_DEFINED(instanceToCopy.getHAS_STATE_DEFINED());
+      instance.setHAS_COUNTRY_DEFINED(instanceToCopy.getHAS_COUNTRY_DEFINED());
+      instance.setACCOUNTING_QUESTIONS(instanceToCopy.getACCOUNTING_QUESTIONS());
+      instance.setTOTAL_QUESTIONS(instanceToCopy.getTOTAL_QUESTIONS());
+     
+      return instance;
+   }
+   
+   public static class Build {
+      private java.lang.String ID = null;
+      private java.sql.Timestamp RECORDED_AT = null;
+      private java.math.BigDecimal USER_CNT = null;
+      private java.math.BigDecimal ACTIVE_USERS = null;
+      private java.math.BigDecimal LOCKED_USERS = null;
+      private java.math.BigDecimal SUSPENDED_USERS = null;
+      private java.math.BigDecimal PENDING_USERS = null;
+      private java.math.BigDecimal INACTIVE_USERS = null;
+      private java.math.BigDecimal USER_GROUP_CNT = null;
+      private java.math.BigDecimal ROOT_USER_GROUP_CNT = null;
+      private java.math.BigDecimal AVG_USERS_PER_GROUP = null;
+      private java.math.BigDecimal ADMIN_CNT = null;
+      private java.math.BigDecimal PROCTOR_CNT = null;
+      private java.math.BigDecimal INSTRUCTOR_CNT = null;
+      private java.math.BigDecimal STUDENT_CNT = null;
+      private java.math.BigDecimal CUSTOM_ROLE_CNT = null;
+      private java.math.BigDecimal ALL_POOLS = null;
+      private java.math.BigDecimal ALL_ROOT_POOLS = null;
+      private java.math.BigDecimal ALL_POOLS_WITH_QUESTIONS = null;
+      private java.math.BigDecimal AVG_QUESTIONS_IN_POOLS = null;
+      private java.math.BigDecimal SINGLE_CHOICE_QUESTIONS = null;
+      private java.math.BigDecimal MULTIPLE_CHOICE_QUESTIONS = null;
+      private java.math.BigDecimal ESSAY_QUESTIONS = null;
+      private java.math.BigDecimal TRUE_FALSE_QUESTIONS = null;
+      private java.math.BigDecimal MATRIX_QUESTIONS = null;
+      private java.math.BigDecimal MATCHING_QUESTIONS = null;
+      private java.math.BigDecimal FILL_IN_BLANKS_QUESTIONS = null;
+      private java.math.BigDecimal ORDERING_QUESTIONS = null;
+      private java.math.BigDecimal HOTSPOT_QUESTIONS = null;
+      private java.math.BigDecimal OPEN_ENDED_QUESTIONS = null;
+      private java.math.BigDecimal DEF_CORRECTINCORRECT_SCORING = null;
+      private java.math.BigDecimal BY_ANSWER_WEIGHT_SCORING = null;
+      private java.math.BigDecimal MANUAL_SCORING = null;
+      private java.math.BigDecimal BY_COMBINATION_SCORING = null;
+      private java.math.BigDecimal BY_RULES_SCORING = null;
+      private java.math.BigDecimal CUSTOM_QUESTION_PROPERTIES = null;
+      private java.math.BigDecimal DEFAULT_TESTS = null;
+      private java.math.BigDecimal ONLY_TESTS_WITH_SECTIONS = null;
+      private java.math.BigDecimal ALL_MANUAL_TESTS = null;
+      private java.math.BigDecimal ALL_GENERATED_TESTS = null;
+      private java.math.BigDecimal GENERATED_BY_CATEGORY_TESTS = null;
+      private java.math.BigDecimal AVG_TEST_VERSIONS_ROOT_TESTS = null;
+      private java.math.BigDecimal MAX_TEST_VERSIONS_ROOT_TESTS = null;
+      private java.math.BigDecimal AVG_TEST_VERSIONS_ROOT_SEC = null;
+      private java.math.BigDecimal MAX_TEST_VERSIONS_ROOT_SEC = null;
+      private java.math.BigDecimal TEST_TEMPLATES = null;
+      private java.math.BigDecimal LIMITED_TIME_TESTS = null;
+      private java.math.BigDecimal UNLIMITED_TIME_TESTS = null;
+      private java.math.BigDecimal DURATION_PER_QUESTION_TESTS = null;
+      private java.math.BigDecimal DURATION_PER_QUIZ_TESTS = null;
+      private java.math.BigDecimal DEADLINE_PER_QUIZ_TESTS = null;
+      private java.math.BigDecimal TEST_ONE_PAGE = null;
+      private java.math.BigDecimal TEST_PAGE_PER_QUESTION = null;
+      private java.math.BigDecimal AFTER_TEST_REPORT = null;
+      private java.math.BigDecimal AFTER_GRADING_REPORT = null;
+      private java.math.BigDecimal AFTER_VERIFICATION_REPORT = null;
+      private java.math.BigDecimal ON_MANAGER_APPROVAL_REPORT = null;
+      private java.math.BigDecimal REALTIME_GRADING = null;
+      private java.math.BigDecimal SCORE_DETAILS = null;
+      private java.math.BigDecimal ONLY_SCORE = null;
+      private java.math.BigDecimal TEST_CERTIFICATES = null;
+      private java.math.BigDecimal SURVEYS = null;
+      private java.math.BigDecimal SELF_ENROLLMENT_GLOBAL = null;
+      private java.math.BigDecimal SESSION_USER_GROUPS = null;
+      private java.math.BigDecimal SESSION_TRAINING = null;
+      private java.math.BigDecimal PROCTOREDU = null;
+      private java.math.BigDecimal PROCTORIO = null;
+      private java.math.BigDecimal FAVORITE_REPORTS = null;
+      private java.math.BigDecimal SCHEDULED_REPORTS = null;
+      private java.math.BigDecimal TRAINING_COURSES = null;
+      private java.math.BigDecimal PINNED_COURSES = null;
+      private java.math.BigDecimal AVG_STEPS_PER_TRAINING = null;
+      private java.math.BigDecimal AVG_TESTS_PER_TRAINING = null;
+      private java.math.BigDecimal ENABLED_EMAIL_NOTIFICATIONS = null;
+      private java.math.BigDecimal DISABLED_EMAIL_NOTIFICATIONS = null;
+      private java.math.BigDecimal ENABLED_APP_NOTIFICATIONS = null;
+      private java.math.BigDecimal DISABLED_APP_NOTIFICATIONS = null;
+      private java.math.BigDecimal LANGUAGE_BUNDLES = null;
+      private java.math.BigDecimal USERS_LOGGED_ALL_TIME = null;
+      private java.math.BigDecimal USERS_LOGGED_LAST_MONTH = null;
+      private java.math.BigDecimal USERS_CREATED_LAST_MONTH = null;
+      private java.math.BigDecimal TOTAL_ATTEMPTS = null;
+      private java.math.BigDecimal TOTAL_TEST_ATTEMPTS = null;
+      private java.math.BigDecimal TOTAL_SURVEY_ATTEMPTS = null;
+      private java.math.BigDecimal MAX_CONCURRENT_USERS_EVER = null;
+      private java.math.BigDecimal MAX_CONCURRENT_USERS_LAST_MONT = null;
+      private java.math.BigDecimal FAILED_LOGINS_LAST_MONTH = null;
+      private java.math.BigDecimal FAILED_EMAILS = null;
+      private java.math.BigDecimal UNFINISHED_ATTEMPTS = null;
+      private java.math.BigDecimal UNFINISHED_DISCONNECTED_ATTEMP = null;
+      private java.math.BigDecimal UNFINISHED_IN_PROGRESS_ATTEMP = null;
+      private java.math.BigDecimal UNFINISHED_AVB_CONTINUE_ATTEMP = null;
+      private java.math.BigDecimal UNFINISHED_SUSPENDED_ATTEMP = null;
+      private java.math.BigDecimal HAS_STATE_DEFINED = null;
+      private java.math.BigDecimal HAS_COUNTRY_DEFINED = null;
+      private java.math.BigDecimal ACCOUNTING_QUESTIONS = null;
+      private java.math.BigDecimal TOTAL_QUESTIONS = null;
+      
+   	  public Build withID( java.lang.String ID ) {
+         this.ID = ID;
+         return this;
+      }
+
+      public Build withRECORDED_AT( java.sql.Timestamp RECORDED_AT ) {
+         this.RECORDED_AT = RECORDED_AT;
+         return this;
+      }
+
+      public Build withUSER_CNT( java.math.BigDecimal USER_CNT ) {
+         this.USER_CNT = USER_CNT;
+         return this;
+      }
+
+      public Build withACTIVE_USERS( java.math.BigDecimal ACTIVE_USERS ) {
+         this.ACTIVE_USERS = ACTIVE_USERS;
+         return this;
+      }
+
+      public Build withLOCKED_USERS( java.math.BigDecimal LOCKED_USERS ) {
+         this.LOCKED_USERS = LOCKED_USERS;
+         return this;
+      }
+
+      public Build withSUSPENDED_USERS( java.math.BigDecimal SUSPENDED_USERS ) {
+         this.SUSPENDED_USERS = SUSPENDED_USERS;
+         return this;
+      }
+
+      public Build withPENDING_USERS( java.math.BigDecimal PENDING_USERS ) {
+         this.PENDING_USERS = PENDING_USERS;
+         return this;
+      }
+
+      public Build withINACTIVE_USERS( java.math.BigDecimal INACTIVE_USERS ) {
+         this.INACTIVE_USERS = INACTIVE_USERS;
+         return this;
+      }
+
+      public Build withUSER_GROUP_CNT( java.math.BigDecimal USER_GROUP_CNT ) {
+         this.USER_GROUP_CNT = USER_GROUP_CNT;
+         return this;
+      }
+
+      public Build withROOT_USER_GROUP_CNT( java.math.BigDecimal ROOT_USER_GROUP_CNT ) {
+         this.ROOT_USER_GROUP_CNT = ROOT_USER_GROUP_CNT;
+         return this;
+      }
+
+      public Build withAVG_USERS_PER_GROUP( java.math.BigDecimal AVG_USERS_PER_GROUP ) {
+         this.AVG_USERS_PER_GROUP = AVG_USERS_PER_GROUP;
+         return this;
+      }
+
+      public Build withADMIN_CNT( java.math.BigDecimal ADMIN_CNT ) {
+         this.ADMIN_CNT = ADMIN_CNT;
+         return this;
+      }
+
+      public Build withPROCTOR_CNT( java.math.BigDecimal PROCTOR_CNT ) {
+         this.PROCTOR_CNT = PROCTOR_CNT;
+         return this;
+      }
+
+      public Build withINSTRUCTOR_CNT( java.math.BigDecimal INSTRUCTOR_CNT ) {
+         this.INSTRUCTOR_CNT = INSTRUCTOR_CNT;
+         return this;
+      }
+
+      public Build withSTUDENT_CNT( java.math.BigDecimal STUDENT_CNT ) {
+         this.STUDENT_CNT = STUDENT_CNT;
+         return this;
+      }
+
+      public Build withCUSTOM_ROLE_CNT( java.math.BigDecimal CUSTOM_ROLE_CNT ) {
+         this.CUSTOM_ROLE_CNT = CUSTOM_ROLE_CNT;
+         return this;
+      }
+
+      public Build withALL_POOLS( java.math.BigDecimal ALL_POOLS ) {
+         this.ALL_POOLS = ALL_POOLS;
+         return this;
+      }
+
+      public Build withALL_ROOT_POOLS( java.math.BigDecimal ALL_ROOT_POOLS ) {
+         this.ALL_ROOT_POOLS = ALL_ROOT_POOLS;
+         return this;
+      }
+
+      public Build withALL_POOLS_WITH_QUESTIONS( java.math.BigDecimal ALL_POOLS_WITH_QUESTIONS ) {
+         this.ALL_POOLS_WITH_QUESTIONS = ALL_POOLS_WITH_QUESTIONS;
+         return this;
+      }
+
+      public Build withAVG_QUESTIONS_IN_POOLS( java.math.BigDecimal AVG_QUESTIONS_IN_POOLS ) {
+         this.AVG_QUESTIONS_IN_POOLS = AVG_QUESTIONS_IN_POOLS;
+         return this;
+      }
+
+      public Build withSINGLE_CHOICE_QUESTIONS( java.math.BigDecimal SINGLE_CHOICE_QUESTIONS ) {
+         this.SINGLE_CHOICE_QUESTIONS = SINGLE_CHOICE_QUESTIONS;
+         return this;
+      }
+
+      public Build withMULTIPLE_CHOICE_QUESTIONS( java.math.BigDecimal MULTIPLE_CHOICE_QUESTIONS ) {
+         this.MULTIPLE_CHOICE_QUESTIONS = MULTIPLE_CHOICE_QUESTIONS;
+         return this;
+      }
+
+      public Build withESSAY_QUESTIONS( java.math.BigDecimal ESSAY_QUESTIONS ) {
+         this.ESSAY_QUESTIONS = ESSAY_QUESTIONS;
+         return this;
+      }
+
+      public Build withTRUE_FALSE_QUESTIONS( java.math.BigDecimal TRUE_FALSE_QUESTIONS ) {
+         this.TRUE_FALSE_QUESTIONS = TRUE_FALSE_QUESTIONS;
+         return this;
+      }
+
+      public Build withMATRIX_QUESTIONS( java.math.BigDecimal MATRIX_QUESTIONS ) {
+         this.MATRIX_QUESTIONS = MATRIX_QUESTIONS;
+         return this;
+      }
+
+      public Build withMATCHING_QUESTIONS( java.math.BigDecimal MATCHING_QUESTIONS ) {
+         this.MATCHING_QUESTIONS = MATCHING_QUESTIONS;
+         return this;
+      }
+
+      public Build withFILL_IN_BLANKS_QUESTIONS( java.math.BigDecimal FILL_IN_BLANKS_QUESTIONS ) {
+         this.FILL_IN_BLANKS_QUESTIONS = FILL_IN_BLANKS_QUESTIONS;
+         return this;
+      }
+
+      public Build withORDERING_QUESTIONS( java.math.BigDecimal ORDERING_QUESTIONS ) {
+         this.ORDERING_QUESTIONS = ORDERING_QUESTIONS;
+         return this;
+      }
+
+      public Build withHOTSPOT_QUESTIONS( java.math.BigDecimal HOTSPOT_QUESTIONS ) {
+         this.HOTSPOT_QUESTIONS = HOTSPOT_QUESTIONS;
+         return this;
+      }
+
+      public Build withOPEN_ENDED_QUESTIONS( java.math.BigDecimal OPEN_ENDED_QUESTIONS ) {
+         this.OPEN_ENDED_QUESTIONS = OPEN_ENDED_QUESTIONS;
+         return this;
+      }
+
+      public Build withDEF_CORRECTINCORRECT_SCORING( java.math.BigDecimal DEF_CORRECTINCORRECT_SCORING ) {
+         this.DEF_CORRECTINCORRECT_SCORING = DEF_CORRECTINCORRECT_SCORING;
+         return this;
+      }
+
+      public Build withBY_ANSWER_WEIGHT_SCORING( java.math.BigDecimal BY_ANSWER_WEIGHT_SCORING ) {
+         this.BY_ANSWER_WEIGHT_SCORING = BY_ANSWER_WEIGHT_SCORING;
+         return this;
+      }
+
+      public Build withMANUAL_SCORING( java.math.BigDecimal MANUAL_SCORING ) {
+         this.MANUAL_SCORING = MANUAL_SCORING;
+         return this;
+      }
+
+      public Build withBY_COMBINATION_SCORING( java.math.BigDecimal BY_COMBINATION_SCORING ) {
+         this.BY_COMBINATION_SCORING = BY_COMBINATION_SCORING;
+         return this;
+      }
+
+      public Build withBY_RULES_SCORING( java.math.BigDecimal BY_RULES_SCORING ) {
+         this.BY_RULES_SCORING = BY_RULES_SCORING;
+         return this;
+      }
+
+      public Build withCUSTOM_QUESTION_PROPERTIES( java.math.BigDecimal CUSTOM_QUESTION_PROPERTIES ) {
+         this.CUSTOM_QUESTION_PROPERTIES = CUSTOM_QUESTION_PROPERTIES;
+         return this;
+      }
+
+      public Build withDEFAULT_TESTS( java.math.BigDecimal DEFAULT_TESTS ) {
+         this.DEFAULT_TESTS = DEFAULT_TESTS;
+         return this;
+      }
+
+      public Build withONLY_TESTS_WITH_SECTIONS( java.math.BigDecimal ONLY_TESTS_WITH_SECTIONS ) {
+         this.ONLY_TESTS_WITH_SECTIONS = ONLY_TESTS_WITH_SECTIONS;
+         return this;
+      }
+
+      public Build withALL_MANUAL_TESTS( java.math.BigDecimal ALL_MANUAL_TESTS ) {
+         this.ALL_MANUAL_TESTS = ALL_MANUAL_TESTS;
+         return this;
+      }
+
+      public Build withALL_GENERATED_TESTS( java.math.BigDecimal ALL_GENERATED_TESTS ) {
+         this.ALL_GENERATED_TESTS = ALL_GENERATED_TESTS;
+         return this;
+      }
+
+      public Build withGENERATED_BY_CATEGORY_TESTS( java.math.BigDecimal GENERATED_BY_CATEGORY_TESTS ) {
+         this.GENERATED_BY_CATEGORY_TESTS = GENERATED_BY_CATEGORY_TESTS;
+         return this;
+      }
+
+      public Build withAVG_TEST_VERSIONS_ROOT_TESTS( java.math.BigDecimal AVG_TEST_VERSIONS_ROOT_TESTS ) {
+         this.AVG_TEST_VERSIONS_ROOT_TESTS = AVG_TEST_VERSIONS_ROOT_TESTS;
+         return this;
+      }
+
+      public Build withMAX_TEST_VERSIONS_ROOT_TESTS( java.math.BigDecimal MAX_TEST_VERSIONS_ROOT_TESTS ) {
+         this.MAX_TEST_VERSIONS_ROOT_TESTS = MAX_TEST_VERSIONS_ROOT_TESTS;
+         return this;
+      }
+
+      public Build withAVG_TEST_VERSIONS_ROOT_SEC( java.math.BigDecimal AVG_TEST_VERSIONS_ROOT_SEC ) {
+         this.AVG_TEST_VERSIONS_ROOT_SEC = AVG_TEST_VERSIONS_ROOT_SEC;
+         return this;
+      }
+
+      public Build withMAX_TEST_VERSIONS_ROOT_SEC( java.math.BigDecimal MAX_TEST_VERSIONS_ROOT_SEC ) {
+         this.MAX_TEST_VERSIONS_ROOT_SEC = MAX_TEST_VERSIONS_ROOT_SEC;
+         return this;
+      }
+
+      public Build withTEST_TEMPLATES( java.math.BigDecimal TEST_TEMPLATES ) {
+         this.TEST_TEMPLATES = TEST_TEMPLATES;
+         return this;
+      }
+
+      public Build withLIMITED_TIME_TESTS( java.math.BigDecimal LIMITED_TIME_TESTS ) {
+         this.LIMITED_TIME_TESTS = LIMITED_TIME_TESTS;
+         return this;
+      }
+
+      public Build withUNLIMITED_TIME_TESTS( java.math.BigDecimal UNLIMITED_TIME_TESTS ) {
+         this.UNLIMITED_TIME_TESTS = UNLIMITED_TIME_TESTS;
+         return this;
+      }
+
+      public Build withDURATION_PER_QUESTION_TESTS( java.math.BigDecimal DURATION_PER_QUESTION_TESTS ) {
+         this.DURATION_PER_QUESTION_TESTS = DURATION_PER_QUESTION_TESTS;
+         return this;
+      }
+
+      public Build withDURATION_PER_QUIZ_TESTS( java.math.BigDecimal DURATION_PER_QUIZ_TESTS ) {
+         this.DURATION_PER_QUIZ_TESTS = DURATION_PER_QUIZ_TESTS;
+         return this;
+      }
+
+      public Build withDEADLINE_PER_QUIZ_TESTS( java.math.BigDecimal DEADLINE_PER_QUIZ_TESTS ) {
+         this.DEADLINE_PER_QUIZ_TESTS = DEADLINE_PER_QUIZ_TESTS;
+         return this;
+      }
+
+      public Build withTEST_ONE_PAGE( java.math.BigDecimal TEST_ONE_PAGE ) {
+         this.TEST_ONE_PAGE = TEST_ONE_PAGE;
+         return this;
+      }
+
+      public Build withTEST_PAGE_PER_QUESTION( java.math.BigDecimal TEST_PAGE_PER_QUESTION ) {
+         this.TEST_PAGE_PER_QUESTION = TEST_PAGE_PER_QUESTION;
+         return this;
+      }
+
+      public Build withAFTER_TEST_REPORT( java.math.BigDecimal AFTER_TEST_REPORT ) {
+         this.AFTER_TEST_REPORT = AFTER_TEST_REPORT;
+         return this;
+      }
+
+      public Build withAFTER_GRADING_REPORT( java.math.BigDecimal AFTER_GRADING_REPORT ) {
+         this.AFTER_GRADING_REPORT = AFTER_GRADING_REPORT;
+         return this;
+      }
+
+      public Build withAFTER_VERIFICATION_REPORT( java.math.BigDecimal AFTER_VERIFICATION_REPORT ) {
+         this.AFTER_VERIFICATION_REPORT = AFTER_VERIFICATION_REPORT;
+         return this;
+      }
+
+      public Build withON_MANAGER_APPROVAL_REPORT( java.math.BigDecimal ON_MANAGER_APPROVAL_REPORT ) {
+         this.ON_MANAGER_APPROVAL_REPORT = ON_MANAGER_APPROVAL_REPORT;
+         return this;
+      }
+
+      public Build withREALTIME_GRADING( java.math.BigDecimal REALTIME_GRADING ) {
+         this.REALTIME_GRADING = REALTIME_GRADING;
+         return this;
+      }
+
+      public Build withSCORE_DETAILS( java.math.BigDecimal SCORE_DETAILS ) {
+         this.SCORE_DETAILS = SCORE_DETAILS;
+         return this;
+      }
+
+      public Build withONLY_SCORE( java.math.BigDecimal ONLY_SCORE ) {
+         this.ONLY_SCORE = ONLY_SCORE;
+         return this;
+      }
+
+      public Build withTEST_CERTIFICATES( java.math.BigDecimal TEST_CERTIFICATES ) {
+         this.TEST_CERTIFICATES = TEST_CERTIFICATES;
+         return this;
+      }
+
+      public Build withSURVEYS( java.math.BigDecimal SURVEYS ) {
+         this.SURVEYS = SURVEYS;
+         return this;
+      }
+
+      public Build withSELF_ENROLLMENT_GLOBAL( java.math.BigDecimal SELF_ENROLLMENT_GLOBAL ) {
+         this.SELF_ENROLLMENT_GLOBAL = SELF_ENROLLMENT_GLOBAL;
+         return this;
+      }
+
+      public Build withSESSION_USER_GROUPS( java.math.BigDecimal SESSION_USER_GROUPS ) {
+         this.SESSION_USER_GROUPS = SESSION_USER_GROUPS;
+         return this;
+      }
+
+      public Build withSESSION_TRAINING( java.math.BigDecimal SESSION_TRAINING ) {
+         this.SESSION_TRAINING = SESSION_TRAINING;
+         return this;
+      }
+
+      public Build withPROCTOREDU( java.math.BigDecimal PROCTOREDU ) {
+         this.PROCTOREDU = PROCTOREDU;
+         return this;
+      }
+
+      public Build withPROCTORIO( java.math.BigDecimal PROCTORIO ) {
+         this.PROCTORIO = PROCTORIO;
+         return this;
+      }
+
+      public Build withFAVORITE_REPORTS( java.math.BigDecimal FAVORITE_REPORTS ) {
+         this.FAVORITE_REPORTS = FAVORITE_REPORTS;
+         return this;
+      }
+
+      public Build withSCHEDULED_REPORTS( java.math.BigDecimal SCHEDULED_REPORTS ) {
+         this.SCHEDULED_REPORTS = SCHEDULED_REPORTS;
+         return this;
+      }
+
+      public Build withTRAINING_COURSES( java.math.BigDecimal TRAINING_COURSES ) {
+         this.TRAINING_COURSES = TRAINING_COURSES;
+         return this;
+      }
+
+      public Build withPINNED_COURSES( java.math.BigDecimal PINNED_COURSES ) {
+         this.PINNED_COURSES = PINNED_COURSES;
+         return this;
+      }
+
+      public Build withAVG_STEPS_PER_TRAINING( java.math.BigDecimal AVG_STEPS_PER_TRAINING ) {
+         this.AVG_STEPS_PER_TRAINING = AVG_STEPS_PER_TRAINING;
+         return this;
+      }
+
+      public Build withAVG_TESTS_PER_TRAINING( java.math.BigDecimal AVG_TESTS_PER_TRAINING ) {
+         this.AVG_TESTS_PER_TRAINING = AVG_TESTS_PER_TRAINING;
+         return this;
+      }
+
+      public Build withENABLED_EMAIL_NOTIFICATIONS( java.math.BigDecimal ENABLED_EMAIL_NOTIFICATIONS ) {
+         this.ENABLED_EMAIL_NOTIFICATIONS = ENABLED_EMAIL_NOTIFICATIONS;
+         return this;
+      }
+
+      public Build withDISABLED_EMAIL_NOTIFICATIONS( java.math.BigDecimal DISABLED_EMAIL_NOTIFICATIONS ) {
+         this.DISABLED_EMAIL_NOTIFICATIONS = DISABLED_EMAIL_NOTIFICATIONS;
+         return this;
+      }
+
+      public Build withENABLED_APP_NOTIFICATIONS( java.math.BigDecimal ENABLED_APP_NOTIFICATIONS ) {
+         this.ENABLED_APP_NOTIFICATIONS = ENABLED_APP_NOTIFICATIONS;
+         return this;
+      }
+
+      public Build withDISABLED_APP_NOTIFICATIONS( java.math.BigDecimal DISABLED_APP_NOTIFICATIONS ) {
+         this.DISABLED_APP_NOTIFICATIONS = DISABLED_APP_NOTIFICATIONS;
+         return this;
+      }
+
+      public Build withLANGUAGE_BUNDLES( java.math.BigDecimal LANGUAGE_BUNDLES ) {
+         this.LANGUAGE_BUNDLES = LANGUAGE_BUNDLES;
+         return this;
+      }
+
+      public Build withUSERS_LOGGED_ALL_TIME( java.math.BigDecimal USERS_LOGGED_ALL_TIME ) {
+         this.USERS_LOGGED_ALL_TIME = USERS_LOGGED_ALL_TIME;
+         return this;
+      }
+
+      public Build withUSERS_LOGGED_LAST_MONTH( java.math.BigDecimal USERS_LOGGED_LAST_MONTH ) {
+         this.USERS_LOGGED_LAST_MONTH = USERS_LOGGED_LAST_MONTH;
+         return this;
+      }
+
+      public Build withUSERS_CREATED_LAST_MONTH( java.math.BigDecimal USERS_CREATED_LAST_MONTH ) {
+         this.USERS_CREATED_LAST_MONTH = USERS_CREATED_LAST_MONTH;
+         return this;
+      }
+
+      public Build withTOTAL_ATTEMPTS( java.math.BigDecimal TOTAL_ATTEMPTS ) {
+         this.TOTAL_ATTEMPTS = TOTAL_ATTEMPTS;
+         return this;
+      }
+
+      public Build withTOTAL_TEST_ATTEMPTS( java.math.BigDecimal TOTAL_TEST_ATTEMPTS ) {
+         this.TOTAL_TEST_ATTEMPTS = TOTAL_TEST_ATTEMPTS;
+         return this;
+      }
+
+      public Build withTOTAL_SURVEY_ATTEMPTS( java.math.BigDecimal TOTAL_SURVEY_ATTEMPTS ) {
+         this.TOTAL_SURVEY_ATTEMPTS = TOTAL_SURVEY_ATTEMPTS;
+         return this;
+      }
+
+      public Build withMAX_CONCURRENT_USERS_EVER( java.math.BigDecimal MAX_CONCURRENT_USERS_EVER ) {
+         this.MAX_CONCURRENT_USERS_EVER = MAX_CONCURRENT_USERS_EVER;
+         return this;
+      }
+
+      public Build withMAX_CONCURRENT_USERS_LAST_MONT( java.math.BigDecimal MAX_CONCURRENT_USERS_LAST_MONT ) {
+         this.MAX_CONCURRENT_USERS_LAST_MONT = MAX_CONCURRENT_USERS_LAST_MONT;
+         return this;
+      }
+
+      public Build withFAILED_LOGINS_LAST_MONTH( java.math.BigDecimal FAILED_LOGINS_LAST_MONTH ) {
+         this.FAILED_LOGINS_LAST_MONTH = FAILED_LOGINS_LAST_MONTH;
+         return this;
+      }
+
+      public Build withFAILED_EMAILS( java.math.BigDecimal FAILED_EMAILS ) {
+         this.FAILED_EMAILS = FAILED_EMAILS;
+         return this;
+      }
+
+      public Build withUNFINISHED_ATTEMPTS( java.math.BigDecimal UNFINISHED_ATTEMPTS ) {
+         this.UNFINISHED_ATTEMPTS = UNFINISHED_ATTEMPTS;
+         return this;
+      }
+
+      public Build withUNFINISHED_DISCONNECTED_ATTEMP( java.math.BigDecimal UNFINISHED_DISCONNECTED_ATTEMP ) {
+         this.UNFINISHED_DISCONNECTED_ATTEMP = UNFINISHED_DISCONNECTED_ATTEMP;
+         return this;
+      }
+
+      public Build withUNFINISHED_IN_PROGRESS_ATTEMP( java.math.BigDecimal UNFINISHED_IN_PROGRESS_ATTEMP ) {
+         this.UNFINISHED_IN_PROGRESS_ATTEMP = UNFINISHED_IN_PROGRESS_ATTEMP;
+         return this;
+      }
+
+      public Build withUNFINISHED_AVB_CONTINUE_ATTEMP( java.math.BigDecimal UNFINISHED_AVB_CONTINUE_ATTEMP ) {
+         this.UNFINISHED_AVB_CONTINUE_ATTEMP = UNFINISHED_AVB_CONTINUE_ATTEMP;
+         return this;
+      }
+
+      public Build withUNFINISHED_SUSPENDED_ATTEMP( java.math.BigDecimal UNFINISHED_SUSPENDED_ATTEMP ) {
+         this.UNFINISHED_SUSPENDED_ATTEMP = UNFINISHED_SUSPENDED_ATTEMP;
+         return this;
+      }
+
+      public Build withHAS_STATE_DEFINED( java.math.BigDecimal HAS_STATE_DEFINED ) {
+         this.HAS_STATE_DEFINED = HAS_STATE_DEFINED;
+         return this;
+      }
+
+      public Build withHAS_COUNTRY_DEFINED( java.math.BigDecimal HAS_COUNTRY_DEFINED ) {
+         this.HAS_COUNTRY_DEFINED = HAS_COUNTRY_DEFINED;
+         return this;
+      }
+
+      public Build withACCOUNTING_QUESTIONS( java.math.BigDecimal ACCOUNTING_QUESTIONS ) {
+         this.ACCOUNTING_QUESTIONS = ACCOUNTING_QUESTIONS;
+         return this;
+      }
+
+      public Build withTOTAL_QUESTIONS( java.math.BigDecimal TOTAL_QUESTIONS ) {
+         this.TOTAL_QUESTIONS = TOTAL_QUESTIONS;
+         return this;
+      }
+
+   	  public StatisticsLogTo build() {
+   	     StatisticsLogTo to = new StatisticsLogTo();
+   		 to.setID(this.ID);
+         to.setRECORDED_AT(this.RECORDED_AT);
+         to.setUSER_CNT(this.USER_CNT);
+         to.setACTIVE_USERS(this.ACTIVE_USERS);
+         to.setLOCKED_USERS(this.LOCKED_USERS);
+         to.setSUSPENDED_USERS(this.SUSPENDED_USERS);
+         to.setPENDING_USERS(this.PENDING_USERS);
+         to.setINACTIVE_USERS(this.INACTIVE_USERS);
+         to.setUSER_GROUP_CNT(this.USER_GROUP_CNT);
+         to.setROOT_USER_GROUP_CNT(this.ROOT_USER_GROUP_CNT);
+         to.setAVG_USERS_PER_GROUP(this.AVG_USERS_PER_GROUP);
+         to.setADMIN_CNT(this.ADMIN_CNT);
+         to.setPROCTOR_CNT(this.PROCTOR_CNT);
+         to.setINSTRUCTOR_CNT(this.INSTRUCTOR_CNT);
+         to.setSTUDENT_CNT(this.STUDENT_CNT);
+         to.setCUSTOM_ROLE_CNT(this.CUSTOM_ROLE_CNT);
+         to.setALL_POOLS(this.ALL_POOLS);
+         to.setALL_ROOT_POOLS(this.ALL_ROOT_POOLS);
+         to.setALL_POOLS_WITH_QUESTIONS(this.ALL_POOLS_WITH_QUESTIONS);
+         to.setAVG_QUESTIONS_IN_POOLS(this.AVG_QUESTIONS_IN_POOLS);
+         to.setSINGLE_CHOICE_QUESTIONS(this.SINGLE_CHOICE_QUESTIONS);
+         to.setMULTIPLE_CHOICE_QUESTIONS(this.MULTIPLE_CHOICE_QUESTIONS);
+         to.setESSAY_QUESTIONS(this.ESSAY_QUESTIONS);
+         to.setTRUE_FALSE_QUESTIONS(this.TRUE_FALSE_QUESTIONS);
+         to.setMATRIX_QUESTIONS(this.MATRIX_QUESTIONS);
+         to.setMATCHING_QUESTIONS(this.MATCHING_QUESTIONS);
+         to.setFILL_IN_BLANKS_QUESTIONS(this.FILL_IN_BLANKS_QUESTIONS);
+         to.setORDERING_QUESTIONS(this.ORDERING_QUESTIONS);
+         to.setHOTSPOT_QUESTIONS(this.HOTSPOT_QUESTIONS);
+         to.setOPEN_ENDED_QUESTIONS(this.OPEN_ENDED_QUESTIONS);
+         to.setDEF_CORRECTINCORRECT_SCORING(this.DEF_CORRECTINCORRECT_SCORING);
+         to.setBY_ANSWER_WEIGHT_SCORING(this.BY_ANSWER_WEIGHT_SCORING);
+         to.setMANUAL_SCORING(this.MANUAL_SCORING);
+         to.setBY_COMBINATION_SCORING(this.BY_COMBINATION_SCORING);
+         to.setBY_RULES_SCORING(this.BY_RULES_SCORING);
+         to.setCUSTOM_QUESTION_PROPERTIES(this.CUSTOM_QUESTION_PROPERTIES);
+         to.setDEFAULT_TESTS(this.DEFAULT_TESTS);
+         to.setONLY_TESTS_WITH_SECTIONS(this.ONLY_TESTS_WITH_SECTIONS);
+         to.setALL_MANUAL_TESTS(this.ALL_MANUAL_TESTS);
+         to.setALL_GENERATED_TESTS(this.ALL_GENERATED_TESTS);
+         to.setGENERATED_BY_CATEGORY_TESTS(this.GENERATED_BY_CATEGORY_TESTS);
+         to.setAVG_TEST_VERSIONS_ROOT_TESTS(this.AVG_TEST_VERSIONS_ROOT_TESTS);
+         to.setMAX_TEST_VERSIONS_ROOT_TESTS(this.MAX_TEST_VERSIONS_ROOT_TESTS);
+         to.setAVG_TEST_VERSIONS_ROOT_SEC(this.AVG_TEST_VERSIONS_ROOT_SEC);
+         to.setMAX_TEST_VERSIONS_ROOT_SEC(this.MAX_TEST_VERSIONS_ROOT_SEC);
+         to.setTEST_TEMPLATES(this.TEST_TEMPLATES);
+         to.setLIMITED_TIME_TESTS(this.LIMITED_TIME_TESTS);
+         to.setUNLIMITED_TIME_TESTS(this.UNLIMITED_TIME_TESTS);
+         to.setDURATION_PER_QUESTION_TESTS(this.DURATION_PER_QUESTION_TESTS);
+         to.setDURATION_PER_QUIZ_TESTS(this.DURATION_PER_QUIZ_TESTS);
+         to.setDEADLINE_PER_QUIZ_TESTS(this.DEADLINE_PER_QUIZ_TESTS);
+         to.setTEST_ONE_PAGE(this.TEST_ONE_PAGE);
+         to.setTEST_PAGE_PER_QUESTION(this.TEST_PAGE_PER_QUESTION);
+         to.setAFTER_TEST_REPORT(this.AFTER_TEST_REPORT);
+         to.setAFTER_GRADING_REPORT(this.AFTER_GRADING_REPORT);
+         to.setAFTER_VERIFICATION_REPORT(this.AFTER_VERIFICATION_REPORT);
+         to.setON_MANAGER_APPROVAL_REPORT(this.ON_MANAGER_APPROVAL_REPORT);
+         to.setREALTIME_GRADING(this.REALTIME_GRADING);
+         to.setSCORE_DETAILS(this.SCORE_DETAILS);
+         to.setONLY_SCORE(this.ONLY_SCORE);
+         to.setTEST_CERTIFICATES(this.TEST_CERTIFICATES);
+         to.setSURVEYS(this.SURVEYS);
+         to.setSELF_ENROLLMENT_GLOBAL(this.SELF_ENROLLMENT_GLOBAL);
+         to.setSESSION_USER_GROUPS(this.SESSION_USER_GROUPS);
+         to.setSESSION_TRAINING(this.SESSION_TRAINING);
+         to.setPROCTOREDU(this.PROCTOREDU);
+         to.setPROCTORIO(this.PROCTORIO);
+         to.setFAVORITE_REPORTS(this.FAVORITE_REPORTS);
+         to.setSCHEDULED_REPORTS(this.SCHEDULED_REPORTS);
+         to.setTRAINING_COURSES(this.TRAINING_COURSES);
+         to.setPINNED_COURSES(this.PINNED_COURSES);
+         to.setAVG_STEPS_PER_TRAINING(this.AVG_STEPS_PER_TRAINING);
+         to.setAVG_TESTS_PER_TRAINING(this.AVG_TESTS_PER_TRAINING);
+         to.setENABLED_EMAIL_NOTIFICATIONS(this.ENABLED_EMAIL_NOTIFICATIONS);
+         to.setDISABLED_EMAIL_NOTIFICATIONS(this.DISABLED_EMAIL_NOTIFICATIONS);
+         to.setENABLED_APP_NOTIFICATIONS(this.ENABLED_APP_NOTIFICATIONS);
+         to.setDISABLED_APP_NOTIFICATIONS(this.DISABLED_APP_NOTIFICATIONS);
+         to.setLANGUAGE_BUNDLES(this.LANGUAGE_BUNDLES);
+         to.setUSERS_LOGGED_ALL_TIME(this.USERS_LOGGED_ALL_TIME);
+         to.setUSERS_LOGGED_LAST_MONTH(this.USERS_LOGGED_LAST_MONTH);
+         to.setUSERS_CREATED_LAST_MONTH(this.USERS_CREATED_LAST_MONTH);
+         to.setTOTAL_ATTEMPTS(this.TOTAL_ATTEMPTS);
+         to.setTOTAL_TEST_ATTEMPTS(this.TOTAL_TEST_ATTEMPTS);
+         to.setTOTAL_SURVEY_ATTEMPTS(this.TOTAL_SURVEY_ATTEMPTS);
+         to.setMAX_CONCURRENT_USERS_EVER(this.MAX_CONCURRENT_USERS_EVER);
+         to.setMAX_CONCURRENT_USERS_LAST_MONT(this.MAX_CONCURRENT_USERS_LAST_MONT);
+         to.setFAILED_LOGINS_LAST_MONTH(this.FAILED_LOGINS_LAST_MONTH);
+         to.setFAILED_EMAILS(this.FAILED_EMAILS);
+         to.setUNFINISHED_ATTEMPTS(this.UNFINISHED_ATTEMPTS);
+         to.setUNFINISHED_DISCONNECTED_ATTEMP(this.UNFINISHED_DISCONNECTED_ATTEMP);
+         to.setUNFINISHED_IN_PROGRESS_ATTEMP(this.UNFINISHED_IN_PROGRESS_ATTEMP);
+         to.setUNFINISHED_AVB_CONTINUE_ATTEMP(this.UNFINISHED_AVB_CONTINUE_ATTEMP);
+         to.setUNFINISHED_SUSPENDED_ATTEMP(this.UNFINISHED_SUSPENDED_ATTEMP);
+         to.setHAS_STATE_DEFINED(this.HAS_STATE_DEFINED);
+         to.setHAS_COUNTRY_DEFINED(this.HAS_COUNTRY_DEFINED);
+         to.setACCOUNTING_QUESTIONS(this.ACCOUNTING_QUESTIONS);
+         to.setTOTAL_QUESTIONS(this.TOTAL_QUESTIONS);
+   		 return to;
+   	  }			
+   }
+}

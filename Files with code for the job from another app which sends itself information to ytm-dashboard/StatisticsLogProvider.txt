@@ -1,0 +1,20 @@
+package com.mallocinc.ytm.model.providers;
+
+import org.apache.log4j.Logger;
+
+import com.mallocinc.querybuilder.GdaoStatement;
+import com.mallocinc.ytm.database.generated.samples.ytm.DataStatisticsLogSample;
+import com.mallocinc.ytm.database.generated.to.StatisticsLogTo;
+import com.mallocinc.ytm.model.providers.api.Provider;
+import com.mallocinc.ytm.model.util.MessageException;
+
+public class StatisticsLogProvider extends Provider {
+
+   static final Logger logger = Logger.getLogger(StatisticsLogProvider.class.getName());
+
+   public StatisticsLogTo getById(String id) throws MessageException {
+      GdaoStatement st = new GdaoStatement().equal(StatisticsLogTo.Columns.ID.name(), id);
+      return selectSingleUsingGdaoStatement(st, DataStatisticsLogSample.class, StatisticsLogTo::new);
+   }
+
+}

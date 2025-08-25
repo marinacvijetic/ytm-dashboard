@@ -121,8 +121,8 @@ export const ClientTable: React.FC = () => {
   const rowClassName = (row: Client) => {
     const outdated = isOutdated(row);
     return {
-      "bg-red-100": !row.last_ping_successful,
-      "bg-yellow-100": row.last_ping_successful && outdated,
+      "client-down": !row.last_ping_successful,
+      "client-outdated": row.last_ping_successful && outdated,
     };
   };
 
@@ -189,9 +189,9 @@ export const ClientTable: React.FC = () => {
         <div className="flex items-center gap-4">
           <Button
             className="btn-text"
-            icon="pi pi-refresh"
             onClick={handleRefesh}
             label="Refresh"
+            text-raised
           />
         </div>
       </div>
@@ -218,14 +218,30 @@ export const ClientTable: React.FC = () => {
           globalFilter={filter}
           rowClassName={rowClassName}
         >
-          <Column field="app_title" header="Client" className="column" frozen />
+          <Column 
+          field="app_title" 
+          header="Client" 
+          className="column" 
+          frozen 
+          body={(row) => (
+            <a
+            href={row.url}
+            target="_blank"
+            rel="noreferrer"
+            title={row.url}
+            className="url"
+            >
+              {row.app_title}
+            </a>
+          )}
+          />
           <Column field="app_id" header="APP ID" className="column" />
           <Column
             field="version"
             header="Version"
             className="column text-center"
           />
-          <Column
+          {/* <Column
             field="url"
             header="URL"
             className="column"
@@ -239,7 +255,7 @@ export const ClientTable: React.FC = () => {
                 {row.url}
               </a>
             )}
-          />
+          /> */}
           <Column
             field="api_url"
             header="API URL"

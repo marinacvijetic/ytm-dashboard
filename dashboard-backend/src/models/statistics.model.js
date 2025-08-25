@@ -157,10 +157,16 @@ exports.findDistinctAppIds = async () => {
   try {
     const apps = await prisma.statistics_log.findMany({
       distinct: ['app_id'],
-      select: {app_id: true},
+      select: {
+        app_id: true,
+        client_application: { select: { app_title: true } },
+      },
     });
     
-    return apps.map((a) => a.app_id);
+    return apps.map((a) => ({
+      app_id: a.app_id,
+      app_title: a.client_application?.app_title || null,
+    }));
   } catch (err) {
     console.error("[statistics.model] findDistinctAppIds error:", err);
     throw err;
