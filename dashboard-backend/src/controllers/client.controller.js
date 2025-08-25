@@ -155,7 +155,7 @@ exports.syncAppInfo = async (req, res) => {
         timeout: 10_000,
       });
 
-      const updatedClient = await clientModel.updateClient(
+      await clientModel.updateClient(
         client.app_id,
         appInfo.title,
         appInfo.version,
