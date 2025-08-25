@@ -4,6 +4,7 @@ import { Column } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
+import { useNavigate } from "react-router-dom";
 
 type Client = {
   client_id: number;
@@ -38,6 +39,7 @@ export const ClientTable: React.FC = () => {
   const [totalCount, setTotalCount] = useState<number>(0);
   const [filter, setFilter] = useState<string>("");
   const toast = useRef<Toast>(null);
+  const navigate = useNavigate();
 
   const OUTDATED_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
   const GRACE_MS = 60 * 60 * 1000; // 60 minutes
@@ -88,7 +90,7 @@ export const ClientTable: React.FC = () => {
   );
 
   const isOutdated = (row: Client) => {
-    if(!row.last_update) return false;
+    if (!row.last_update) return false;
     const diff = Date.now() - new Date(row.last_update).getTime();
     return diff > OUTDATED_THRESHOLD_MS + GRACE_MS;
   };
@@ -109,8 +111,12 @@ export const ClientTable: React.FC = () => {
     } else if (row.is_active) {
       text = "Active";
       color = "text-green-600";
-    } 
-    return <span className={color} title={tooltip}>{text}</span>;
+    }
+    return (
+      <span className={color} title={tooltip}>
+        {text}
+      </span>
+    );
   };
 
   const rowClassName = (row: Client) => {
@@ -120,7 +126,6 @@ export const ClientTable: React.FC = () => {
       "bg-yellow-100": row.last_ping_successful && outdated,
     };
   };
-
 
   const handleRefesh = async () => {
     fetchData(page);
@@ -135,14 +140,18 @@ export const ClientTable: React.FC = () => {
       const data = await resp.json();
 
       if (!resp.ok || data.status === "error") {
-        if(data?.client) {
-          setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data.client } : c)));
+        if (data?.client) {
+          setClients((prev) =>
+            prev.map((c) => (c.app_id === appId ? { ...c, ...data.client } : c))
+          );
         }
         throw new Error(data.reason || data.error || `HTTP ${resp.status}`);
       }
 
-      setClients((prev) => prev.map((c) => (c.app_id === appId ? {...c, ...data} : c)));
-        toast.current?.show({
+      setClients((prev) =>
+        prev.map((c) => (c.app_id === appId ? { ...c, ...data } : c))
+      );
+      toast.current?.show({
         severity: "success",
         summary: "Sync Successful",
         detail: `${data.app_title || appId} synced successfully.`,
@@ -151,7 +160,7 @@ export const ClientTable: React.FC = () => {
     } catch (err: unknown) {
       console.error(`Sync failed for ${appId}`, err);
       let message = err instanceof Error ? err.message : String(err);
-      if(/ECONNREFUSED/i.test(message)){
+      if (/ECONNREFUSED/i.test(message)) {
         message = "Application is unreachable.";
       }
       toast.current?.show({
@@ -160,7 +169,7 @@ export const ClientTable: React.FC = () => {
         detail: message,
         life: 5000,
       });
-    } 
+    }
   };
 
   if (loading) {
@@ -265,26 +274,36 @@ export const ClientTable: React.FC = () => {
             body={(row) => yesNoBadge(row.superset_apache)}
             className="column text-center"
           />
-          <Column field="status" header="Status" className="column text-center" body={statusBody} />
+          <Column
+            field="status"
+            header="Status"
+            className="column text-center"
+            body={statusBody}
+          />
           <Column field="billing" header="Billing" className="column" />
           <Column
             field="last_update"
             header="Last Updated"
             className="column"
             body={(row) => (
-              <div className="flex items-center gap-2">
-                <span>
-                  {row.last_update
-                    ? new Date(row.last_update).toLocaleDateString(undefined, {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })
-                    : ""}
-                </span>
+              <span>
+                {row.last_update
+                  ? new Date(row.last_update).toLocaleString(undefined, {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : ""}
+              </span>
+            )}
+          />
+          <Column
+            header="Actions"
+            className="column text-center"
+            body={(row) => (
+              <div className="flex items-center justify-center gap-2">
                 <button
                   onClick={() => handleSync(row.app_id)}
                   className="update-button"
@@ -293,6 +312,15 @@ export const ClientTable: React.FC = () => {
                 >
                   <i className="pi pi-refresh" />
                   <span>Update</span>
+                </button>
+                <button
+                  onClick={() => navigate(`/statistics?appId=${row.app_id}`)}
+                  className="stats-button"
+                  title="Statistic"
+                  aria-label="Statistic"
+                >
+                  <i className="pi pi-chart-bar" />
+                  <span>Statistic</span>
                 </button>
               </div>
             )}

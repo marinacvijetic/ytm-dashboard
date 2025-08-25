@@ -125,20 +125,24 @@ exports.createStatisticsLog = async (data) => {
   }
 };
 
-exports.countLogs = async () => {
+exports.countLogs = async (appId) => {
   try {
-    return await prisma.statistics_log.count();
+    return await prisma.statistics_log.count({
+      where: appId ? { app_id: appId } : undefined,
+    });
   } catch (err) {
     console.error("[statistics.model] countLogs error:", err);
     throw err;
   }
 };
 
-exports.findLogsPage = async (skip, take) => {
+exports.findLogsPage = async (skip, take, appId) => {
   try {
     const logs = await prisma.statistics_log.findMany({
+      where: appId ? { app_id: appId } : undefined,
       skip: skip,
       take: take,
+      orderBy: { recorded_at: 'desc' },
     });
 
     // Map into the exact shape your front‐end expects:

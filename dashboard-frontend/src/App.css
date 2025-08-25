@@ -65,7 +65,11 @@
   }
 
   .update-button {
-    @apply ml-4 flex items-center gap-2 px-3 py-1 rounded-full bg-primary-blue text-white text-sm hover:bg-blue-700 transition-colors;
+    @apply flex items-center gap-2 px-3 py-1 rounded-full bg-primary-blue text-white text-sm hover:bg-blue-600 transition-colors;
+  }
+
+  .stats-button {
+    @apply flex items-center gap-2 px-3 py-1 rounded-full bg-primary-blue text-white text-sm hover:bg-blue-600 transition-colors;
   }
 
   /* Paginator container */

@@ -30,8 +30,8 @@ exports.getAllLogs = async (req, res) => {
 
   try {
     const [data, totalCount] = await Promise.all([
-      statisticsModel.findLogsPage(skip, safeLimit),
-      statisticsModel.countLogs(),
+      statisticsModel.findLogsPage(skip, safeLimit, appId), 
+      statisticsModel.countLogs(appId),
     ]);
 
     const totalPages = Math.ceil(totalCount / safeLimit);

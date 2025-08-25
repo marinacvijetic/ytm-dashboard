@@ -3,6 +3,7 @@ import { DataTable, type DataTablePageEvent } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
+import { useSearchParams } from "react-router-dom";
 
 export type StatisticsLog = {
   id: string;
@@ -125,16 +126,18 @@ export const StatisticsInfo: React.FC = () => {
   const [limit] = useState<number>(6);
   const [, setTotalPages] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [searchParams] = useSearchParams();
+  const appId = searchParams.get("appId") ?? undefined;
 
   useEffect(() => {
     fetchData(page);
-  }, [page]);
+  }, [page, appId]);
 
   const fetchData = async (pageToLoad: number=1) => {
     setLoading(true);
     fetch(`${
         import.meta.env.VITE_BASE_URL
-      }/statistics?page=${pageToLoad}&limit=${limit}`
+      }/statistics?page=${pageToLoad}&limit=${limit}${appId ? `&appId=${appId}` : ""}`
     ).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
