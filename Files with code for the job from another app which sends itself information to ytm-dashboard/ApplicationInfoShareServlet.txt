@@ -1,0 +1,45 @@
+package com.mallocinc.ytm.webview.api.system;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mallocinc.ytm.model.usecase.appInfo.GetApplicationInfoReport;
+import com.mallocinc.ytm.model.usecase.jobs.pojo.ApplicationInfoReport;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.log4j.Log4j;
+
+@Log4j
+@WebServlet("/app/info")
+public class ApplicationInfoShareServlet extends HttpServlet {
+
+   private static final long                  serialVersionUID = 1L;
+
+   private final GetApplicationInfoReport reportBuilder    = new GetApplicationInfoReport();
+
+   @Override
+   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+      resp.setContentType("application/json");
+      resp.setCharacterEncoding("UTF-8");
+
+      try (PrintWriter out = resp.getWriter()) {
+         ApplicationInfoReport report = reportBuilder.buildReport();
+
+         ObjectMapper mapper = new ObjectMapper();
+         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+         String jsonPayload = mapper.writeValueAsString(report);
+
+         log.info("Returning JSON payload on-demand: " + jsonPayload);
+         out.write(jsonPayload);
+      } catch (Exception e) {
+         log.error("Error generating on-demand ApplicationInfoReport", e);
+         resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to generate application info report");
+      }
+   }
+}
