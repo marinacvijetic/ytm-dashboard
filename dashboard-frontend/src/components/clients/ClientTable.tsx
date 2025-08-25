@@ -197,6 +197,7 @@ export const ClientTable: React.FC = () => {
           scrollable
           scrollHeight="400px"
           paginatorClassName="paginator"
+          showGridlines
           paginator
           rows={limit}
           first={(page - 1) * limit}

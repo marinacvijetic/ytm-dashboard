@@ -6,6 +6,7 @@ import { Button } from "primereact/button";
 
 export type StatisticsLog = {
   id: string;
+  app_id: string;
   recorded_at: Date;
   user_cnt?: number;
   active_users?: number;
@@ -181,6 +182,7 @@ const filteredStats = filter
           loading={loading}
           className="client-table"
           paginator
+          showGridlines
           paginatorClassName="paginator"
           rows={limit}
           first={(page - 1) * limit}
@@ -191,6 +193,7 @@ const filteredStats = filter
           globalFilter={filter}
           emptyMessage="No available statistic logs"
         >
+          <Column field="app_id" header="App ID" className="column text-right" frozen />
           <Column
             field="recorded_at"
             header="Recorded At"

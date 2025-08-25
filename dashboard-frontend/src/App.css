@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@layer tailwind-base, tailwind-utilities, primereact;
+@layer tailwindcss, tailwind-base, tailwind-utilities, primereact ;
 
 @layer base {
   h2 {

@@ -3,10 +3,12 @@ import { createRoot } from 'react-dom/client'
 import { PrimeReactProvider } from "primereact/api";
 import App from './App.tsx'
 
-// 2) PrimeReact styles
+// 1) PrimeReact styles
 import 'primeicons/primeicons.css'
+import 'primereact/resources/themes/lara-light-blue/theme.css';
+import 'primereact/resources/primereact.min.css';
 
-// 1) Tailwind
+// 2) Tailwind
 import './App.css'
 
 createRoot(document.getElementById('root')!).render(
