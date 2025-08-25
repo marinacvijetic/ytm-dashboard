@@ -1,20 +1,22 @@
-
-const statisticsModel = require('../models/statistics.model');
+const statisticsModel = require("../models/statistics.model");
+const { Prisma } = require("@prisma/client");
 
 exports.receiveStatisticsInfo = async (req, res) => {
   try {
     const statsPayload = req.body;
 
-    if(!statsPayload.id) return res.status(400).json({ error: 'Missing id' });
-    if(!statsPayload.recordedAt) return res.status(400).json({ error: 'Missing recordedAt' });
-    if(!statsPayload.appId) return res.status(400).json({ error: 'Missing appId' });
+    if (!statsPayload.id) return res.status(400).json({ error: "Missing id" });
+    if (!statsPayload.recordedAt)
+      return res.status(400).json({ error: "Missing recordedAt" });
+    if (!statsPayload.appId)
+      return res.status(400).json({ error: "Missing appId" });
 
     const created = await statisticsModel.createStatisticsLog(statsPayload);
     return res.status(201).json(created);
   } catch (err) {
     console.error("Failed to create statistics_log:", err);
     return res
-      .status(err instanceof prisma.Prisma.PrismaClientValidationError ? 400 : 500)
+      .status(err instanceof Prisma.PrismaClientValidationError ? 400 : 500)
       .json({ error: err.message });
   }
 };
@@ -23,6 +25,7 @@ exports.receiveStatisticsInfo = async (req, res) => {
 exports.getAllLogs = async (req, res) => {
   const page = parseInt(req.query.page || "1", 10);
   const limit = parseInt(req.query.limit || "6", 10);
+  const appId = req.query.appId;
 
   const safePage = isNaN(page) || page < 1 ? 1 : page;
   const safeLimit = isNaN(limit) || limit < 1 ? 6 : limit;
@@ -30,7 +33,7 @@ exports.getAllLogs = async (req, res) => {
 
   try {
     const [data, totalCount] = await Promise.all([
-      statisticsModel.findLogsPage(skip, safeLimit, appId), 
+      statisticsModel.findLogsPage(skip, safeLimit, appId),
       statisticsModel.countLogs(appId),
     ]);
 
@@ -38,13 +41,13 @@ exports.getAllLogs = async (req, res) => {
 
     res.json({
       data,
-    page: safePage,
+      page: safePage,
       totalPages,
       totalCount,
       pageSize: safeLimit,
     });
   } catch (err) {
-    console.error("Error in getStatisticsLogs:", err.message);
+    console.error("Error in getAllLogs:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -55,20 +58,20 @@ exports.getAppIds = async (_req, res) => {
     res.json(appIds);
   } catch (err) {
     console.error("Error in getAppIds:", err);
-    res.status(500).json({ error: "Internal Server Error"});
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 exports.getLatestLogByAppId = async (req, res) => {
-  try{
+  try {
     const appId = req.params.appId;
     const log = await statisticsModel.findLatestLogByAppId(appId);
-    if(!log) {
-      return res.status(404).json({ error: "Not Found"});
+    if (!log) {
+      return res.status(404).json({ error: "Not Found" });
     }
     res.json(log);
-  } catch(err) {
+  } catch (err) {
     console.error("Error in getLatestLogByAppId:", err);
-    res.status(500).json({ error: "Internal Server Error"});
+    res.status(500).json({ error: "Internal Server Error" });
   }
-}
+};

@@ -161,7 +161,6 @@ exports.findDistinctAppIds = async () => {
     });
     
     return apps.map((a) => a.app_id);
-    return appIds.map(entry => entry.app_id);
   } catch (err) {
     console.error("[statistics.model] findDistinctAppIds error:", err);
     throw err;

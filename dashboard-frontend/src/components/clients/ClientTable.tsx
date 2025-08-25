@@ -15,7 +15,6 @@ type Client = {
   api_url: string;
   created_at: string;
   last_update: string;
-  last_ping_at: string | null;
   last_ping_successful: boolean;
   is_active: boolean;
   proctor_edu: boolean;
@@ -311,7 +310,6 @@ export const ClientTable: React.FC = () => {
                   aria-label="Update"
                 >
                   <i className="pi pi-refresh" />
-                  <span>Update</span>
                 </button>
                 <button
                   onClick={() => navigate(`/statistics?appId=${row.app_id}`)}
@@ -320,7 +318,6 @@ export const ClientTable: React.FC = () => {
                   aria-label="Statistic"
                 >
                   <i className="pi pi-chart-bar" />
-                  <span>Statistic</span>
                 </button>
               </div>
             )}

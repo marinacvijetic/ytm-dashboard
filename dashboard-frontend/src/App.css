@@ -61,7 +61,7 @@
   }
 
   .card-dashboard {
-    @apply flex flex-col bg-white border border-gray-300 rounded-xl shadow-lg w-70 h-46 p-6;
+    @apply bg-white border border-gray-300 rounded-xl shadow-lg w-70 h-50 ;
   }
 
   .update-button {

@@ -179,6 +179,7 @@ const filteredStats = filter
       </div>
 
       <div className="overflow-x-auto">
+        <h2 className="p-0.5">Statistic records for {appId}</h2>
         <DataTable
           value={filteredStats}
           lazy
@@ -196,7 +197,6 @@ const filteredStats = filter
           globalFilter={filter}
           emptyMessage="No available statistic logs"
         >
-          <Column field="app_id" header="App ID" className="column text-right" frozen />
           <Column
             field="recorded_at"
             header="Recorded At"
