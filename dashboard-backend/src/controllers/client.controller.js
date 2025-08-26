@@ -3,6 +3,7 @@ const prisma = new PrismaClient();
 const axios = require("axios");
 const clientModel = require("../models/client.model");
 const eventBus = require("../utils/eventBus");
+const { classifyAxiosError } = require("../utils/httpError");
 
 exports.getAllClients = async (req, res) => {
   try {
@@ -45,7 +46,7 @@ exports.getPaginatedClients = async (req, res) => {
       pageSize: safeLimit,
     });
   } catch (err) {
-    console.error("Error in getAllClients:", err.message);
+    console.error("Error in getPaginatedClients:", err.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -153,7 +154,21 @@ exports.syncAppInfo = async (req, res) => {
     try {
       const { data: appInfo } = await axios.get(servletUrl, {
         timeout: 10_000,
+        headers: { "Accept": "application/json", "User-Agent": "ytm-dashboard/1.0" }
       });
+
+            if (!appInfo || typeof appInfo !== "object" || !appInfo.title) {
+        return res.status(502).json({
+          status: "error",
+          error: {
+            type: "InvalidResponse",
+            message: "Invalid response payload from target application",
+            code: "INVALID_RESPONSE",
+            request: { method: "GET", url: servletUrl, appId: client.app_id, timestamp: new Date().toISOString() },
+            response: { status: 200, body: JSON.stringify(appInfo).slice(0, 300) }
+          }
+        });
+      }
 
       await clientModel.updateClient(
         client.app_id,
@@ -191,15 +206,18 @@ exports.syncAppInfo = async (req, res) => {
       console.error(`Failed to sync app info for ${client.app_id}:`, e.message);
       await clientModel.updatePingStatus(client.app_id, false);
       const failedClient = await clientModel.findClientByAppId(client.app_id);
-      const reason = e.code === "ECONNREFUSED" ? "Application is not active" : e.message;
-      return res.status(503).json({
-        appId: client.app_id,
-        status: "error",
-        client: failedClient,
-      });
+      const classified = classifyAxiosError(e, { method: 'GET', url: servletUrl, appId: client.app_id });
+      classified.client = failedClient;
+      
+      const statusCode = (/^\d+$/.test(classified?.error?.code || '') ? Number(classified.error.code) : 503);
+      return res.status(statusCode).json(classified);
+
     }
   } catch (e) {
     console.error("Application information sync failed", e);
-    return res.status(500).json({ error: "Sync failed", details: e.message });
+    return res.status(500).json({ 
+      status: "error", 
+      error: {type: "ApplicationError", message: "Sync failed", code: "INTERNAL_ERROR", details: e.message} 
+    });
   }
 };

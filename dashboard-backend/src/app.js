@@ -14,5 +14,9 @@ app.get('/', (req, res) => {
   res.send('Homepage is working!');
 });
 
+const errorHandler = require('./middlewares/errorHandler');
+
+app.use(errorHandler);
+
 module.exports = app;
 

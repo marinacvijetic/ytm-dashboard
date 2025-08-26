@@ -5,6 +5,7 @@ import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
 import { useNavigate } from "react-router-dom";
+import { fetchJson, HttpError } from "../../lib/fetchJson";
 
 type Client = {
   client_id: number;
@@ -131,45 +132,76 @@ export const ClientTable: React.FC = () => {
   };
 
   const handleSync = async (appId: string) => {
-    try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_BASE_URL}/app-info/sync/${appId}`
-      );
+  try {
+    const data = await fetchJson<any>(`${import.meta.env.VITE_BASE_URL}/app-info/sync/${appId}`, { method: "GET", timeoutMs: 10000 });
 
-      const data = await resp.json();
+    // success -> update table row
+    setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data } : c)));
 
-      if (!resp.ok || data.status === "error") {
-        if (data?.client) {
-          setClients((prev) =>
-            prev.map((c) => (c.app_id === appId ? { ...c, ...data.client } : c))
-          );
-        }
-        throw new Error(data.reason || data.error || `HTTP ${resp.status}`);
-      }
-
-      setClients((prev) =>
-        prev.map((c) => (c.app_id === appId ? { ...c, ...data } : c))
-      );
-      toast.current?.show({
-        severity: "success",
-        summary: "Sync Successful",
-        detail: `${data.app_title || appId} synced successfully.`,
-        life: 3000,
-      });
-    } catch (err: unknown) {
-      console.error(`Sync failed for ${appId}`, err);
-      let message = err instanceof Error ? err.message : String(err);
-      if (/ECONNREFUSED/i.test(message)) {
-        message = "Application is unreachable.";
-      }
-      toast.current?.show({
-        severity: "error",
-        summary: "Sync Failed.",
-        detail: message,
-        life: 5000,
-      });
+    toast.current?.show({
+      severity: "success",
+      summary: "Sync Successful",
+      detail: `${data.app_title || appId} synced successfully.`,
+      life: 3000,
+    });
+  } catch (err: unknown) {
+    console.error(`Sync failed for ${appId}`, err);
+    let message = "Sync failed";
+    if (err instanceof HttpError) {
+      message = err.message;
+    } else if (err instanceof Error) {
+      message = err.message;
     }
-  };
+    toast.current?.show({
+      severity: "error",
+      summary: "Sync failed",
+      detail: message,
+      life: 6000,
+    });
+  } 
+};
+
+  // const handleSync = async (appId: string) => {
+  //   try {
+
+  //     const resp = await fetch(
+  //       `${import.meta.env.VITE_BASE_URL}/app-info/sync/${appId}`
+  //     );
+
+  //     const data = await resp.json();
+
+  //     if (!resp.ok || data.status === "error") {
+  //       if (data?.client) {
+  //         setClients((prev) =>
+  //           prev.map((c) => (c.app_id === appId ? { ...c, ...data.client } : c))
+  //         );
+  //       }
+  //       throw new Error(data.reason || data.error || `HTTP ${resp.status}`);
+  //     }
+
+  //     setClients((prev) =>
+  //       prev.map((c) => (c.app_id === appId ? { ...c, ...data } : c))
+  //     );
+  //     toast.current?.show({
+  //       severity: "success",
+  //       summary: "Sync Successful",
+  //       detail: `${data.app_title || appId} synced successfully.`,
+  //       life: 3000,
+  //     });
+  //   } catch (err: unknown) {
+  //     console.error(`Sync failed for ${appId}`, err);
+  //     let message = err instanceof Error ? err.message : String(err);
+  //     if (/ECONNREFUSED/i.test(message)) {
+  //       message = "Application is unreachable.";
+  //     }
+  //     toast.current?.show({
+  //       severity: "error",
+  //       summary: "Sync Failed.",
+  //       detail: message,
+  //       life: 5000,
+  //     });
+  //   }
+  // };
 
   if (loading) {
     return <p className="text-white p-4">Loading…</p>;
