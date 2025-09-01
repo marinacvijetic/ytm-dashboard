@@ -1,20 +1,74 @@
 package com.mallocinc.ytm.model.providers;
 
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.SQLException;
+
 import org.apache.log4j.Logger;
 
+import com.mallocinc.codegenerator.exceptions.GDAOException;
 import com.mallocinc.querybuilder.GdaoStatement;
 import com.mallocinc.ytm.database.generated.samples.ytm.DataStatisticsLogSample;
 import com.mallocinc.ytm.database.generated.to.StatisticsLogTo;
 import com.mallocinc.ytm.model.providers.api.Provider;
+import com.mallocinc.ytm.model.util.Connect;
 import com.mallocinc.ytm.model.util.MessageException;
 
 public class StatisticsLogProvider extends Provider {
 
    static final Logger logger = Logger.getLogger(StatisticsLogProvider.class.getName());
 
+   public StatisticsLogTo createAndFetchCurrent() throws MessageException {
+      Connection conn = null;
+
+      try {
+         conn = Connect.obtainConn(conn);
+
+         String logId = createLogAndReturnId(conn);
+
+         return selectById(conn, logId);
+
+      } catch (SQLException | GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException("Failed to create/fetch StatisticsLog: " + e.getMessage());
+      } finally {
+         Connect.returnConn(conn);
+      }
+   }
+
    public StatisticsLogTo getById(String id) throws MessageException {
+      Connection conn = null;
+
+      try {
+         conn = Connect.obtainConn(conn);
+
+         return selectById(conn, id);
+      } catch (GDAOException e) {
+         logger.error(e.getMessage(), e);
+         throw new MessageException("Failed to fetch StatisticsLog: " + e.getMessage());
+      } finally {
+         Connect.returnConn(conn);
+      }
+   }
+
+   private String createLogAndReturnId(Connection conn) throws SQLException {
+      try (CallableStatement cs = conn.prepareCall("{ ? = call f_extract_statistics() }")) {
+         cs.registerOutParameter(1, java.sql.Types.VARCHAR);
+         cs.execute();
+
+         return cs.getString(1);
+      }
+   }
+
+   private StatisticsLogTo selectById(Connection conn, String id) throws GDAOException, MessageException {
+
       GdaoStatement st = new GdaoStatement().equal(StatisticsLogTo.Columns.ID.name(), id);
-      return selectSingleUsingGdaoStatement(st, DataStatisticsLogSample.class, StatisticsLogTo::new);
+
+      logger.debug("Select query: " + st.getQuery());
+      logger.debug("Select prepared query: " + st.getPreparedStatementQuery());
+
+      DataStatisticsLogSample data = getInstanceOfData(DataStatisticsLogSample.class);
+      return data.selectSingleUsingQuery(conn, st.getPreparedStatementQuery(), st.getParameters());
    }
 
 }

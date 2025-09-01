@@ -1,0 +1,66 @@
+package com.mallocinc.ytm.webview.jobs;
+
+import java.util.Map;
+import java.util.Optional;
+
+import com.mallocinc.ytm.model.usecase.jobs.FolderJobHelper;
+import com.mallocinc.ytm.model.usecase.jobs.JobType;
+import com.mallocinc.ytm.model.util.StringUtils;
+import com.mallocinc.ytm.webview.controllers.setup.Controller;
+import com.mallocinc.ytm.webview.controllers.setup.FacesUtil;
+
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@AllArgsConstructor
+public abstract class JobController extends Controller {
+   private static final long serialVersionUID = 1L;
+
+   @Getter(value = AccessLevel.PROTECTED)
+   private JobsController    jobsController;
+
+   @Getter
+   private JobDTO            job;
+
+   public abstract String getTitleProperty();
+
+   public abstract void save();
+
+   public abstract void cancel();
+
+   public boolean isJobDataDisplayed() {
+      return true;
+   }
+
+   public void handleJobTypeChange() {
+      job.resetData();
+      job.setServiceSpecific(JobType.valueOf(job.getTypeId()).isServiceSpecific());
+   }
+
+   public String getJobDataFacet() {
+      return "/pages/systemParts/jobsDashboard/" + StringUtils.underscoresToLowerCamelCase(job.getTypeId()) + "JobData.xhtml";
+   }
+
+   public abstract Map<String, String> getJobsList();
+
+   public void testSftpConnection() {
+      String location = (String) job.getData().get("location");
+      String host = (String) job.getData().get("host");
+      int port = Integer.parseInt(Optional.ofNullable((String) job.getData().get("port")).orElse("22"));
+      String username = (String) job.getData().get("username");
+      String password = (String) job.getData().get("password");
+
+      String folder = (String) job.getData().get("folder");
+
+      FolderJobHelper folderManager = new FolderJobHelper.Builder().jobExecutor(null).locationType(location).path(folder)
+            .host(host).port(port).username(username).password(password).build();
+
+      if (folderManager.isConnectionSuccessful()) {
+         FacesUtil.throwInfo("system.connect.success");
+      } else {
+         FacesUtil.throwError("system.connect.fail");
+      }
+   }
+
+}

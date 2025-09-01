@@ -1,13 +1,23 @@
 // Responsible for defining routes, middleware, application-level functionality
 const express = require('express');
+const cors = require('cors');
+const { frontendOrigin } = require('../config');
+
 const app = express();
+
+// Dev: Allow all origins. Prod: Allow only frontend origin
+const corsOptions = process.env.NODE_ENV === 'development' 
+  ? { origin: true, credentials: false }
+  : { origin: frontendOrigin, credentials: false };
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+app.use(express.json());
+
+// Routes
 const clientRoutes = require('./routes/client.routes');
 const statisticsRoutes = require('./routes/statistics.routes');
-const cors = require('cors');
-
-// Allow all origins during development
-app.use(cors());
-app.use(express.json());
 app.use('/api', clientRoutes, statisticsRoutes);
 
 app.get('/', (req, res) => {

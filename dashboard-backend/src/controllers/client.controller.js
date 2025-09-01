@@ -143,7 +143,7 @@ exports.syncAppInfo = async (req, res) => {
     }
 
     const baseUrl = ('http://localhost:8085/ytm.webview/' || "").replace(/\/$/, "");
-    // const baseUrl = (client.api_url || "").replace(/\/$/, "");
+    // const baseUrl = (client.url || "").replace(/\/$/, "");
     if (!baseUrl) {
       return res
         .status(400)
@@ -153,7 +153,6 @@ exports.syncAppInfo = async (req, res) => {
     const servletUrl = `${baseUrl}/app/info`;
     try {
       const { data: appInfo } = await axios.get(servletUrl, {
-        timeout: 10_000,
         headers: { "Accept": "application/json", "User-Agent": "ytm-dashboard/1.0" }
       });
 
@@ -165,7 +164,7 @@ exports.syncAppInfo = async (req, res) => {
             message: "Invalid response payload from target application",
             code: "INVALID_RESPONSE",
             request: { method: "GET", url: servletUrl, appId: client.app_id, timestamp: new Date().toISOString() },
-            response: { status: 200, body: JSON.stringify(appInfo).slice(0, 300) }
+            response: { status: 200, body: JSON.stringify(appInfo) }
           }
         });
       }

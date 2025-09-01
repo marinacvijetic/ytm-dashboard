@@ -1,0 +1,16 @@
+package com.mallocinc.ytm.model.providers.jobs;
+
+import com.mallocinc.ytm.model.entities.job.JobInstance;
+import com.mallocinc.ytm.model.usecase.ListInput;
+import com.mallocinc.ytm.model.usecase.ListOutput;
+import com.mallocinc.ytm.model.usecase.UseCase.CountOutput;
+
+public interface JobInstanceProvider {
+
+   JobInstance create(JobInstance jobInstance);
+
+   ListOutput<JobInstance> list(ListInput list);
+
+   CountOutput count(ListInput input);
+
+}

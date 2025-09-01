@@ -4,7 +4,7 @@ export const DashboardPanel: React.FC = () => {
   const [stats, setStats] = useState({ apps: 0 });
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_BASE_URL}/all-clients`)
+    fetch(`${import.meta.env.VITE_BACKEND_HOST}/all-clients`)
       .then((res) => res.json())
       .then((data: unknown[]) => {
         setStats({

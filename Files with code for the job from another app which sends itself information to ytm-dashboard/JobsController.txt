@@ -1,0 +1,119 @@
+package com.mallocinc.ytm.webview.jobs;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import jakarta.inject.Named;
+
+import org.omnifaces.cdi.ViewScoped;
+
+import com.mallocinc.ytm.model.providers.ActionLogProvider;
+import com.mallocinc.ytm.model.usecase.ListInput;
+import com.mallocinc.ytm.model.usecase.jobs.DeleteJob;
+import com.mallocinc.ytm.model.usecase.jobs.ExecuteJob;
+import com.mallocinc.ytm.model.usecase.jobs.JobIdInput;
+import com.mallocinc.ytm.model.usecase.service.ListServices;
+import com.mallocinc.ytm.model.usecase.service.ServiceType;
+import com.mallocinc.ytm.webview.controllers.setup.Controller;
+import com.mallocinc.ytm.webview.controllers.setup.FacesUtil;
+import com.mallocinc.ytm.webview.controllers.system.services.ServiceDTO;
+
+import lombok.Getter;
+
+@Named("jobsController")
+@ViewScoped
+public class JobsController extends Controller {
+
+   private static final long                 serialVersionUID      = 1L;
+
+   @Getter
+   private JobController                     jobController;
+
+   @Getter
+   private JobsLazyModel                     jobsLazyModel         = new JobsLazyModel();
+
+   @Getter
+   private JobInstancesLazyModel             jobInstancesLazyModel = new JobInstancesLazyModel();
+
+   @Getter
+   private JobInstancesByJobLazyModel        jobInstancesByJobLazyModel;
+
+   @Getter
+   private boolean                           jobsDisplayed         = true;
+   @Getter
+   private boolean                           jobInstancesDisplayed = false;
+
+   @Getter
+   private JobInstanceDTO                    displayedJobInstance;
+
+   private List<ServiceDTO>                  services;
+
+   private final transient ActionLogProvider actionLogProvider     = new ActionLogProvider();
+
+   public void add() {
+      jobController = new CreateJobController(this);
+   }
+
+   public void update(JobDTO job) {
+      jobController = new UpdateJobController(this, job);
+   }
+
+   public void delete(JobDTO job) {
+      new DeleteJob(getApplicationUser()).execute(JobIdInput.of(job.getId()));
+      FacesUtil.throwInfo("system.jobs.actions.delete.success");
+   }
+
+   private void resetView() {
+      jobsDisplayed = false;
+      jobInstancesDisplayed = false;
+   }
+
+   public void displayJobs() {
+      resetView();
+      jobsDisplayed = true;
+      jobInstancesByJobLazyModel = null;
+   }
+
+   public void displayJobInstances() {
+      resetView();
+      jobInstancesDisplayed = true;
+   }
+
+   public void previewJobInstance(JobInstanceDTO jobInstance) {
+      jobInstance.loadLog();
+      displayedJobInstance = jobInstance;
+   }
+
+   public void executeJob(JobDTO job) {
+      new ExecuteJob().execute(ExecuteJob.Input.of(job.getId()));
+      if (!getApplicationUser().isSuperuser()) {
+         actionLogProvider.jobExecuted(getApplicationUser(), job.convertToEntity());
+      }
+      FacesUtil.throwInfo("system.jobs.actions.execute.success");
+   }
+
+   public void copyJob(JobDTO job) {
+      jobController = new CreateJobController(this, job);
+   }
+
+   public void displayJobInstances(JobDTO job) {
+      jobInstancesByJobLazyModel = new JobInstancesByJobLazyModel(job);
+   }
+
+   public boolean isJobInstancesByJobDisplayed() {
+      return jobsDisplayed && jobInstancesByJobLazyModel != null;
+   }
+
+   public List<ServiceDTO> getServices() {
+      if (services == null) {
+         Map<String, Object> filterBy = new HashMap<>();
+         filterBy.put("type", ServiceType.GETCERTIFIED_WEBAPP.name());
+         services = new ListServices().execute(ListInput.builder().listAll(true).filterBy(filterBy).build()).getList().stream()
+               .map(ServiceDTO::new).collect(Collectors.toList());
+      }
+      return services;
+   }
+
+}

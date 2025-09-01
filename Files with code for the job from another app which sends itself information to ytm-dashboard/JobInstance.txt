@@ -1,0 +1,25 @@
+package com.mallocinc.ytm.model.entities.job;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+
+import com.mallocinc.ytm.model.entities.api.Entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Value;
+
+@AllArgsConstructor
+@Value
+public class JobInstance implements Entity {
+   private final BigDecimal id;
+   private final Job        job;
+   private final Timestamp  startedAt;
+   private final Timestamp  finishedAt;
+   private final int        errorCount;
+   private final String     log;
+
+   public JobInstance(Job job, Timestamp startedAt, Timestamp finishedAt, int errorCount, String log) {
+      this(null, job.execute(), startedAt, finishedAt, errorCount, log);
+   }
+
+}

@@ -1,6 +1,7 @@
 package com.mallocinc.ytm.model.usecase.appInfo;
 
 import com.mallocinc.ytm.database.generated.to.StatisticsLogTo;
+import com.mallocinc.ytm.model.providers.system.SystemParametersManager;
 import com.mallocinc.ytm.model.usecase.jobs.pojo.StatisticsLog;
 
 import lombok.NoArgsConstructor;
@@ -10,7 +11,9 @@ public class StatisticsLogMapper {
 
    public StatisticsLog buildReport(StatisticsLogTo to) {
 
-      return StatisticsLog.builder().id(to.getID()).recordedAt(to.getRECORDED_AT()).userCnt(to.getUSER_CNT())
+      String appId = SystemParametersManager.getApplicationId();
+
+      return StatisticsLog.builder().id(to.getID()).recordedAt(to.getRECORDED_AT()).appId(appId).userCnt(to.getUSER_CNT())
             .activeUsers(to.getACTIVE_USERS()).lockedUsers(to.getLOCKED_USERS()).suspendedUsers(to.getSUSPENDED_USERS())
             .pendingUsers(to.getPENDING_USERS()).inactiveUsers(to.getINACTIVE_USERS()).userGroupCnt(to.getUSER_GROUP_CNT())
             .rootUserGroupCnt(to.getROOT_USER_GROUP_CNT()).avgUsersPerGroup(to.getAVG_USERS_PER_GROUP())

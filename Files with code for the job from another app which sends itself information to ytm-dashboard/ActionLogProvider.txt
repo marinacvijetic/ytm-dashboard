@@ -1,0 +1,2146 @@
+package com.mallocinc.ytm.model.providers;
+
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.apache.log4j.Logger;
+
+import com.mallocinc.codegenerator.exceptions.GDAOException;
+import com.mallocinc.querybuilder.GdaoSnippetStatement;
+import com.mallocinc.querybuilder.GdaoStatement;
+import com.mallocinc.ytm.database.generated.samples.ytm.DataUserActionLogSample;
+import com.mallocinc.ytm.database.generated.to.CourseTo;
+import com.mallocinc.ytm.database.generated.to.QuizDefinitionTo;
+import com.mallocinc.ytm.database.generated.to.QuizTemplateTo;
+import com.mallocinc.ytm.database.generated.to.UserActionLogTo;
+import com.mallocinc.ytm.database.generated.to.UsersTo;
+import com.mallocinc.ytm.database.generated.to.VCoursesSumTo;
+import com.mallocinc.ytm.database.generated.to.VRepUserActionsTo;
+import com.mallocinc.ytm.database.orm.entities.pool.Pool;
+import com.mallocinc.ytm.database.util.UtilActionCodes;
+import com.mallocinc.ytm.database.util.UtilCodeTypes;
+import com.mallocinc.ytm.database.util.UtilProperites;
+import com.mallocinc.ytm.database.views.DataVRepUserActions;
+import com.mallocinc.ytm.model.entities.EntityAuthorization;
+import com.mallocinc.ytm.model.entities.EntityGroup;
+import com.mallocinc.ytm.model.entities.EntityLesson;
+import com.mallocinc.ytm.model.entities.EntityPool;
+import com.mallocinc.ytm.model.entities.EntityPoolResource;
+import com.mallocinc.ytm.model.entities.EntityQuestion;
+import com.mallocinc.ytm.model.entities.EntityQuizQuestion;
+import com.mallocinc.ytm.model.entities.EntityRole;
+import com.mallocinc.ytm.model.entities.EntityRoom;
+import com.mallocinc.ytm.model.entities.EntitySubscribers;
+import com.mallocinc.ytm.model.entities.EntitySystemParameter;
+import com.mallocinc.ytm.model.entities.EntityUserActionLog;
+import com.mallocinc.ytm.model.entities.EntityVQuizInstanceResult;
+import com.mallocinc.ytm.model.entities.EntityVQuizTemplate;
+import com.mallocinc.ytm.model.entities.EntityVSubscribers;
+import com.mallocinc.ytm.model.entities.EntityVUserFavoriteReports;
+import com.mallocinc.ytm.model.entities.EntityVUserRole;
+import com.mallocinc.ytm.model.entities.EntityVUsersSubscribers;
+import com.mallocinc.ytm.model.entities.certificate.Certificate;
+import com.mallocinc.ytm.model.entities.customcolumns.EntityCustomColumn;
+import com.mallocinc.ytm.model.entities.customerSupport.EntityCustomerSupport;
+import com.mallocinc.ytm.model.entities.event.EventDefinition;
+import com.mallocinc.ytm.model.entities.event.EventNotificationDefinition;
+import com.mallocinc.ytm.model.entities.gradings.EntityGradingSystem;
+import com.mallocinc.ytm.model.entities.gradings.question.EntityQuestionGradingSystem;
+import com.mallocinc.ytm.model.entities.job.Job;
+import com.mallocinc.ytm.model.entities.language.Language;
+import com.mallocinc.ytm.model.entities.lessons.EntityLessonItem;
+import com.mallocinc.ytm.model.entities.lessons.EntityVLesson;
+import com.mallocinc.ytm.model.entities.lessons.EntityVUserLesson;
+import com.mallocinc.ytm.model.entities.literature.EntityLiterature;
+import com.mallocinc.ytm.model.entities.location.EntityVTestingLocationAddress;
+import com.mallocinc.ytm.model.entities.messagefile.MessageFile;
+import com.mallocinc.ytm.model.entities.questionresults.EntityQuizResult;
+import com.mallocinc.ytm.model.entities.quizzes.EntityQuizDefinition;
+import com.mallocinc.ytm.model.entities.quizzes.EntityQuizInstance;
+import com.mallocinc.ytm.model.entities.quizzes.EntityTestingLocation;
+import com.mallocinc.ytm.model.entities.quizzes.EntityTestingSession;
+import com.mallocinc.ytm.model.entities.report.SpecialRequest;
+import com.mallocinc.ytm.model.entities.reports.impl.EntityReportVReportDefinition;
+import com.mallocinc.ytm.model.entities.scheduledreport.EntityScheduledReport;
+import com.mallocinc.ytm.model.entities.session.EntityVTestingSessionLocation;
+import com.mallocinc.ytm.model.entities.set.CustomType;
+import com.mallocinc.ytm.model.entities.set.SetType;
+import com.mallocinc.ytm.model.entities.theme.Theme;
+import com.mallocinc.ytm.model.entities.user.EntityAddress;
+import com.mallocinc.ytm.model.entities.user.EntityUser;
+import com.mallocinc.ytm.model.entities.usercourse.EntityVCourseUser;
+import com.mallocinc.ytm.model.entities.workspace.Workspace;
+import com.mallocinc.ytm.model.entities.workspace.WorkspaceUserMemberRole;
+import com.mallocinc.ytm.model.providers.api.BaseProvider;
+import com.mallocinc.ytm.model.providers.system.CompatibleBrowser;
+import com.mallocinc.ytm.model.providers.system.CompatibleOperatingSystem;
+import com.mallocinc.ytm.model.quiz.ResourceModification;
+import com.mallocinc.ytm.model.usecase.login.FailedLoginReason;
+import com.mallocinc.ytm.model.usecase.media.MediaMetaData;
+import com.mallocinc.ytm.model.usecase.quiz.QuizDeliveryPreference;
+import com.mallocinc.ytm.model.user.ApplicationUser;
+import com.mallocinc.ytm.model.user.ApplicationUserData;
+import com.mallocinc.ytm.model.user.ApplicationUserModel;
+import com.mallocinc.ytm.model.util.Connect;
+import com.mallocinc.ytm.model.util.MessageException;
+import com.mallocinc.ytm.model.util.PersistenceException;
+
+public class ActionLogProvider extends BaseProvider<DataUserActionLogSample, UserActionLogTo, EntityUserActionLog> {
+
+   public ActionLogProvider() {
+      super(DataUserActionLogSample.class, EntityUserActionLog.class);
+   }
+
+   /**
+    * 
+    */
+   static final Logger logger = Logger.getLogger(ActionLogProvider.class.getName());
+
+   public void logUserActions(BigDecimal userId,
+         String actionLogCode,
+         String aditionalMsg,
+         String userIpAddress,
+         EntityUser impersonator) {
+      try {
+         EntityUserActionLog userActionLog = new EntityUserActionLog(userId,
+                                                                     actionLogCode,
+                                                                     aditionalMsg,
+                                                                     userIpAddress,
+                                                                     checkImpersonatorId(impersonator),
+                                                                     checkImpersonatorUsername(impersonator));
+         EntityUserActionLog.getProviderInstance().insertEntity(userActionLog);
+      } catch (MessageException e) {
+         logger.error(e.getMessage(), e);
+      }
+
+   }
+
+   public List<EntityUserActionLog> getTestActionsWithParameters(List<BigDecimal> quizInstanceIds) throws MessageException {
+   // @formatter:off
+      GdaoStatement gdaoStatement = new GdaoStatement().leftParen()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.CONTINUE_LATER_PRESSED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.START_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.FINISH_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.START_SURVEY).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.FINISH_SURVEY).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.MORE_TIME_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.TEST_LEFT).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.SURVEY_LEFT).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.PROCTORING_SESSION_STARTED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.PROCTORING_SESSION_STOPED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.PROCTORING_SESSION_PROBLEM).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.BROWSER_LOCKDOWN_VIOLATION_REGISTERED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.BROWSER_LOCKDOWN_VIOLATION_RESOLVED).or()
+			.equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.USERS_SETTED_TO_NOT_COMPLETED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.CANDIDATE_DELETED_FROM_SURVEY_OR_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.ATTEMPT_SUSPENDED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.PREVIEW_ATTEMPT_STARTED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.PREVIEW_ATTEMPTS_DELETED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.ATTEMPT_DELETED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.ATTEMPT_MARKED_FOR_REVIEW).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.GRADE_SETTED_TO_ZERO).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.ATTEMPT_VERIFIED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.USERS_LIST_UPDATED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.USERS_ASSIGNED_TO_QUESTION_POOL).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.USERS_REMOVED_FROM_QUESTION_POOL).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.CANDIDATES_ATTEMPT_RESET).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.USER_ASSIGNED_TO_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.QUESTION_STARTED_IN_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.QUESTION_STARTED_IN_TEST_WITH_SECTIONS).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.QUESTION_FINISHED_IN_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.QUESTION_FINISHED_IN_TEST_WITH_SECTIONS).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.BRANCHING_QUESTION_STARTED_IN_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.BRANCHING_QUESTION_STARTED_IN_TEST_WITH_SECTIONS).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.BRANCHING_QUESTION_FINISHED_IN_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.BRANCHING_QUESTION_FINISHED_IN_TEST_WITH_SECTIONS).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.SECTION_STARTED_IN_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.SECTION_FINISHED_IN_TEST).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.TEST_OR_SURVEY_CONTINUED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.PROCTORING_VIOLATION_REGISTERED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.PROCTORING_VIOLATION_RESOLVED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.PROCTORING_TERMINATION_TIMEOUT_REACHED).or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), UtilActionCodes.FINISHED_ATTACHMENTS_REVIEW).rightParen().and()
+            .in(UserActionLogTo.Columns.OBJECT_ID.name(), quizInstanceIds);
+   // @formatter:on
+      return this.selectUsingGdaoStatement(gdaoStatement);
+   }
+
+   public void logUserActions(BigDecimal userId,
+         String actionLogCode,
+         String aditionalMsg,
+         String userIpAddress,
+         String sessionId,
+         BigDecimal impersonatorId,
+         String impersonatorUsername) {
+      logUserActions(userId, actionLogCode, aditionalMsg, userIpAddress, null, sessionId, null, null, impersonatorId,
+            impersonatorUsername);
+   }
+
+   public void logUserActions(BigDecimal userId,
+         String actionLogCode,
+         String aditionalMsg,
+         String userIpAddress,
+         BigDecimal objectId,
+         String sessionId,
+         BigDecimal impersonatorId,
+         String impersonatorUsername) {
+      logUserActions(userId, actionLogCode, aditionalMsg, userIpAddress, objectId, sessionId, null, null, impersonatorId,
+            impersonatorUsername);
+   }
+
+   public void logUserActions(BigDecimal userId,
+         String actionLogCode,
+         String aditionalMsg,
+         String userIpAddress,
+         String sessionId,
+         String browserInformation,
+         String operatingSystemInformation,
+         BigDecimal impersonatorId,
+         String impersonatorUsername) {
+      logUserActions(userId, actionLogCode, aditionalMsg, userIpAddress, null, sessionId, browserInformation,
+            operatingSystemInformation, impersonatorId, impersonatorUsername);
+   }
+
+   public void logUserActions(BigDecimal userId,
+         String actionLogCode,
+         String aditionalMsg,
+         String userIpAddress,
+         BigDecimal objectId,
+         String sessionId,
+         String browserInformation,
+         String operatingSystemInformation,
+         BigDecimal impersonatorId,
+         String impersonatorUsername) {
+      try {
+         EntityUserActionLog userActionLog = getUserActionLogEntity(userId, actionLogCode, aditionalMsg, userIpAddress, objectId,
+               sessionId, browserInformation, operatingSystemInformation, impersonatorId, impersonatorUsername);
+         EntityUserActionLog.getProviderInstance().insertEntity(userActionLog);
+      } catch (MessageException e) {
+         logger.error(e.getMessage(), e);
+      }
+   }
+
+   private EntityUserActionLog getUserActionLogEntity(BigDecimal userId,
+         String actionLogCode,
+         String aditionalMsg,
+         String userIpAddress,
+         BigDecimal objectId,
+         String sessionId,
+         String browserInformation,
+         String operatingSystemInformation,
+         BigDecimal impersonatorId,
+         String impersonatorUsername) {
+      EntityUserActionLog userActionLog = new EntityUserActionLog(userId,
+                                                                  actionLogCode,
+                                                                  aditionalMsg,
+                                                                  userIpAddress,
+                                                                  impersonatorId,
+                                                                  impersonatorUsername);
+      userActionLog.setSessionId(sessionId);
+      userActionLog.setObjectId(objectId);
+      userActionLog.setBrowserInformation(browserInformation);
+      userActionLog.setOperatingSystemInformation(operatingSystemInformation);
+      return userActionLog;
+   }
+
+   public List<VRepUserActionsTo> getActionInfoForPaging(int first,
+         int pageSize,
+         String sortField,
+         String sortOrder,
+         Map<String, Object> filters) throws MessageException {
+
+      DataVRepUserActions dataUserActions = new DataVRepUserActions();
+      Connection conn = null;
+      List<VRepUserActionsTo> actions = new ArrayList<>();
+      try {
+         conn = Connect.obtainConn(conn);
+         actions = dataUserActions.getActionInfoReportsForPaging(conn, first, pageSize, sortField, sortOrder, filters);
+         Connect.returnConn(conn);
+      } catch (GDAOException e) {
+
+         throw new MessageException("error", MessageException.ERROR, "somethingWentWrong");
+      } finally {
+         Connect.returnConn(conn);
+      }
+      return actions;
+   }
+
+   public long getActionInfoFilterCount(Map<String, Object> filters) throws MessageException {
+      DataVRepUserActions dataUserActions = new DataVRepUserActions();
+      Connection conn = null;
+      long count = 0;
+      try {
+         conn = Connect.obtainConn(conn);
+         count = dataUserActions.getActionInfoReportsFilterCount(conn, filters);
+         Connect.returnConn(conn);
+      } catch (GDAOException e) {
+
+         throw new MessageException("error", MessageException.ERROR, "somethingWentWrong");
+      } finally {
+         Connect.returnConn(conn);
+      }
+      return count;
+   }
+
+   public List<EntityUserActionLog> getUserActionLogInLogsWithoutLogOuts() throws MessageException {
+      GdaoStatement userActionLogInLogsWithouyLogOuts = new GdaoStatement()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), "LGN").and().isNot(UserActionLogTo.Columns.SESSION_ID.name(), null)
+            .and().snippet(
+                  new GdaoSnippetStatement("NOT EXISTS(SELECT * FROM USER_ACTION_LOG ual WHERE ual.session_id = user_action_log.session_id AND (ual.ACTION_CODE = 'LGO' OR ual.ACTION_CODE = 'POPUPTIME' OR ual.ACTION_CODE = 'POPUPCLICK' OR ual.ACTION_CODE = 'BRWSRSHUT' OR ual.ACTION_CODE = 'SYSCRASH' OR ual.ACTION_CODE = 'TCATSHUT'))"));
+      return selectUsingGdaoStatement(userActionLogInLogsWithouyLogOuts);
+   }
+
+   public boolean doesSessionHaveLogOutRecord(String sessionID) throws MessageException {
+      GdaoStatement sessionLogoutCountStatemet = new GdaoStatement().equal(UserActionLogTo.Columns.SESSION_ID.name(), sessionID)
+            .and().leftParen().equal(UserActionLogTo.Columns.ACTION_CODE.name(), "POPUPCLICK").or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), "POPUPTIME").or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), "BRWSRSHUT").or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), "SYSCRASH").or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), "TCATSHUT").or()
+            .equal(UserActionLogTo.Columns.ACTION_CODE.name(), "LGO").rightParen();
+      long sessionLogoutCount = selectCountGdaoStatement(sessionLogoutCountStatemet);
+      return sessionLogoutCount > 0;
+   }
+
+   public void createUserActionLogForSessionDestroy(String sessionID,
+         BigDecimal userId,
+         String ipAddress,
+         EntityUser impersonator) {
+      try {
+         if (doesSessionHaveLogOutRecord(sessionID)) {
+            logger.info("logout record exists for session: " + sessionID + ", sessiondestroy method will do nothing");
+         } else {
+            logUserActions(userId, UtilActionCodes.BROWSER_SHUT, UtilActionCodes.getActionText(UtilActionCodes.BROWSER_SHUT),
+                  ipAddress, sessionID, checkImpersonatorId(impersonator), checkImpersonatorUsername(impersonator));
+         }
+      } catch (MessageException e) {
+         throw new PersistenceException(e.getMessage(), e);
+      }
+   }
+
+   public void createMissingLogoutsAtTomcatStop() throws MessageException {
+      List<EntityUserActionLog> listOfUsers = getUserActionLogInLogsWithoutLogOuts();
+      List<EntityUserActionLog> logoutRecords = listOfUsers.stream().map(this::createLogoutForLoginAtTomcatStop)
+            .collect(Collectors.toList());
+      batchEntityInsert(logoutRecords);
+   }
+
+   public void createMissingLogoutsAtTomcatStart() throws MessageException {
+      List<EntityUserActionLog> listOfUsers = getUserActionLogInLogsWithoutLogOuts();
+      List<EntityUserActionLog> logoutRecords = listOfUsers.stream().map(this::createLogoutForLoginAtTomcatStart)
+            .collect(Collectors.toList());
+      batchEntityInsert(logoutRecords);
+   }
+
+   private EntityUserActionLog createLogoutForLoginAtTomcatStop(EntityUserActionLog loginRecord) {
+      EntityUserActionLog logOutRecord = new EntityUserActionLog(loginRecord.getUserId(),
+                                                                 UtilActionCodes.TOMCAT_SHUTDOWN,
+                                                                 UtilActionCodes.getActionText(UtilActionCodes.TOMCAT_SHUTDOWN),
+                                                                 loginRecord.getIpAddress());
+      logOutRecord.setSessionId(loginRecord.getSessionId());
+      return logOutRecord;
+   }
+
+   private EntityUserActionLog createLogoutForLoginAtTomcatStart(EntityUserActionLog loginRecord) {
+      EntityUserActionLog logOutRecord = new EntityUserActionLog(loginRecord.getUserId(),
+                                                                 UtilActionCodes.SYSTEM_CRASH,
+                                                                 UtilActionCodes.getActionText(UtilActionCodes.SYSTEM_CRASH),
+                                                                 loginRecord.getIpAddress());
+      logOutRecord.setSessionId(loginRecord.getSessionId());
+      return logOutRecord;
+   }
+
+   public void attemptDisconnected(EntityQuizInstance leadQuizInstance) {
+      String actionCode = leadQuizInstance.isSurvey() ? UtilActionCodes.SURVEY_LEFT : UtilActionCodes.TEST_LEFT;
+      String actionDescription = UtilActionCodes.getActionText(actionCode + "." + "description",
+            leadQuizInstance.getUniqueQuiz().getQuizDefinition().getQuizName());
+      logUserActions(leadQuizInstance.getUserTestedId(), actionCode, actionDescription, null, leadQuizInstance.getId(), null,
+            null, null);
+   }
+
+   public void attemptFinished(EntityQuizInstance leadQuizInstance, ApplicationUser applicationUser) {
+      String actionCode = leadQuizInstance.isSurvey() ? UtilActionCodes.FINISH_SURVEY : UtilActionCodes.FINISH_TEST;
+      String quizType = UtilActionCodes.getActionText(leadQuizInstance.isSurvey() ? "survey" : "test");
+      logUserActions(applicationUser.getUserId(), actionCode,
+            UtilActionCodes.getActionText(actionCode, quizType,
+                  leadQuizInstance.getUniqueQuiz().getQuizDefinition().getQuizName()),
+            applicationUser.getIpAddress(), leadQuizInstance.getId(), null,
+            checkImpersonatorId(applicationUser.getImpersonator()), checkImpersonatorUsername(applicationUser.getImpersonator()));
+   }
+
+   private BigDecimal checkImpersonatorId(EntityUser impersonator) {
+      return impersonator != null ? impersonator.getUserId() : null;
+   }
+
+   private String checkImpersonatorUsername(EntityUser impersonator) {
+      return impersonator != null ? impersonator.getUsername() : null;
+   }
+
+   public void attemptReconnected(EntityQuizInstance leadQuizInstance) {
+      String actionCode = leadQuizInstance.isSurvey() ? UtilActionCodes.SURVEY_RECONNECTED : UtilActionCodes.TEST_RECONNECTED;
+      String actionDescription = UtilActionCodes.getActionText(actionCode + "." + "description",
+            leadQuizInstance.getUniqueQuiz().getQuizDefinition().getQuizName());
+      logUserActions(leadQuizInstance.getUserTestedId(), actionCode, actionDescription, null, leadQuizInstance.getId(), null,
+            null, null);
+   }
+
+   public void browserLockdownViolationRegistered(ApplicationUser applicationUser, EntityVQuizInstanceResult leadQuizInstance) {
+      logAction(applicationUser, UtilActionCodes.BROWSER_LOCKDOWN_VIOLATION_REGISTERED, leadQuizInstance.getQuizInstanceId());
+   }
+
+   public void browserLockdownViolationResolved(ApplicationUser applicationUser, EntityVQuizInstanceResult leadQuizInstance) {
+      logAction(applicationUser, UtilActionCodes.BROWSER_LOCKDOWN_VIOLATION_RESOLVED, leadQuizInstance.getQuizInstanceId());
+   }
+
+   public void proctoringSessionProblem(ApplicationUser applicationUser,
+         EntityVQuizInstanceResult entityVQuizInstanceResult,
+         String proctoringSessionId,
+         String proctoringSessionError) {
+      String actionCode = UtilActionCodes.PROCTORING_SESSION_PROBLEM;
+      String actionDescription = UtilActionCodes.getActionText(actionCode + ".description", proctoringSessionId,
+            proctoringSessionError);
+      logUserActions(applicationUser.getUserId(), actionCode, actionDescription, applicationUser.getIpAddress(),
+            entityVQuizInstanceResult.getInstanceId(), applicationUser.getSessionId(), applicationUser.getBrowser(),
+            applicationUser.getOperatingSystem(), checkImpersonatorId(applicationUser.getImpersonator()),
+            checkImpersonatorUsername(applicationUser.getImpersonator()));
+   }
+
+   public void proctoringSessionStarted(ApplicationUser applicationUser,
+         EntityVQuizInstanceResult entityVQuizInstanceResult,
+         String proctoringSessionId) {
+      String actionCode = UtilActionCodes.PROCTORING_SESSION_STARTED;
+      String actionDescription = UtilActionCodes.getActionText(actionCode + ".description", proctoringSessionId);
+      logUserActions(applicationUser.getUserId(), actionCode, actionDescription, applicationUser.getIpAddress(),
+            entityVQuizInstanceResult.getInstanceId(), applicationUser.getSessionId(), applicationUser.getBrowser(),
+            applicationUser.getOperatingSystem(), checkImpersonatorId(applicationUser.getImpersonator()),
+            checkImpersonatorUsername(applicationUser.getImpersonator()));
+   }
+
+   public void proctoringSessionStoped(ApplicationUser applicationUser,
+         EntityVQuizInstanceResult entityVQuizInstanceResult,
+         String proctoringSessionId) {
+      String actionCode = UtilActionCodes.PROCTORING_SESSION_STOPED;
+      String actionDescription = UtilActionCodes.getActionText(actionCode + ".description", proctoringSessionId);
+      logUserActions(applicationUser.getUserId(), actionCode, actionDescription, applicationUser.getIpAddress(),
+            entityVQuizInstanceResult.getInstanceId(), applicationUser.getSessionId(), applicationUser.getBrowser(),
+            applicationUser.getOperatingSystem(), checkImpersonatorId(applicationUser.getImpersonator()),
+            checkImpersonatorUsername(applicationUser.getImpersonator()));
+   }
+
+   private void logAction(ApplicationUserData applicationUserModel,
+         String actionCode,
+         BigDecimal objectId,
+         Object... parameters) {
+      try {
+         EntityUserActionLog actionLog = createLogObject(applicationUserModel, actionCode, objectId, parameters);
+         insertEntity(actionLog);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   private EntityUserActionLog createLogObject(ApplicationUserData applicationUserModel,
+         String actionCode,
+         BigDecimal objectId,
+         Object... parameters) {
+      String text = UtilActionCodes.getActionText(actionCode, parameters);
+      return getUserActionLogEntity(applicationUserModel.getUserId(), actionCode, text, applicationUserModel.getIpAddress(),
+            objectId, applicationUserModel.getSessionId(), applicationUserModel.getBrowser(),
+            applicationUserModel.getOperatingSystem(), checkImpersonatorId(applicationUserModel.getImpersonator()),
+            checkImpersonatorUsername(applicationUserModel.getImpersonator()));
+
+   }
+
+   /**
+    * @param    applicationUser
+    * @param    customType - category of {@link SetType#TEST_CATEGORY test} or {@link SetType#TEST_CATEGORY question} type.
+    * @see      #customTypeCreated(ApplicationUserData, CustomType)
+    */
+   public void categoryCreated(ApplicationUserData applicationUser, CustomType customType) {
+      logAction(applicationUser, UtilActionCodes.CATEGORY_CREATED, customType.getId().getValue(), customType.getName());
+   }
+
+   /**
+    * @param    applicationUser
+    * @param    customType - category of {@link SetType#TEST_CATEGORY test} or {@link SetType#TEST_CATEGORY question} type.
+    * @see      #customTypeDeleted(ApplicationUserData, CustomType)
+    */
+   public void categoryDeleted(ApplicationUserData applicationUser, CustomType customType) {
+      logAction(applicationUser, UtilActionCodes.CATEGORY_DELETED, customType.getId().getValue(), customType.getName());
+   }
+
+   /**
+    * @param    applicationUser
+    * @param    customType - category of {@link SetType#TEST_CATEGORY test} or {@link SetType#TEST_CATEGORY question} type.
+    * @see      #customTypeUpdated(ApplicationUserData, CustomType)
+    */
+   public void categoryUpdated(ApplicationUserData applicationUser, CustomType customType) {
+      logAction(applicationUser, UtilActionCodes.CATEGORY_EDITED, customType.getId().getValue(), customType.getName());
+   }
+
+   public void customColumnCreated(ApplicationUserModel applicationUser, EntityCustomColumn column) {
+      logAction(applicationUser, UtilActionCodes.CUSTOM_COLUMN_CREATED, column.getId(), column.getTableName(), column.getName());
+   }
+
+   public void customColumnDeleted(ApplicationUserModel applicationUser, EntityCustomColumn column) {
+      logAction(applicationUser, UtilActionCodes.CUSTOM_COLUMN_DELETED, column.getId(), column.getTableName(), column.getName());
+   }
+
+   public void customColumnUpdated(ApplicationUserModel applicationUser, EntityCustomColumn column) {
+      logAction(applicationUser, UtilActionCodes.CUSTOM_COLUMN_UPDATED, column.getId(), column.getTableName(), column.getName());
+   }
+
+   public void customColumnEnabled(ApplicationUserModel applicationUser, EntityCustomColumn column) {
+      logAction(applicationUser, UtilActionCodes.CUSTOM_COLUMN_ENABLED, column.getId(), column.getTableName(), column.getName());
+   }
+
+   public void customColumnDisabled(ApplicationUserModel applicationUser, EntityCustomColumn column) {
+      logAction(applicationUser, UtilActionCodes.CUSTOM_COLUMN_DISABLED, column.getId(), column.getTableName(), column.getName());
+   }
+
+   public void customTypeCreated(ApplicationUserData applicationUser, CustomType customType) {
+      logAction(applicationUser, UtilActionCodes.CUSTOM_TYPE_CREATED, customType.getId().getValue(), customType.getName());
+   }
+
+   public void customTypeDeleted(ApplicationUserData applicationUser, CustomType customType) {
+      logAction(applicationUser, UtilActionCodes.CUSTOM_TYPE_DELETED, customType.getId().getValue(), customType.getName());
+   }
+
+   public void customTypeUpdated(ApplicationUserData applicationUser, CustomType customType) {
+      logAction(applicationUser, UtilActionCodes.CUSTOM_TYPE_EDITED, customType.getId().getValue(), customType.getName());
+   }
+
+   public void attachmentCreated(ApplicationUser applicationUser, MediaMetaData media) {
+      logAction(applicationUser, UtilActionCodes.ATTACHMENT_CREATED, media.getId(), media.getName(), media.getType());
+   }
+
+   public void attachmentCopied(ApplicationUser applicationUser, MediaMetaData media) {
+      logAction(applicationUser, UtilActionCodes.ATTACHMENT_COPIED, media.getId(), media.getName(), media.getType());
+   }
+
+   public void attachmentUpdated(ApplicationUser applicationUser, MediaMetaData media) {
+      logAction(applicationUser, UtilActionCodes.ATTACHMENT_EDITED, media.getId(), media.getName(), media.getType());
+   }
+
+   public void attachmentDeleted(ApplicationUser applicationUser, MediaMetaData media) {
+      logAction(applicationUser, UtilActionCodes.ATTACHMENT_DELETED, media.getId(), media.getName(), media.getType());
+   }
+
+   public void attachmentDownloaded(ApplicationUser applicationUser, MediaMetaData media) {
+      logAction(applicationUser, UtilActionCodes.ATTACHMENT_DOWNLOADED, media.getId(), media.getName(), media.getType());
+   }
+
+   public void supportInfoUpdated(ApplicationUser applicationUser, EntityCustomerSupport customerSupport) {
+      logAction(applicationUser, UtilActionCodes.SUPPORT_INFO_UPDATED, customerSupport.getSupportId());
+   }
+
+   public void jobCreated(ApplicationUserModel applicationUserModel, Job job) {
+      logAction(applicationUserModel, UtilActionCodes.JOB_CREATED, job.getId(), job.getName(), job.getType());
+   }
+
+   public void jobDeleted(ApplicationUserModel applicationUserModel, Job job) {
+      logAction(applicationUserModel, UtilActionCodes.JOB_DELETED, job.getId(), job.getName(), job.getType());
+   }
+
+   public void jobUpdated(ApplicationUserModel applicationUserModel, Job job) {
+      logAction(applicationUserModel, UtilActionCodes.JOB_EDITED, job.getId(), job.getName(), job.getType());
+   }
+
+   public void jobCopied(ApplicationUserModel applicationUserModel, Job job) {
+      logAction(applicationUserModel, UtilActionCodes.JOB_COPIED, job.getId(), job.getName(), job.getType());
+   }
+
+   public void jobExecuted(ApplicationUserModel applicationUserModel, Job job) {
+      logAction(applicationUserModel, UtilActionCodes.JOB_EXECUTED, job.getId(), job.getName(), job.getType());
+   }
+
+   public void appNotificationStatusUpdate(ApplicationUser applicationUser, EventDefinition event) {
+      logAction(applicationUser, UtilActionCodes.NOTIFICATION_STATUS, event.getId(),
+            event.isApplicationNotificationEnabled() ? "Enabled" : "Disabled", "application", event.getName());
+   }
+
+   public void emailNotificationStatusUpdate(ApplicationUser applicationUser, EventDefinition event) {
+      logAction(applicationUser, UtilActionCodes.NOTIFICATION_STATUS, event.getId(),
+            event.isEmailNotificationEnabled() ? "Enabled" : "Disabled", "email", event.getName());
+   }
+
+   public void languageBundleDeleted(ApplicationUserModel applicationUser, MessageFile messageFile) {
+      logAction(applicationUser, UtilActionCodes.LANGUAGE_BUNDLE_DELETED, messageFile.getId(), messageFile.getName());
+   }
+
+   public void languageBundleUpdated(ApplicationUserModel applicationUser, MessageFile messageFile) {
+      logAction(applicationUser, UtilActionCodes.LANGUAGE_BUNDLE_EDITED, messageFile.getId(), messageFile.getName());
+   }
+
+   public void languageBundleActivated(ApplicationUserModel applicationUser, MessageFile messageFile) {
+      logAction(applicationUser, UtilActionCodes.LANGUAGE_BUNDLE_ACTIVATED, messageFile.getId(), messageFile.getName());
+   }
+
+   public void languageBundleDownloaded(ApplicationUserModel applicationUser, MessageFile messageFile) {
+      logAction(applicationUser, UtilActionCodes.LANGUAGE_BUNDLE_DOWNLOADED, messageFile.getId(), messageFile.getName());
+   }
+
+   public void languageBundleCreated(ApplicationUserModel applicationUser, MessageFile messageFile) {
+      logAction(applicationUser, UtilActionCodes.LANGUAGE_BUNDLE_CREATED, messageFile.getId(), messageFile.getName());
+   }
+
+   public void appNotificationUpdate(ApplicationUser applicationUser, EventNotificationDefinition notificationDefinition) {
+      logAction(applicationUser, UtilActionCodes.NOTIFICATION_EMAIL_UPDATED, notificationDefinition.getEventDefinitionId(),
+            notificationDefinition.getNotificationMailSubject());
+   }
+
+   public void emailNotificationUpdate(ApplicationUser applicationUser, EventNotificationDefinition notificationDefinition) {
+      logAction(applicationUser, UtilActionCodes.NOTIFICATION_APP_UPDATED, notificationDefinition.getEventDefinitionId(),
+            notificationDefinition.getNotificationMailSubject());
+   }
+
+   public void languangeSettingsStatusUpdated(ApplicationUser applicationUser, Language language) {
+      logAction(applicationUser, UtilActionCodes.LANGUAGE_SETTINGS_STATUS, language.getId(),
+            language.isEnabled() ? "Enabled" : "Disabled", language.getName());
+   }
+
+   private void logActionWithoutParameters(ApplicationUserModel applicationUserModel, String actionCode) {
+      logAction(applicationUserModel, actionCode, null);
+   }
+
+   public void logoReset(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.LOGO_RESET);
+   }
+
+   public void logoChanged(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.LOGO_CHANGED);
+   }
+
+   public void whiteLabelingUpdated(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.WHITE_LABELING_UPDATED);
+   }
+
+   public void themeDeleted(ApplicationUser applicationUser, Theme theme) {
+      logAction(applicationUser, UtilActionCodes.THEME_DELETED, theme.getId(), theme.getName());
+   }
+
+   public void themeUpdated(ApplicationUserModel applicationUser, Theme theme) {
+      logAction(applicationUser, UtilActionCodes.THEME_UPDATED, theme.getId(), theme.getName());
+   }
+
+   public void themeApplied(ApplicationUser applicationUser, Theme theme) {
+      logAction(applicationUser, UtilActionCodes.THEME_APPLIED, theme.getId(), theme.getName());
+   }
+
+   public void browserCompatibilityCreated(ApplicationUser applicationUser, CompatibleBrowser browser) {
+      logAction(applicationUser, UtilActionCodes.BROWSER_COMPATIBILITY_CREATED, null, browser.getName());
+   }
+
+   public void browserCompatibilityUpdated(ApplicationUser applicationUser, CompatibleBrowser browser) {
+      logAction(applicationUser, UtilActionCodes.BROWSER_COMPATIBILITY_UPDATED, null, browser.getName());
+   }
+
+   public void browserCompatibilityDeleted(ApplicationUser applicationUser, CompatibleBrowser browser) {
+      logAction(applicationUser, UtilActionCodes.BROWSER_COMPATIBILITY_DELETED, null, browser.getName());
+   }
+
+   public void operatingSystemCompatibilityCreated(ApplicationUser applicationUser, CompatibleOperatingSystem operatingSystem) {
+      logAction(applicationUser, UtilActionCodes.OPERATING_SYSTEM_COMPATIBILITY_CREATED, null, operatingSystem.getName());
+   }
+
+   public void operatingSystemCompatibilityUpdated(ApplicationUser applicationUser, CompatibleOperatingSystem operatingSystem) {
+      logAction(applicationUser, UtilActionCodes.OPERATING_SYSTEM_COMPATIBILITY_UPDATED, null, operatingSystem.getName());
+   }
+
+   public void operatingSystemCompatibilityDeleted(ApplicationUser applicationUser, CompatibleOperatingSystem operatingSystem) {
+      logAction(applicationUser, UtilActionCodes.OPERATING_SYSTEM_COMPATIBILITY_DELETED, null, operatingSystem.getName());
+   }
+
+   public void myTestsAndSurveysViewUpdated(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.MY_TESTS_AND_SURVEYS_VIEW_CONFIGURATION);
+   }
+
+   public void finishTestUrlUpdated(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.FINISH_TEST_URL_UPDATED);
+   }
+
+   public void expiringTestRemindersSaved(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.EXPIRING_TEST_REMINDERS_SAVED);
+   }
+
+   public void upcomingTestRemindersSaved(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.UPCOMING_TEST_REMINDERS_SAVED);
+   }
+
+   public void testEmailSent(ApplicationUser applicationUser, String testemaiString) {
+      logAction(applicationUser, UtilActionCodes.TEST_MAIL_SENT, null, testemaiString);
+   }
+
+   public void additionalModulesUpdated(ApplicationUser applicationUser, EntitySystemParameter systemParameter) {
+      logAction(applicationUser, UtilActionCodes.ADDITIONAL_MODULES_UPDATED, systemParameter.getId(),
+            systemParameter.getSystemParameterName());
+   }
+
+   public void knowledgeDefRepDemoDownloaded(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.KNOWLEDGE_DEF_REP_DEMO_DOWNLOADED);
+   }
+
+   public void knowledgeDeficiencyReportUpdated(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.KNOWLEDGE_DEFICIENCY_REPORT_UPDATED);
+   }
+
+   public void scoreReportUpdated(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.SCORE_REPORT_UPDATED);
+   }
+
+   public void subscribersDeleted(ApplicationUser applicationUser, List<EntityVSubscribers> list) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         for (EntityVSubscribers user : list) {
+            String text = UtilActionCodes.getActionText(UtilActionCodes.SUBSCRIBERS_DELETED, user.getTo().getSUBSCRIBE_TITLE());
+            EntityUserActionLog userActionLog = getUserActionLogEntity(applicationUser.getUserId(),
+                  UtilActionCodes.SUBSCRIBERS_DELETED, text, applicationUser.getIpAddress(), user.getTo().getSUBSCRIBER_ID(),
+                  applicationUser.getSessionId(), applicationUser.getBrowser(), applicationUser.getOperatingSystem(),
+                  checkImpersonatorId(applicationUser.getImpersonator()),
+                  checkImpersonatorUsername(applicationUser.getImpersonator()));
+            logList.add(userActionLog);
+         }
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void subscribersUpdated(ApplicationUser applicationUser, EntitySubscribers sub) {
+      logAction(applicationUser, UtilActionCodes.SUBSCRIBERS_UPDATED, sub.getTo().getSUBSCRIBER_ID(),
+            sub.getTo().getSUBSCRIBE_TITLE());
+   }
+
+   public void scheduleReportStatusUpdated(ApplicationUser applicationUser, EntityScheduledReport report, String reportName) {
+      logAction(applicationUser, UtilActionCodes.SCHEDULE_REPORT_STATUS_UPDATED, report.getId(), reportName);
+   }
+
+   public void scheduleReportAdded(ApplicationUser applicationUser, EntityScheduledReport report, String reportName) {
+      logAction(applicationUser, UtilActionCodes.SCHEDULE_REPORT_ADDED, report.getId(), reportName);
+   }
+
+   public void favoriteReportAdded(ApplicationUser applicationUser, EntityReportVReportDefinition report) {
+      logAction(applicationUser, UtilActionCodes.FAVORITE_REPORT_ADDED, report.getReportDefinitionId(), report.getReportName());
+   }
+
+   public void favoriteReportDeleted(ApplicationUser applicationUser, EntityVUserFavoriteReports currentFavoriteReportRecord) {
+      logAction(applicationUser, UtilActionCodes.FAVORITE_REPORT_DELETED, currentFavoriteReportRecord.getReportDefinitionId(),
+            currentFavoriteReportRecord.getReportName());
+   }
+
+   public void favoriteReportUpdated(ApplicationUser applicationUser, EntityVUserFavoriteReports currentFavoriteReportRecord) {
+      logAction(applicationUser, UtilActionCodes.FAVORITE_REPORT_UPDATED, currentFavoriteReportRecord.getReportDefinitionId(),
+            currentFavoriteReportRecord.getReportName());
+   }
+
+   public void trackingUsersRemoved(ApplicationUser applicationUser, List<EntityVUsersSubscribers> list) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         for (EntityVUsersSubscribers user : list) {
+            String text = UtilActionCodes.getActionText(UtilActionCodes.SUBSCRIBERS_LIST_OF_TRECKED_USERS_DELETED,
+                  user.getTo().getUSERNAME());
+            EntityUserActionLog userActionLog = getUserActionLogEntity(applicationUser.getUserId(),
+                  UtilActionCodes.SUBSCRIBERS_LIST_OF_TRECKED_USERS_DELETED, text, applicationUser.getIpAddress(),
+                  user.getTo().getUSER_ID(), applicationUser.getSessionId(), applicationUser.getBrowser(),
+                  applicationUser.getOperatingSystem(), checkImpersonatorId(applicationUser.getImpersonator()),
+                  checkImpersonatorUsername(applicationUser.getImpersonator()));
+            logList.add(userActionLog);
+         }
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void bookingSettingsSaved(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.BOOKING_SETTINGS_SAVED);
+   }
+
+   public void trainingCourseSuspended(ApplicationUser applicationUser, EntityVLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_COURSE_SUSPENDED, lesson.getLessonId(), lesson.getLessonName());
+   }
+
+   public void trainingCourseUnsuspended(ApplicationUser applicationUser, EntityVLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_COURSE_UNSUSPENDED, lesson.getLessonId(), lesson.getLessonName());
+   }
+
+   public void usersMovedToStep(ApplicationUser applicationUser, List<EntityVUserLesson> list, String lessonItem) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         for (EntityVUserLesson lessonUser : list) {
+            EntityUserActionLog userActionLog = createLogObject(applicationUser, UtilActionCodes.USERS_MOVED_TO_STEP,
+                  lessonUser.getTo().getUSER_ID(), lessonUser.getTo().getUSERNAME(), lessonItem, lessonUser.getLessonName());
+            logList.add(userActionLog);
+         }
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public interface Loggable {
+      BigDecimal getLogObjectId();
+
+      Object[] getLogParameters();
+   }
+
+   public void usersSettedToNotCompleted(ApplicationUser applicationUser, List<EntityVUserLesson> list) {
+      try {
+
+         Function<EntityVUserLesson, BigDecimal> getObjectIdFunction = x -> null;
+         Function<EntityVUserLesson, Object[]> getParametersFunction = x -> new Object[] {
+                                                                                           x.getTo().getUSERNAME(),
+                                                                                           x.getLessonName() };
+
+         createAndSaveActionLogs(applicationUser, UtilActionCodes.USERS_SETTED_TO_NOT_COMPLETED, list, getObjectIdFunction,
+               getParametersFunction);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   private <T> void createAndSaveActionLogs(ApplicationUser applicationUser,
+         String actionCode,
+         List<T> list,
+         Function<T, BigDecimal> getObjectIdFunction,
+         Function<T, Object[]> getParametersFunction) throws MessageException {
+
+      Function<T, EntityUserActionLog> createLogObjectFunction = x -> createLogObject(applicationUser, actionCode,
+            getObjectIdFunction.apply(x), getParametersFunction.apply(x));
+      List<EntityUserActionLog> actionLogs = list.stream().map(createLogObjectFunction).collect(Collectors.toList());
+      batchEntityInsert(actionLogs);
+   }
+
+   public void usersRemoved(ApplicationUser applicationUser, List<EntityVUserLesson> list) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         for (EntityVUserLesson lessonUser : list) {
+            String text = UtilActionCodes.getActionText(UtilActionCodes.USERS_REMOVED, lessonUser.getTo().getUSERNAME(),
+                  lessonUser.getLessonName());
+            EntityUserActionLog userActionLog = getUserActionLogEntity(applicationUser.getUserId(), UtilActionCodes.USERS_REMOVED,
+                  text, applicationUser.getIpAddress(), lessonUser.getTo().getUSER_ID(), applicationUser.getSessionId(),
+                  applicationUser.getBrowser(), applicationUser.getOperatingSystem(),
+                  checkImpersonatorId(applicationUser.getImpersonator()),
+                  checkImpersonatorUsername(applicationUser.getImpersonator()));
+            logList.add(userActionLog);
+         }
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void managerRemoved(ApplicationUser applicationUser, EntityVUserLesson manager) {
+      logAction(applicationUser, UtilActionCodes.MANAGER_REMOVED, manager.getTo().getUSER_ID(), manager.getTo().getUSERNAME(),
+            manager.getLessonName());
+   }
+
+   public void usersAdded(ApplicationUser applicationUser, List<EntityUser> list, String lessonName) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         for (EntityUser lessonUser : list) {
+            String text = UtilActionCodes.getActionText(UtilActionCodes.USERS_ADDED, lessonUser.getTo().getUSERNAME(),
+                  lessonName);
+            EntityUserActionLog userActionLog = getUserActionLogEntity(applicationUser.getUserId(), UtilActionCodes.USERS_ADDED,
+                  text, applicationUser.getIpAddress(), lessonUser.getTo().getUSER_ID(), applicationUser.getSessionId(),
+                  applicationUser.getBrowser(), applicationUser.getOperatingSystem(),
+                  checkImpersonatorId(applicationUser.getImpersonator()),
+                  checkImpersonatorUsername(applicationUser.getImpersonator()));
+            logList.add(userActionLog);
+         }
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void managersAdded(ApplicationUser applicationUser, List<EntityUser> list, String lessonName) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         for (EntityUser lessonUser : list) {
+            String text = UtilActionCodes.getActionText(UtilActionCodes.MANAGERS_ADDED, lessonUser.getTo().getUSERNAME(),
+                  lessonName);
+            EntityUserActionLog userActionLog = getUserActionLogEntity(applicationUser.getUserId(),
+                  UtilActionCodes.MANAGERS_ADDED, text, applicationUser.getIpAddress(), lessonUser.getTo().getUSER_ID(),
+                  applicationUser.getSessionId(), applicationUser.getBrowser(), applicationUser.getOperatingSystem(),
+                  checkImpersonatorId(applicationUser.getImpersonator()),
+                  checkImpersonatorUsername(applicationUser.getImpersonator()));
+            logList.add(userActionLog);
+         }
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void trainingCoursePublished(ApplicationUser applicationUser, EntityVLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_COURSE_PUBLISHED, lesson.getLessonId(), lesson.getLessonName());
+   }
+
+   public void lessonItemQuizRemoved(ApplicationUser applicationUser, EntityLessonItem lessonItem, String quizName) {
+      logAction(applicationUser, UtilActionCodes.TEST_REMOVED, lessonItem.getTo().getITEM_ID(), quizName,
+            lessonItem.getTo().getLESSON_NAME());
+   }
+
+   public void existingTestAdded(ApplicationUser applicationUser, EntityLessonItem lessonItem, String quizName) {
+      logAction(applicationUser, UtilActionCodes.EXISTING_TEST_ADDED, lessonItem.getTo().getITEM_ID(), quizName,
+            lessonItem.getTo().getLESSON_NAME());
+   }
+
+   public void stepAddedToTrainingCourse(ApplicationUser applicationUser, EntityLessonItem lessonItem, EntityLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.STEP_ADDED, lessonItem.getTo().getITEM_ID(), lessonItem.getTo().getITEM_NAME(),
+            lesson.getName());
+   }
+
+   public void trainingCourseStepEdited(ApplicationUser applicationUser, EntityLessonItem lessonItem) {
+      logAction(applicationUser, UtilActionCodes.STEP_EDITED, lessonItem.getTo().getITEM_ID(), lessonItem.getTo().getITEM_NAME(),
+            lessonItem.getTo().getLESSON_NAME());
+   }
+
+   public void roomAddedToTheLocation(ApplicationUserModel applicationUser, EntityRoom room, EntityTestingLocation location) {
+      logAction(applicationUser, UtilActionCodes.ROOM_ADDED, room.getTo().getROOM_ID(), room.getTo().getROOM_NUMBER(),
+            location.getLocationName());
+   }
+
+   public void commonTestingSessionScheduled(ApplicationUserModel applicationUser,
+         EntityTestingSession session,
+         EntityTestingLocation location) {
+      logAction(applicationUser, UtilActionCodes.COMMON_TESTING_SESSION_SCHEDULED, session.getId(), session.getSessionName(),
+            location.getLocationName());
+   }
+
+   public void specifyAddressAdded(ApplicationUser applicationUser,
+         EntityAddress address,
+         EntityTestingLocation entityTestingLocation) {
+      logAction(applicationUser, UtilActionCodes.SPECIFY_ADDRESS_ADDED, address.getId(), entityTestingLocation.getLocationName());
+   }
+
+   public void poolExportedToJSON(ApplicationUser applicationUser, Pool pool) {
+      logAction(applicationUser, UtilActionCodes.POOL_EXPORTED_TO_JSON, pool.getPOOL_ID(), pool.getPOOL_NAME());
+   }
+
+   public void questionsMovedFromPool(ApplicationUser applicationUser, EntityPool pool, String pool2) {
+      logAction(applicationUser, UtilActionCodes.QUESTIONS_MOVED_FROM_POOL, pool.getTo().getPOOL_ID(),
+            pool.getTo().getPOOL_NAME(), pool2);
+   }
+
+   public void questionsCopiedFromPool(ApplicationUser applicationUser, EntityPool pool, String pool2) {
+      logAction(applicationUser, UtilActionCodes.QUESTIONS_COPIED_FROM_POOL, pool.getTo().getPOOL_ID(),
+            pool.getTo().getPOOL_NAME(), pool2);
+   }
+
+   public void gradingScaleCreated(ApplicationUser applicationUser, EntityGradingSystem gradingSystem) {
+      logAction(applicationUser, UtilActionCodes.GRADING_SCALE_CREATED, gradingSystem.getId(), gradingSystem.getName());
+   }
+
+   public void gradingScaleUpdated(ApplicationUser applicationUser, EntityGradingSystem gradingSystem) {
+      logAction(applicationUser, UtilActionCodes.GRADING_SCALE_UPDATED, gradingSystem.getId(), gradingSystem.getName());
+   }
+
+   public void authorizationCreated(ApplicationUserModel applicationUser, EntityAuthorization authorization) {
+      logAction(applicationUser, UtilActionCodes.AUTHORIZATION_CREATED, authorization.getAuthorizationId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  authorization.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            authorization.getQuizDefinition().getQuizName(), authorization.getUser().getUsername());
+   }
+
+   public void authorizationDeleted(ApplicationUserModel applicationUser, EntityAuthorization authorization) {
+      logAction(applicationUser, UtilActionCodes.AUTHORIZATION_DELETED, authorization.getAuthorizationId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  authorization.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            authorization.getQuizDefinition().getQuizName(), authorization.getUser().getUsername());
+   }
+
+   public void authorizationUpdated(ApplicationUserModel applicationUser, EntityAuthorization authorization) {
+      logAction(applicationUser, UtilActionCodes.AUTHORIZATION_UPDATED, authorization.getAuthorizationId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  authorization.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            authorization.getQuizDefinition().getQuizName(), authorization.getUser().getUsername());
+   }
+
+   public void authorizationRemovedFromAttempt(ApplicationUserModel applicationUser,
+         EntityAuthorization authorization,
+         BigDecimal attemptId) {
+      logAction(applicationUser, UtilActionCodes.AUTHORIZATION_REMOVED, authorization.getAuthorizationId(), attemptId,
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  authorization.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            authorization.getQuizDefinition().getQuizName(), authorization.getUser().getUsername());
+   }
+
+   public void proctorsAssigned(ApplicationUser applicationUser, EntityTestingSession session) {
+      logAction(applicationUser, UtilActionCodes.PROCTORS_ASSIGNED, session.getId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  session.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            session.getQuizDefinition().getQuizName());
+   }
+
+   public void proctorsDeleted(ApplicationUser applicationUser, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.PROCTORS_DELETED, quizDefinition.getQuizDefinitionId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void gradingChangedForTestOrSurvey(ApplicationUser applicationUser, EntityQuizDefinition quiz) {
+      logAction(applicationUser, UtilActionCodes.GRADING_SCALE_CHANGED, quiz.getQuizDefinitionId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quiz.isSurvey() ? "surveySmall" : "testSmall"), quiz.getQuizName());
+   }
+
+   public void questionsCreated(ApplicationUser applicationUser, EntityQuestion question, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_CREATED_FOR_SURVEY_OR_TEST, question.getQuestionId(),
+            UtilCodeTypes.QuestionType.getCodeDesc(UtilProperites.DEFAULT_PROPERTIES_LOCALE.toLanguageTag(), question.getType()),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void questionsImportedFromPool(ApplicationUser applicationUser, String poolName, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.QUESTIONS_IMPORTED_FROM_POOL, quizDefinition.getQuizDefinitionId(), poolName,
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void questionVersionDeleted(ApplicationUser applicationUser,
+         BigDecimal questionId,
+         BigDecimal questionMetadataId,
+         BigDecimal revisionNumber) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_VERSION_DELETED, questionId, questionId, revisionNumber,
+            questionMetadataId);
+   }
+
+   public void questionVersionActivated(ApplicationUser applicationUser,
+         BigDecimal questionId,
+         BigDecimal questionMetadataId,
+         BigDecimal poolId) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_VERSION_ACTIVATED, questionMetadataId, questionId, poolId);
+   }
+
+   public void questionVersionScheduledForActivation(ApplicationUser applicationUser,
+         BigDecimal questionId,
+         BigDecimal questionMetadataId,
+         BigDecimal poolId) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_VERSION_SCHEDULED, questionId, questionId, questionMetadataId, poolId);
+   }
+
+   public void questionExternalIdsUpdated(ApplicationUser applicationUser, BigDecimal questionId, BigDecimal questionMetadataId) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_EXTERNAL_IDS_UPDATED, questionMetadataId, questionMetadataId,
+            questionId);
+   }
+
+   public void questionEdited(ApplicationUser applicationUser,
+         EntityQuestion question,
+         EntityQuizDefinition quizDefinition,
+         EntityQuizQuestion quizQuestion) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_EDITED_IN_SURVEY, question.getQuestionId(),
+            quizQuestion.getOrdinalNumber(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   /**
+    * <p>Action log used when attempt status was not changed to Deleted, but was
+    * removed.
+    * 
+    * @param    applicationUser
+    * @param    quizInstanceResult
+    * @see      #attemptDeleted(ApplicationUser, EntityVQuizInstanceResult)
+    */
+   public void candidateDeleted(ApplicationUser applicationUser, EntityVQuizInstanceResult quizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.CANDIDATE_DELETED_FROM_SURVEY_OR_TEST, quizInstanceResult.getInstanceId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  quizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            quizInstanceResult.getQuizName(), quizInstanceResult.getSessionName());
+   }
+
+   public void attemptSuspended(ApplicationUser applicationUser, EntityVQuizInstanceResult quizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.ATTEMPT_SUSPENDED, quizInstanceResult.getInstanceId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  quizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            quizInstanceResult.getQuizName(), quizInstanceResult.getSessionName(),
+            quizInstanceResult.getSuspendTypeForDisplay(Locale.ENGLISH.getLanguage()));
+   }
+
+   public void attemptUnsuspended(ApplicationUser applicationUser, EntityVQuizInstanceResult quizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.ATTEMPT_UNSUSPENDED, quizInstanceResult.getInstanceId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  quizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            quizInstanceResult.getQuizName(), quizInstanceResult.getSessionName());
+   }
+
+   public void sessionChangedForCandidate(ApplicationUser applicationUser,
+         EntityTestingSession oldSession,
+         EntityTestingSession newSession) {
+      logAction(applicationUser, UtilActionCodes.SESSION_CHANGED_FOR_CANDIDATE, newSession.getId(), oldSession.getSessionName(),
+            newSession.getSessionName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  newSession.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            newSession.getQuizDefinition().getQuizName());
+   }
+
+   public void candidatesAddedToSession(ApplicationUser applicationUser, EntityTestingSession session) {
+      logAction(applicationUser, UtilActionCodes.CANDIDATES_ADDED_TO_SESSION, session.getId(), session.getSessionName(),
+            session.getQuizDefinition().getQuizName());
+   }
+
+   public void candidatesAddedToCommonSession(ApplicationUser applicationUser,
+         EntityTestingSession session,
+         EntityQuizDefinition quiz) {
+      logAction(applicationUser, UtilActionCodes.CANDIDATES_ADDED_TO_SESSION, session.getId(), session.getSessionName(),
+            quiz.getQuizName());
+   }
+
+   public void surveyOrTestReturnedToWizard(ApplicationUser applicationUser, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_OR_TEST_RETURNED_TO_WIZARD, quizDefinition.getQuizDefinitionId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void previewAttemptStarted(ApplicationUser applicationUser, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.PREVIEW_ATTEMPT_STARTED, quizDefinition.getQuizDefinitionId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void SurveyOrTestSuspended(ApplicationUser applicationUser, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_OR_TEST_SUSPENDED, quizDefinition.getQuizDefinitionId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void copyCreatedForSurveyOrTest(ApplicationUser applicationUser, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.COPY_CREATED_FOR_TEST_OR_SURVEY, quizDefinition.getQuizDefinitionId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void previewAttemptsDeleted(ApplicationUser applicationUser, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.PREVIEW_ATTEMPTS_DELETED, quizDefinition.getQuizDefinitionId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void testingSessionDeleted(ApplicationUserModel applicationUser, EntityTestingSession session) {
+      logAction(applicationUser, UtilActionCodes.TESTING_SESSION_DELETED, session.getId(), session.getSessionName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  session.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            session.getQuizDefinition().getQuizName());
+   }
+
+   public void surveyOrTestPublished(ApplicationUser applicationUser, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_OR_TEST_PUBLISHED, quizDefinition.getQuizDefinitionId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void testingSessionCreated(ApplicationUserModel applicationUser, EntityTestingSession session) {
+      logAction(applicationUser, UtilActionCodes.TESTING_SESSION_CREATED, session.getId(), session.getSessionName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  session.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            session.getQuizDefinition().getQuizName());
+   }
+
+   public void testingSessionUpdated(ApplicationUserModel applicationUser, EntityTestingSession session) {
+      logAction(applicationUser, UtilActionCodes.TESTING_SESSION_UPDATED, session.getId(), session.getSessionName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  session.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            session.getQuizDefinition().getQuizName());
+   }
+
+   public void testResultsExportedViaSystemJob(ApplicationUser applicationUser, Job job) {
+      logAction(applicationUser, UtilActionCodes.TEST_RESULTS_EXPORTED_VIA_SYSTEM_JOB, job.getId(), job.getName());
+   }
+
+   public void attemptDeleted(ApplicationUser applicationUser, EntityVQuizInstanceResult attempt) {
+      logAction(applicationUser, UtilActionCodes.ATTEMPT_DELETED, attempt.getQuizInstanceId(),
+            attempt.getQuizDefinition().getQuizName(), attempt.getSessionName());
+   }
+
+   public void attemptMarkedForReview(ApplicationUser applicationUser, EntityVQuizInstanceResult attempt) {
+      logAction(applicationUser, UtilActionCodes.ATTEMPT_MARKED_FOR_REVIEW, attempt.getQuizInstanceId(),
+            attempt.getQuizDefinition().getQuizName(), attempt.getSessionName());
+   }
+
+   public void gradeSettedToZero(ApplicationUser applicationUser, EntityVQuizInstanceResult attempt) {
+      logAction(applicationUser, UtilActionCodes.GRADE_SETTED_TO_ZERO, attempt.getQuizInstanceId(),
+            attempt.getQuizDefinition().getQuizName(), attempt.getSessionName());
+   }
+
+   public void attemptVerified(ApplicationUser applicationUser, EntityVQuizInstanceResult attempt) {
+      logAction(applicationUser, UtilActionCodes.ATTEMPT_VERIFIED, attempt.getQuizInstanceId(), attempt.getQuizInstanceId(),
+            attempt.getQuizDefinition().getQuizName(), attempt.getSessionName());
+   }
+
+   public void commonSessionExported(ApplicationUser applicationUser,
+         EntityVTestingSessionLocation entityVTestingSessionLocation) {
+      logAction(applicationUser, UtilActionCodes.COMMON_SESSION_EXPORTED, entityVTestingSessionLocation.getCommonSessionId(),
+            entityVTestingSessionLocation.getTestingSessionName());
+   }
+
+   public void usersListUpdated(ApplicationUser applicationUser, EntityPool pool) {
+      logAction(applicationUser, UtilActionCodes.USERS_LIST_UPDATED, pool.getPoolId(), pool.getName());
+   }
+
+   public void usersRemovedFromQuestionPool(ApplicationUser applicationUser, EntityPool pool) {
+      logAction(applicationUser, UtilActionCodes.USERS_REMOVED_FROM_QUESTION_POOL, pool.getPoolId(), pool.getName());
+   }
+
+   public void usersAssignedToQuestionPool(ApplicationUser applicationUser, EntityPool pool) {
+      logAction(applicationUser, UtilActionCodes.USERS_ASSIGNED_TO_QUESTION_POOL, pool.getPoolId(), pool.getName());
+   }
+
+   public void questionDeletedFromPool(ApplicationUser applicationUser, EntityQuestion question, EntityPool pool) {
+      logAction(applicationUser, UtilActionCodes.QUESTIONS_DELETED_FROM_POOL, question.getQuestionId(),
+            UtilCodeTypes.QuestionType.getCodeDesc(UtilProperites.DEFAULT_PROPERTIES_LOCALE.toLanguageTag(), question.getType()),
+            pool.getName());
+   }
+
+   public void questionsDeletedFromPool(ApplicationUser applicationUser, int numOfQuestions, BigDecimal poolId) {
+      logAction(applicationUser, UtilActionCodes.MULTIPLE_QUESTIONS_DELETED_FROM_POOL, poolId, numOfQuestions, poolId);
+   }
+
+   public void questionAddedToPool(ApplicationUser applicationUser, EntityQuestion question, EntityPool pool) {
+      logAction(applicationUser, UtilActionCodes.QUESTIONS_ADDED_TO_POOL, question.getQuestionId(),
+            question.getQuestionMetadataId(), pool.getName());
+   }
+
+   public void questionVersionAddedToPool(ApplicationUser applicationUser,
+         EntityQuestion question,
+         BigDecimal poolId,
+         String poolName) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_VERSION_ADDED_TO_POOL, question.getQuestionId(),
+            question.getQuestionMetadataId(), question.getQuestionId(), poolName);
+      if (question.getActivateAt() == null) {
+         questionVersionActivated(applicationUser, question.getQuestionId(), question.getQuestionMetadataId(), poolId);
+      } else {
+         questionVersionScheduledForActivation(applicationUser, question.getQuestionId(), question.getQuestionMetadataId(),
+               poolId);
+      }
+   }
+
+   public void questionUpdatedFromPool(ApplicationUser applicationUser, EntityQuestion question, String poolName) {
+      logAction(applicationUser, UtilActionCodes.QUESTIONS_UPDATED_FROM_POOL, question.getQuestionId(),
+            question.getQuestionMetadataId(), question.getQuestionId(), poolName);
+   }
+
+   public void questionPoolUpdated(ApplicationUser applicationUser, EntityPool pool) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_POOL_UPDATED, pool.getPoolId(), pool.getName());
+   }
+
+   public void questionPoolCreated(ApplicationUser applicationUser, EntityPool pool) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_POOL_CREATED, pool.getPoolId(), pool.getName());
+   }
+
+   public void questionPoolMoved(ApplicationUser applicationUser, EntityPool pool, EntityPool destination) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_POOL_MOVED, pool.getPoolId(), pool.getName(), destination.getName());
+   }
+
+   public void verificationConfigurationUpdated(ApplicationUser applicationUser, QuizDeliveryPreference deliveryPreference) {
+      logAction(applicationUser, UtilActionCodes.VERIFICATION_CONFIGURATION_UPDATED, applicationUser.getUserId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, deliveryPreference.labelSmall()));
+   }
+
+   public void testListUpdatedforCertificate(ApplicationUser applicationUser, Certificate certificate) {
+      logAction(applicationUser, UtilActionCodes.CERTIFICATE_TEST_LIST_UPDATED, certificate.getId(), certificate.getName());
+   }
+
+   public void conditionUpdatedforCertificate(ApplicationUser applicationUser, BigDecimal certificateId, String certificateName) {
+      logAction(applicationUser, UtilActionCodes.CERTIFICATE_CONDITION_UPDATED, certificateId, certificateName);
+   }
+
+   public void managersAddedForCertificate(ApplicationUser applicationUser, Certificate certificate) {
+      logAction(applicationUser, UtilActionCodes.MANAGERS_ADDED_FOR_CERTIFICATE, certificate.getId(), certificate.getName());
+   }
+
+   public void manualProctoringReportSubmited(ApplicationUser applicationUser, EntityTestingSession session) {
+      logAction(applicationUser, UtilActionCodes.MANUAL_PROCTORING_REPORT_SUBMITED, session.getId(), session.getSessionName(),
+            session.getQuizDefinition().getQuizName());
+   }
+
+   public void manualProctoringReportSubmited(ApplicationUser applicationUser,
+         BigDecimal sessionId,
+         String sessionName,
+         String quizName) {
+      logAction(applicationUser, UtilActionCodes.MANUAL_PROCTORING_REPORT_SUBMITED, sessionId, sessionName, quizName);
+   }
+
+   public void redirectingToPersonalReport(ApplicationUser applicationUser, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.REDIRECTING_TO_PERSONAL_REPORT, quizDefinition.getQuizDefinitionId(),
+            quizDefinition.getQuizName());
+   }
+
+   public void candidatesAttemptReset(ApplicationUser applicationUser, EntityVQuizInstanceResult curCandidate) {
+      logAction(applicationUser, UtilActionCodes.CANDIDATES_ATTEMPT_RESET, curCandidate.getUserId(),
+            curCandidate.getQuizDefinition().getQuizName(), curCandidate.getTestTakerUsername());
+   }
+
+   public void questionFlaggedForReview(ApplicationUser applicationUser, EntityQuizResult question) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_FLAGGED, question.getQuestionIdBD(),
+            question.getQuestionOrdinalNumber().toString());
+   }
+
+   public void questionUnflaggedForReview(ApplicationUser applicationUser, EntityQuizResult question) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_UNFLAGGED, question.getQuestionIdBD(),
+            question.getQuestionOrdinalNumber().toString());
+   }
+
+   public void roleDeleted(ApplicationUser applicationUser, EntityRole role) {
+      logAction(applicationUser, UtilActionCodes.ROLE_DELETED, null, role.getRoleName());
+   }
+
+   public void roleUpdated(ApplicationUser applicationUser, EntityRole role) {
+      logAction(applicationUser, UtilActionCodes.ROLE_UPDATED, null, role.getRoleName());
+   }
+
+   public void quizAddedToStatistics(ApplicationUser applicationUser,
+         VCoursesSumTo vCoursesSumTo,
+         EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.QUIZ_ADDED_TO_STATISTICS, vCoursesSumTo.getCOURSE_ID(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            vCoursesSumTo.getCOURSE_NAME());
+   }
+
+   public void memberAddedToStatistics(ApplicationUser applicationUser, VCoursesSumTo vCoursesSumTo) {
+      logAction(applicationUser, UtilActionCodes.MEMBER_ADDED_TO_STATISTICS, vCoursesSumTo.getCOURSE_ID(),
+            vCoursesSumTo.getCOURSE_NAME());
+   }
+
+   public void userAssignedToTest(ApplicationUser applicationUser, EntityUser user) {
+      logAction(applicationUser, UtilActionCodes.USER_ASSIGNED_TO_TEST, user.getUserId(), user.getUsername());
+   }
+
+   public void syncWithActiveDirectorySucceeded(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.SYNC_WITH_ACTIVE_DIRECTORY_SUCCEEDED);
+   }
+
+   public void syncWithActiveDirectoryFailed(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.SYNC_WITH_ACTIVE_DIRECTORY_FAILED);
+   }
+
+   public void userStatusSetted(ApplicationUser applicationUser, List<EntityVUserRole> list, String status) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         for (EntityVUserRole user : list) {
+            String text = UtilActionCodes.getActionText(UtilActionCodes.USER_STATUS_SETTED, user.getUser().getUsername(), status);
+            EntityUserActionLog userActionLog = getUserActionLogEntity(applicationUser.getUserId(),
+                  UtilActionCodes.USER_STATUS_SETTED, text, applicationUser.getIpAddress(), user.getUserId(),
+                  applicationUser.getSessionId(), applicationUser.getBrowser(), applicationUser.getOperatingSystem(),
+                  checkImpersonatorId(applicationUser.getImpersonator()),
+                  checkImpersonatorUsername(applicationUser.getImpersonator()));
+            logList.add(userActionLog);
+         }
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void attachmentAdded(ApplicationUser applicationUser, EntityLiterature literature) {
+      logAction(applicationUser, UtilActionCodes.ATTACHMENT_ADDED, literature.getMediaMetadataId(), literature.getName());
+   }
+
+   public void reportDisplayed(ApplicationUser applicationUser, EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.REPORT_DISPLAYED, quizDefinition.getQuizDefinitionId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveySmall" : "testSmall"),
+            quizDefinition.getQuizName());
+   }
+
+   public void managersDeletedFromCertificate(ApplicationUser applicationUser, Certificate certificate) {
+      logAction(applicationUser, UtilActionCodes.MANAGERS_DELETED_FROM_CERTIFICATE, certificate.getId(), certificate.getName());
+   }
+
+   public void personalInfoUpdated(ApplicationUser applicationUser, String username) {
+      logAction(applicationUser, UtilActionCodes.USER_PERSONAL_UPDATE, applicationUser.getUserId(), username);
+   }
+
+   public void userProfileUpdated(ApplicationUser applicationUser, String username) {
+      logAction(applicationUser, UtilActionCodes.USER_UPDATED, applicationUser.getUserId(), username);
+   }
+
+   public void membersAddedToUserGroup(ApplicationUser applicationUser, EntityGroup group) {
+      logAction(applicationUser, UtilActionCodes.MEMBERS_ADDED_TO_USER_GROUP, group.getId(), group.getName());
+   }
+
+   public void managersAddedToUserGroup(ApplicationUser applicationUser, EntityGroup group) {
+      logAction(applicationUser, UtilActionCodes.MANAGERS_ADDED_TO_USER_GROUP, group.getId(), group.getName());
+   }
+
+   public void trainingCourseStarted(ApplicationUser applicationUser, BigDecimal lessonId, String lessonName) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_TAKEN, lessonId, lessonName);
+   }
+
+   public void trainingCourseContinued(ApplicationUser applicationUser,
+         BigDecimal lessonId,
+         String lessonName,
+         BigDecimal itemOrdinalNumber) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_CONTINUED, lessonId, lessonName, itemOrdinalNumber);
+   }
+
+   public void trainingCourseUserChangedStep(ApplicationUser applicationUser,
+         BigDecimal oldItemOrdinal,
+         BigDecimal newItemOrdinal,
+         BigDecimal lessonId,
+         String lessonName) {
+      logAction(applicationUser, UtilActionCodes.CHANGED_STEP, lessonId, oldItemOrdinal, newItemOrdinal, lessonName);
+   }
+
+   public void trainingCourseRevisited(ApplicationUser applicationUser, EntityLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_REVISITED, lesson.getId(), lesson.getName());
+   }
+
+   public void attachmentAddedToTrainingCourse(ApplicationUser applicationUser, MediaMetaData media, String lessonName) {
+      logAction(applicationUser, UtilActionCodes.ATTACHMENT_ADDED_TO_TRAINING_COURSE, media.getId(), media.getType(), lessonName);
+   }
+
+   public void poolDeleted(ApplicationUser applicationUser, EntityPool pool) {
+      logAction(applicationUser, UtilActionCodes.POOL_DELETED, pool.getPoolId(), pool.getName());
+   }
+
+   public void testOrSurveyPaused(ApplicationUser applicationUser,
+         EntityTestingSession session,
+         EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.TEST_OR_SURVEY_PAUSED, session.getId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveysSmall" : "testsSmall"),
+            session.getSessionName());
+   }
+
+   public void testOrSurveyPaused(ApplicationUser applicationUser, BigDecimal sessionId, String sessionName, boolean isSurvey) {
+      logAction(applicationUser, UtilActionCodes.TEST_OR_SURVEY_PAUSED, sessionId,
+            UtilProperites.getMessageProperty(Locale.ENGLISH, isSurvey ? "surveysSmall" : "testsSmall"), sessionName);
+   }
+
+   public void testOrSurveyResumed(ApplicationUser applicationUser,
+         EntityTestingSession session,
+         EntityQuizDefinition quizDefinition) {
+      logAction(applicationUser, UtilActionCodes.TEST_OR_SURVEY_RESUMED, session.getId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH, quizDefinition.isSurvey() ? "surveysSmall" : "testsSmall"),
+            session.getSessionName());
+   }
+
+   public void testOrSurveyResumed(ApplicationUser applicationUser, BigDecimal sessionId, String sessionName, boolean isSurvey) {
+      logAction(applicationUser, UtilActionCodes.TEST_OR_SURVEY_RESUMED, sessionId,
+            UtilProperites.getMessageProperty(Locale.ENGLISH, isSurvey ? "surveysSmall" : "testsSmall"), sessionName);
+   }
+
+   public void surveyOrTestSelected(ApplicationUser applicationUser, BigDecimal quizId, String quizName, boolean isSurvey) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_OR_TEST_SELECTED, quizId,
+            UtilProperites.getMessageProperty(Locale.ENGLISH, isSurvey ? "surveySmall" : "testSmall"), quizName);
+   }
+
+   public void surveyOrTestBooked(ApplicationUser applicationUser, BigDecimal quizId, String quizName, boolean isSurvey) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_OR_TEST_BOOKED, quizId,
+            UtilProperites.getMessageProperty(Locale.ENGLISH, isSurvey ? "surveySmall" : "testSmall"), quizName);
+   }
+
+   public void commonTestingSessionDeleted(ApplicationUserModel applicationUser, EntityVTestingSessionLocation session) {
+      logAction(applicationUser, UtilActionCodes.TESTING_SESSION_DELETED, session.getTestingSessionId(),
+            session.getTestingSessionName(), UtilProperites.getMessageProperty(Locale.ENGLISH, "testSmall"),
+            session.getQuizDefinitionId() != null
+                                                  ? session.getQuizName()
+                                                  : UtilProperites.getMessageProperty(Locale.ENGLISH, "multipleTests"));
+   }
+
+   public void userGroupCreated(ApplicationUser applicationUser, CourseTo course) {
+      logAction(applicationUser, UtilActionCodes.COURSE_CREATED, course.getCOURSE_ID(), course.getCOURSE_NAME());
+   }
+
+   public void userGroupDeleted(ApplicationUser applicationUser, CourseTo course) {
+      logAction(applicationUser, UtilActionCodes.COURSE_DELETED, course.getCOURSE_ID(), course.getCOURSE_NAME());
+   }
+
+   public void userGroupUpdated(ApplicationUser applicationUser, CourseTo course) {
+      logAction(applicationUser, UtilActionCodes.COURSE_UPDATED, course.getCOURSE_ID(), course.getCOURSE_NAME());
+   }
+
+   public void userSubGroupCreated(ApplicationUser applicationUser, CourseTo course) {
+      logAction(applicationUser, UtilActionCodes.SUB_COURSE_CREATED, course.getCOURSE_ID(), course.getCOURSE_NAME());
+   }
+
+   public void userSubGroupDeleted(ApplicationUser applicationUser, CourseTo course) {
+      logAction(applicationUser, UtilActionCodes.SUB_COURSE_DELETED, course.getCOURSE_ID(), course.getCOURSE_NAME());
+   }
+
+   public void userSubGroupUpdated(ApplicationUser applicationUser, CourseTo course) {
+      logAction(applicationUser, UtilActionCodes.SUB_COURSE_UPDATED, course.getCOURSE_ID(), course.getCOURSE_NAME());
+   }
+
+   public void passwordChanged(ApplicationUser applicationUser, UsersTo user) {
+      logAction(applicationUser, UtilActionCodes.CHANGE_PASSWORD, user.getUSER_ID(), user.getUSERNAME());
+   }
+
+   public void userRegistration(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.NEW_USER_CREATED);
+   }
+
+   public void userLogOut(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.LOGOUT);
+   }
+
+   public void userLogIn(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.LOGIN);
+   }
+
+   public void userActivated(ApplicationUser applicationUser, EntityUser user) {
+      logAction(applicationUser, UtilActionCodes.USER_ACTIVATED, user.getUserId(), user.getFirstName(), user.getLastName());
+   }
+
+   public void userCreated(ApplicationUser applicationUser, EntityUser user) {
+      logAction(applicationUser, UtilActionCodes.USER_CREATED, user.getUserId(), user.getUsername());
+   }
+
+   public void userDeactivated(ApplicationUser applicationUser, EntityUser user) {
+      logAction(applicationUser, UtilActionCodes.USER_DEACTIVATED, user.getUserId(), user.getFirstName(), user.getLastName());
+   }
+
+   public void userDeleted(ApplicationUser applicationUser, EntityUser user) {
+      logAction(applicationUser, UtilActionCodes.USER_DELETED, user.getUserId(), user.getFirstName(), user.getLastName());
+   }
+
+   public void userLocked(ApplicationUser applicationUser, EntityUser user) {
+      logAction(applicationUser, UtilActionCodes.USER_LOCKED, user.getUserId(), user.getFirstName(), user.getLastName());
+   }
+
+   public void userSuspended(ApplicationUser applicationUser, EntityUser user) {
+      logAction(applicationUser, UtilActionCodes.USER_SUSPENDED, user.getUserId(), user.getFirstName(), user.getLastName());
+   }
+
+   public void trainingCourseUpdated(ApplicationUser applicationUser, EntityVLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_UPDATED, lesson.getTo().getLESSON_ID(),
+            lesson.getTo().getLESSON_NAME());
+   }
+
+   public void trainingLiteratureDeleted(ApplicationUser applicationUser, EntityVLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_LITTERATURE_REMOVED, lesson.getTo().getLESSON_ID(),
+            lesson.getTo().getLESSON_NAME());
+   }
+
+   public void trainingLiteratureAdded(ApplicationUser applicationUser, EntityVLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_LITTERATURE_ADDED, lesson.getTo().getLESSON_ID(),
+            lesson.getTo().getLESSON_NAME());
+   }
+
+   public void trainingCourseDeleted(ApplicationUser applicationUser, EntityVLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_DELETED, lesson.getTo().getLESSON_ID(),
+            lesson.getTo().getLESSON_NAME());
+   }
+
+   public void quizTemplateDeleted(ApplicationUser applicationUser, BigDecimal quizTemplateId) {
+      logAction(applicationUser, UtilActionCodes.QUIZ_TEMPLATE_DELETED, quizTemplateId, quizTemplateId);
+   }
+
+   public void quizTemplateCreated(ApplicationUser applicationUser, QuizTemplateTo template) {
+      logAction(applicationUser, UtilActionCodes.QUIZ_TEMPLATE_CREATED, template.getQUIZ_TEMPLATE_ID(),
+            template.getTEMPLATE_NAME());
+   }
+
+   public void quizTemplateUpdated(ApplicationUser applicationUser, QuizTemplateTo template) {
+      logAction(applicationUser, UtilActionCodes.QUIZ_TEMPLATE_UPDATED, template.getQUIZ_TEMPLATE_ID(),
+            template.getTEMPLATE_NAME());
+   }
+
+   public void surveyTemplateDeleted(ApplicationUser applicationUser, EntityVQuizTemplate template) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_TEMPLATE_DELETED, template.getTo().getQUIZ_TEMPLATE_ID(),
+            template.getTo().getTEMPLATE_NAME());
+   }
+
+   public void surveyTemplateCreated(ApplicationUser applicationUser, QuizTemplateTo template) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_TEMPLATE_CREATED, template.getQUIZ_TEMPLATE_ID(),
+            template.getTEMPLATE_NAME());
+   }
+
+   public void surveyTemplateUpdated(ApplicationUser applicationUser, EntityVQuizTemplate template) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_TEMPLATE_UPDATED, template.getTo().getQUIZ_TEMPLATE_ID(),
+            template.getTo().getTEMPLATE_NAME());
+   }
+
+   public void popupLogoutClick(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.POPUP_LOGOUT_CLICK);
+   }
+
+   public void popupLogoutInactivity(ApplicationUser applicationUser) {
+      logActionWithoutParameters(applicationUser, UtilActionCodes.POPUP_LOGOUT_INACTIVITY);
+   }
+
+   public void trainingCourseCreated(ApplicationUser applicationUser, EntityVLesson lesson) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_CREATED, lesson.getTo().getLESSON_ID(),
+            lesson.getTo().getLESSON_NAME());
+   }
+
+   public void certificateCreated(ApplicationUser applicationUser, Certificate certificate) {
+      logAction(applicationUser, UtilActionCodes.CERTIFICATE_CREATED, certificate.getId(), certificate.getName());
+   }
+
+   public void certificateDeleted(ApplicationUser applicationUser, Certificate certificate) {
+      logAction(applicationUser, UtilActionCodes.CERTIFICATE_DELETED, certificate.getId(), certificate.getName());
+   }
+
+   public void certificateUpdated(ApplicationUser applicationUser, Certificate certificate) {
+      logAction(applicationUser, UtilActionCodes.CERTIFICATE_UPDATED, certificate.getId(), certificate.getName());
+   }
+
+   public void quizDeleted(ApplicationUser applicationUser, QuizDefinitionTo quiz) {
+      logAction(applicationUser, UtilActionCodes.QUIZ_DELETED, quiz.getQUIZ_DEFINITION_ID(), quiz.getQUIZ_NAME());
+   }
+
+   public void quizCreated(ApplicationUser applicationUser, EntityQuizDefinition quiz) {
+      logAction(applicationUser, UtilActionCodes.QUIZ_CREATED, quiz.getQuizDefinitionId(), quiz.getQuizName());
+   }
+
+   public void quizUpdated(ApplicationUser applicationUser, QuizDefinitionTo quiz) {
+      logAction(applicationUser, UtilActionCodes.QUIZ_UPDATED, quiz.getQUIZ_DEFINITION_ID(), quiz.getQUIZ_NAME());
+   }
+
+   public void surveyDeleted(ApplicationUser applicationUser, QuizDefinitionTo quiz) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_DELETED, quiz.getQUIZ_DEFINITION_ID(), quiz.getQUIZ_NAME());
+   }
+
+   public void surveyCreated(ApplicationUser applicationUser, EntityQuizDefinition quiz) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_CREATED, quiz.getQuizDefinitionId(), quiz.getQuizName());
+   }
+
+   public void surveyUpdated(ApplicationUser applicationUser, QuizDefinitionTo quiz) {
+      logAction(applicationUser, UtilActionCodes.SURVEY_UPDATED, quiz.getQUIZ_DEFINITION_ID(), quiz.getQUIZ_NAME());
+   }
+
+   public void testingLocationDeleted(ApplicationUser applicationUser, EntityVTestingLocationAddress location) {
+      logAction(applicationUser, UtilActionCodes.LOCATION_DELETED, location.getTestingLocationId(), location.getLocationName());
+   }
+
+   public void testingLocationCreated(ApplicationUser applicationUser, EntityTestingLocation location) {
+      logAction(applicationUser, UtilActionCodes.LOCATION_CREATED, location.getId(), location.getLocationName());
+   }
+
+   public void testingLocationUpdated(ApplicationUser applicationUser, EntityTestingLocation location) {
+      logAction(applicationUser, UtilActionCodes.LOCATION_UPDATED, location.getId(), location.getLocationName());
+   }
+
+   public void continueLater(ApplicationUser applicationUser, EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.CONTINUE_LATER_PRESSED, entityVQuizInstanceResult.getInstanceId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "survey" : "test"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void quizFinished(ApplicationUser applicationUser, EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser,
+            entityVQuizInstanceResult.isSurvey() ? UtilActionCodes.FINISH_SURVEY : UtilActionCodes.FINISH_TEST,
+            entityVQuizInstanceResult.getInstanceId(), entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void quizStart(ApplicationUser applicationUser, EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, entityVQuizInstanceResult.isSurvey() ? UtilActionCodes.START_SURVEY : UtilActionCodes.START_TEST,
+            entityVQuizInstanceResult.getInstanceId(), entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void testPausedForCandidate(ApplicationUser applicationUser, EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.PAUSE_TEST, entityVQuizInstanceResult.getTestingSessionId(),
+            entityVQuizInstanceResult.getUserId(), entityVQuizInstanceResult.getSessionName());
+   }
+
+   public void testResumedForCandidate(ApplicationUser applicationUser, EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.RESUME_TEST, entityVQuizInstanceResult.getTestingSessionId(),
+            entityVQuizInstanceResult.getUserId(), entityVQuizInstanceResult.getSessionName());
+   }
+
+   public void moreTimeGivenToCandidate(ApplicationUser applicationUser,
+         EntityVQuizInstanceResult entityVQuizInstanceResult,
+         long seconds) {
+      logAction(applicationUser, UtilActionCodes.MORE_TIME_TEST, entityVQuizInstanceResult.getInstanceId(), seconds,
+            entityVQuizInstanceResult.getTo().getUSERNAME(), applicationUser.getUsername());
+   }
+
+   public void questionStartedInQuiz(ApplicationUser applicationUser,
+         int questionOrdinalNumber,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_STARTED_IN_TEST, entityVQuizInstanceResult.getInstanceId(),
+            questionOrdinalNumber,
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void questionStartedInQuizWithSections(ApplicationUser applicationUser,
+         int questionOrdinalNumber,
+         EntityVQuizInstanceResult section,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_STARTED_IN_TEST_WITH_SECTIONS,
+            entityVQuizInstanceResult.getInstanceId(), questionOrdinalNumber, section.getAssessmentName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void questionFinishedInQuiz(ApplicationUser applicationUser,
+         int questionOrdinalNumber,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_FINISHED_IN_TEST, entityVQuizInstanceResult.getInstanceId(),
+            questionOrdinalNumber,
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void questionFinishedInQuizWithSections(ApplicationUser applicationUser,
+         int questionOrdinalNumber,
+         EntityVQuizInstanceResult section,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_FINISHED_IN_TEST_WITH_SECTIONS,
+            entityVQuizInstanceResult.getInstanceId(), questionOrdinalNumber, section.getAssessmentName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void branchingQuestionStartedInQuiz(ApplicationUser applicationUser,
+         String BranchingQuestionOrdinalNumber,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.BRANCHING_QUESTION_STARTED_IN_TEST, entityVQuizInstanceResult.getInstanceId(),
+            BranchingQuestionOrdinalNumber,
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void branchingQuestionStartedInQuizWithSections(ApplicationUser applicationUser,
+         String BranchingQuestionOrdinalNumber,
+         EntityVQuizInstanceResult section,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.BRANCHING_QUESTION_STARTED_IN_TEST_WITH_SECTIONS,
+            entityVQuizInstanceResult.getInstanceId(), BranchingQuestionOrdinalNumber, section.getAssessmentName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void branchingQuestionFinishedInQuiz(ApplicationUser applicationUser,
+         String BranchingQuestionOrdinalNumber,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.BRANCHING_QUESTION_FINISHED_IN_TEST, entityVQuizInstanceResult.getInstanceId(),
+            BranchingQuestionOrdinalNumber,
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void branchingQuestionFinishedInQuizWithSections(ApplicationUser applicationUser,
+         String BranchingQuestionOrdinalNumber,
+         EntityVQuizInstanceResult section,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.BRANCHING_QUESTION_FINISHED_IN_TEST_WITH_SECTIONS,
+            entityVQuizInstanceResult.getInstanceId(), BranchingQuestionOrdinalNumber, section.getAssessmentName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void sectionStartedInQuiz(ApplicationUser applicationUser,
+         EntityVQuizInstanceResult section,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.SECTION_STARTED_IN_TEST, entityVQuizInstanceResult.getInstanceId(),
+            section.getAssessmentName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void sectionFinishedInQuiz(ApplicationUser applicationUser,
+         EntityVQuizInstanceResult section,
+         EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.SECTION_FINISHED_IN_TEST, entityVQuizInstanceResult.getInstanceId(),
+            section.getAssessmentName(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void quizContinued(ApplicationUser applicationUser, EntityVQuizInstanceResult entityVQuizInstanceResult) {
+      logAction(applicationUser, UtilActionCodes.TEST_OR_SURVEY_CONTINUED, entityVQuizInstanceResult.getInstanceId(),
+            UtilProperites.getMessageProperty(Locale.ENGLISH,
+                  entityVQuizInstanceResult.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+            entityVQuizInstanceResult.getAssessmentName());
+   }
+
+   public void workspaceCreated(ApplicationUserModel applicationUser, Workspace created) {
+      logUserActions(applicationUser.getUserId(), UtilActionCodes.WORKSPACE_CREATED,
+            UtilActionCodes.getActionText(UtilActionCodes.WORKSPACE_CREATED, created.getName()), applicationUser.getIpAddress(),
+            created.getId(), applicationUser.getSessionId(), checkImpersonatorId(applicationUser.getImpersonator()),
+            checkImpersonatorUsername(applicationUser.getImpersonator()));
+   }
+
+   public void logWorkspaceDeleted(ApplicationUser applicationUser, Workspace workspace) {
+      logUserActions(applicationUser.getUserId(), UtilActionCodes.WORKSPACE_DELETED,
+            UtilActionCodes.getActionText(UtilActionCodes.WORKSPACE_DELETED, workspace.getName()), applicationUser.getIpAddress(),
+            workspace.getId(), applicationUser.getSessionId(), checkImpersonatorId(applicationUser.getImpersonator()),
+            checkImpersonatorUsername(applicationUser.getImpersonator()));
+   }
+
+   public void logWorkspaceUpdated(ApplicationUser applicationUser, Workspace workspace) {
+      logUserActions(applicationUser.getUserId(), UtilActionCodes.WORKSPACE_UPDATED,
+            UtilActionCodes.getActionText(UtilActionCodes.WORKSPACE_UPDATED, workspace.getName()), applicationUser.getIpAddress(),
+            workspace.getId(), applicationUser.getSessionId(), checkImpersonatorId(applicationUser.getImpersonator()),
+            checkImpersonatorUsername(applicationUser.getImpersonator()));
+   }
+
+   /**
+    * <p>Method logs each workspace members assignment to a workspace.
+    * Logs are inserted in a batch.</p>
+    * <p>This method only needs members id, username, workspace id and workspace name.
+    * So, members object can be changed.</p>
+    * 
+    * @param    applicationUser - current user
+    * @param    members - workspace members which membership has changed
+    * @author   milos.ilic 
+    * @since    11.1
+    */
+   public void logWorkspaceMembersCreated(ApplicationUser applicationUser, List<WorkspaceUserMemberRole> members) {
+      try {
+         List<EntityUserActionLog> actionLogs = new ArrayList<>();
+         for (WorkspaceUserMemberRole member : members) {
+            EntityUserActionLog userActionLog = new EntityUserActionLog(applicationUser.getUserId(),
+                                                                        UtilActionCodes.WORKSPACE_MEMBER_ADDED,
+                                                                        UtilActionCodes.getActionText(
+                                                                              UtilActionCodes.WORKSPACE_MEMBER_ADDED,
+                                                                              member.getUsername(), member.getWorkspaceName(),
+                                                                              member.getWorkspaceRoleName()),
+                                                                        applicationUser.getIpAddress());
+            userActionLog.setSessionId(applicationUser.getSessionId());
+            userActionLog.setObjectId(member.getWorkspaceId());
+            actionLogs.add(userActionLog);
+         }
+         batchEntityInsert(actionLogs);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void logWorkspaceMembersDeleted(ApplicationUser applicationUser, List<WorkspaceUserMemberRole> members) {
+      try {
+         List<EntityUserActionLog> actionLogs = new ArrayList<>();
+         for (WorkspaceUserMemberRole member : members) {
+            EntityUserActionLog userActionLog = new EntityUserActionLog(applicationUser.getUserId(),
+                                                                        UtilActionCodes.WORKSPACE_MEMBER_REMOVED,
+                                                                        UtilActionCodes.getActionText(
+                                                                              UtilActionCodes.WORKSPACE_MEMBER_REMOVED,
+                                                                              member.getUsername(), member.getWorkspaceName(),
+                                                                              member.getWorkspaceRoleName()),
+                                                                        applicationUser.getIpAddress());
+            userActionLog.setSessionId(applicationUser.getSessionId());
+            userActionLog.setObjectId(member.getWorkspaceId());
+            actionLogs.add(userActionLog);
+         }
+         batchEntityInsert(actionLogs);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   /**
+    * <p>Method log workspace member assignment to a workspace.
+    * <p>This method only needs member id, username, workspace id and workspace name.
+    * So, member object can be changed.</p>
+    * 
+    * @param    applicationUser - current user
+    * @param    member - workspace member which membership has changed
+    * @author   milan.vicic
+    * @since    14.1
+    */
+   public void logWorkspaceMemberCreated(ApplicationUserModel applicationUser, WorkspaceUserMemberRole member) {
+      try {
+         EntityUserActionLog userActionLog = new EntityUserActionLog(applicationUser.getUserId(),
+                                                                     UtilActionCodes.WORKSPACE_MEMBER_ADDED,
+                                                                     UtilActionCodes.getActionText(
+                                                                           UtilActionCodes.WORKSPACE_MEMBER_ADDED,
+                                                                           member.getUsername(), member.getWorkspaceName(),
+                                                                           member.getWorkspaceRoleName()),
+                                                                     applicationUser.getIpAddress());
+         userActionLog.setSessionId(applicationUser.getSessionId());
+         userActionLog.setObjectId(member.getWorkspaceId());
+         EntityUserActionLog.getProviderInstance().insertEntity(userActionLog);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void failedLogin(ApplicationUser user, String username, FailedLoginReason reason) {
+      logAction(user, UtilActionCodes.FAILED_LOGIN, null, reason.getActivityLogMessage(username, null));
+   }
+
+   public void failedResetPassword(ApplicationUser user, String username, String email, FailedLoginReason reason) {
+      logAction(user, UtilActionCodes.FAILED_RESET_PASSWORD, null, reason.getActivityLogMessage(username, email));
+   }
+
+   public void logRescheduleRequested(ApplicationUser user, BigDecimal testingSessionId) {
+      logAction(user, UtilActionCodes.RESCHEDULE_REQUESTED, null, testingSessionId);
+   }
+
+   public void logRescheduleResolved(ApplicationUser user, BigDecimal candidateId, BigDecimal testingSessionId) {
+      logAction(user, UtilActionCodes.RESCHEDULE_RESOLVED, null, candidateId, testingSessionId);
+   }
+
+   public void productPurchased(ApplicationUser applicationUser, BigDecimal productId, String productName) {
+      logAction(applicationUser, UtilActionCodes.PRODUCT_PURCHASED, null, productId, productName);
+   }
+
+   public void retakePriceUpdated(ApplicationUser applicationUser, BigDecimal testingSessionId, String testingSessionName) {
+      logAction(applicationUser, UtilActionCodes.RETAKE_PRICE_UPDATED, null, testingSessionId, testingSessionName);
+   }
+
+   public void retakePriceRemoved(ApplicationUser applicationUser, BigDecimal testingSessionId, String testingSessionName) {
+      logAction(applicationUser, UtilActionCodes.RETAKE_PRICE_REMOVED, null, testingSessionId, testingSessionName);
+   }
+
+   public void createNewSpecialRequest(ApplicationUser applicationUser, SpecialRequest specialRequest) {
+      logAction(applicationUser, UtilActionCodes.SPECIAL_REQUEST_CREATED, specialRequest.getQuizInstanceId(),
+            specialRequest.getId(), specialRequest.getQuizInstanceId());
+   }
+
+   public void usersRemovedFromCourse(ApplicationUser applicationUser,
+         BigDecimal courseId,
+         String courseName,
+         List<BigDecimal> removedUsersIds) {
+      String removedIds = removedUsersIds.stream().map(BigDecimal::toString).collect(Collectors.joining(", "));
+      logAction(applicationUser, UtilActionCodes.USERS_REMOVED_FROM_COURSE, courseId, removedUsersIds.size(), courseId,
+            courseName, removedIds);
+   }
+
+   public void updateSpecialRequest(ApplicationUser applicationUser, SpecialRequest specialRequest) {
+      logAction(applicationUser, UtilActionCodes.SPECIAL_REQUEST_UPDATED, specialRequest.getQuizInstanceId(),
+            specialRequest.getId(), specialRequest.getQuizInstanceId());
+   }
+
+   public void managerDeletedAttachmentFromSpecialRequest(ApplicationUser applicationUser, SpecialRequest specialRequest) {
+      logAction(applicationUser, UtilActionCodes.SPECIAL_REQUEST_ATTACHMENT_DELETED, specialRequest.getQuizInstanceId(),
+            specialRequest.getId(), specialRequest.getQuizInstanceId());
+   }
+
+   public void logDeletedUser(ApplicationUser applicationUser, EntityUser user) {
+      logAction(applicationUser, UtilActionCodes.DELETED_USER_FROM_USER_LIST, applicationUser.getUserId(), user.getUsername(),
+            user.getUserId());
+   }
+
+   public void proctoringViolationRegistered(ApplicationUser applicationUser, EntityVQuizInstanceResult leadQuizInstance) {
+      logAction(applicationUser, UtilActionCodes.PROCTORING_VIOLATION_REGISTERED, leadQuizInstance.getQuizInstanceId());
+   }
+
+   public void proctoringViolationResolved(ApplicationUser applicationUser, EntityVQuizInstanceResult leadQuizInstance) {
+      logAction(applicationUser, UtilActionCodes.PROCTORING_VIOLATION_RESOLVED, leadQuizInstance.getQuizInstanceId());
+   }
+
+   public void proctoringTerminationTimeoutReached(ApplicationUser applicationUser, EntityVQuizInstanceResult leadQuizInstance) {
+      logAction(applicationUser, UtilActionCodes.PROCTORING_TERMINATION_TIMEOUT_REACHED, leadQuizInstance.getQuizInstanceId());
+   }
+
+   public void userCourseStatusSetted(ApplicationUser applicationUser, List<EntityVCourseUser> list, String status) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         for (EntityVCourseUser user : list) {
+            String text = UtilActionCodes.getActionText(UtilActionCodes.USER_STATUS_SETTED, user.getTo().getUSERNAME(), status);
+            EntityUserActionLog userActionLog = getUserActionLogEntity(applicationUser.getUserId(),
+                  UtilActionCodes.USER_STATUS_SETTED, text, applicationUser.getIpAddress(), user.getUserId(),
+                  applicationUser.getSessionId(), applicationUser.getBrowser(), applicationUser.getOperatingSystem(),
+                  checkImpersonatorId(applicationUser.getImpersonator()),
+                  checkImpersonatorUsername(applicationUser.getImpersonator()));
+            logList.add(userActionLog);
+         }
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void ecommerceReceiptSummaryUpdated(ApplicationUser applicationUser, String summary) {
+      logAction(applicationUser, UtilActionCodes.ECOMMERCE_RECEIPT_SUMMARY_UPDATED, applicationUser.getUserId(), summary);
+   }
+
+   public void attemptCommented(ApplicationUser applicationUser, EntityQuizInstance leadQuizInstance) {
+      logAction(applicationUser, UtilActionCodes.ATTEMPT_COMMENTED, leadQuizInstance.getId(), applicationUser.getUsername(),
+            applicationUser.getUserId(), leadQuizInstance.getId());
+   }
+
+   public void userStartingLessonViaDirectLink(ApplicationUser applicationUser, BigDecimal lessonId, String lessonName) {
+      logAction(applicationUser, UtilActionCodes.TRAINING_STARTED_VIA_DIRECT_LINK, lessonId, lessonName, lessonId);
+   }
+
+   public void userCreatedQuestionGradingSystem(ApplicationUser applicationUser,
+         EntityQuestionGradingSystem questionGradingSystem) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_GRADING_CREATED, questionGradingSystem.getQuestionGradingSystemId(),
+            questionGradingSystem.getQuestionGradingSystemName(), questionGradingSystem.getQuestionGradingSystemId());
+   }
+
+   public void userUpdatedQuestionGradingSystem(ApplicationUser applicationUser,
+         EntityQuestionGradingSystem questionGradingSystem) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_GRADING_UPDATED, questionGradingSystem.getQuestionGradingSystemId(),
+            questionGradingSystem.getQuestionGradingSystemName(), questionGradingSystem.getQuestionGradingSystemId());
+   }
+
+   public void userDeletedQuestionGradingSystem(ApplicationUser applicationUser,
+         EntityQuestionGradingSystem questionGradingSystem) {
+      logAction(applicationUser, UtilActionCodes.QUESTION_GRADING_DELETED, questionGradingSystem.getQuestionGradingSystemId(),
+            questionGradingSystem.getQuestionGradingSystemName(), questionGradingSystem.getQuestionGradingSystemId());
+   }
+
+   public void testingSessioActivated(ApplicationUserModel applicationUser, EntityTestingSession session) {
+      if (session.isActive()) {
+         logAction(applicationUser, UtilActionCodes.TESTING_SESSION_ACTIVATED, session.getId(), session.getSessionName(),
+               UtilProperites.getMessageProperty(Locale.ENGLISH,
+                     session.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+               session.getQuizDefinition().getQuizName());
+      } else {
+         logAction(applicationUser, UtilActionCodes.TESTING_SESSION_INACTIVATED, session.getId(), session.getSessionName(),
+               UtilProperites.getMessageProperty(Locale.ENGLISH,
+                     session.getQuizDefinition().isSurvey() ? "surveySmall" : "testSmall"),
+               session.getQuizDefinition().getQuizName());
+      }
+   }
+
+   public void multipleTestingSessionActivated(ApplicationUserModel applicationUser, EntityTestingSession session) {
+      if (session.isActive()) {
+         logAction(applicationUser, UtilActionCodes.MULTIPLE_TESTING_SESSION_ACTIVATED, session.getId(),
+               session.getSessionName());
+      } else {
+         logAction(applicationUser, UtilActionCodes.MULTIPLE_TESTING_SESSION_INACTIVATED, session.getId(),
+               session.getSessionName());
+      }
+   }
+
+   public void quizResultGraded(ApplicationUser applicationUser, EntityQuizResult result) {
+      logAction(applicationUser, UtilActionCodes.QUIZ_RESULT_GRADED, applicationUser.getUserId(), result.getQuizResultId(),
+            result.getPointsAssigned());
+   }
+
+   public void multipleTestingSessionCreated(ApplicationUserModel applicationUser, EntityTestingSession session) {
+      logAction(applicationUser, UtilActionCodes.MULTIPLE_TESTING_SESSION_CREATED, session.getId(), session.getSessionName());
+   }
+
+   public void multipleTestingSessionUpdated(ApplicationUserModel applicationUser, EntityTestingSession session) {
+      logAction(applicationUser, UtilActionCodes.MULTIPLE_TESTING_SESSION_UPDATED, session.getId(), session.getSessionName());
+   }
+
+   public void userImpersonatedAnotherUser(ApplicationUser applicationUser, EntityUser impersonatedUser) {
+      logAction(applicationUser, UtilActionCodes.IMPERSONATED_USER, applicationUser.getUserId(), impersonatedUser.getUsername(),
+            impersonatedUser.getUserId());
+   }
+
+   public void hideReportByQuizInstance(ApplicationUserModel applicationUser, EntityVQuizInstanceResult instance) {
+      String reportHiddenMessage = String.format("Report for the candidate %s on the test %s has been hidden by the manager %s.",
+            instance.getTestTakerUsername(), instance.getQuizName(), applicationUser.getUsername());
+
+      logUserActions(applicationUser.getUserId(), UtilActionCodes.REPORT_HIDDEN_FROM_CANDIDATE, reportHiddenMessage,
+            applicationUser.getIpAddress(), instance.getInstanceId(), applicationUser.getSessionId(),
+            checkImpersonatorId(applicationUser.getImpersonator()), checkImpersonatorUsername(applicationUser.getImpersonator()));
+   }
+
+   public void unverifiedAttempt(ApplicationUserModel applicationUser, EntityVQuizInstanceResult attempt) {
+      String unverifyMessage = String.format(
+            "Verification for the result for the candidate %s on the test %s has been reverted by the manager %s.",
+            attempt.getTestTakerUsername(), attempt.getQuizName(), applicationUser.getUsername());
+
+      logUserActions(applicationUser.getUserId(), UtilActionCodes.ATTEMPT_UNVERIFIED, unverifyMessage,
+            applicationUser.getIpAddress(), attempt.getInstanceId(), applicationUser.getSessionId(),
+            checkImpersonatorId(applicationUser.getImpersonator()), checkImpersonatorUsername(applicationUser.getImpersonator()));
+   }
+
+   public void gradersAddedToTest(ApplicationUser applicationUser, List<EntityUser> graders, EntityQuizDefinition quiz) {
+      gradersManagementOnTest(applicationUser, UtilActionCodes.GRADERS_ADDED_TO_TEST, graders, quiz);
+   }
+
+   public void gradersRemovedFromTest(ApplicationUser applicationUser, List<EntityUser> graders, EntityQuizDefinition quiz) {
+      gradersManagementOnTest(applicationUser, UtilActionCodes.GRADERS_REMOVED_FROM_TEST, graders, quiz);
+   }
+
+   private void gradersManagementOnTest(ApplicationUser applicationUser,
+         String code,
+         List<EntityUser> graders,
+         EntityQuizDefinition quiz) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         logList.addAll(
+               graders.stream().map(e -> createLogObject(applicationUser, code, e.getUserId(), applicationUser.getUsername(),
+                     e.getUsername(), quiz.getQuizName(), quiz.getQuizDefinitionId())).collect(Collectors.toList()));
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void userAddedQuestionPoolToGeneratedQuiz(ApplicationUser applicationUser, EntityPoolResource resource) {
+      logAction(applicationUser, UtilActionCodes.ADDED_RESOURCE_FROM_GENERATED_QUIZ, resource.getQuizDefinitionId(),
+            resource.getPool().getName(), resource.getPoolId(), resource.getQuizDefinitionId());
+   }
+
+   public void userUpdatedQuestionPoolInGeneratedQuiz(ApplicationUser applicationUser, EntityPoolResource resource) {
+      logAction(applicationUser, UtilActionCodes.UPDATED_RESOURCE_FROM_GENERATED_QUIZ, resource.getQuizDefinitionId(),
+            resource.getPool().getName(), resource.getPoolId(), resource.getQuizDefinitionId());
+   }
+
+   public void userRemovedQuestionPoolFromGeneratedQuiz(ApplicationUser applicationUser, EntityPoolResource resource) {
+      logAction(applicationUser, UtilActionCodes.REMOVED_RESOURCE_FROM_GENERATED_QUIZ, resource.getQuizDefinitionId(),
+            resource.getPool().getName(), resource.getPoolId(), resource.getQuizDefinitionId());
+   }
+
+   public void userModifiedQuestionPoolsInGeneratedQuiz(ApplicationUser applicationUser,
+         List<ResourceModification> resources,
+         Connection connection) throws MessageException {
+      List<EntityUserActionLog> logList = resources.stream()
+            .map(e -> createLogObject(applicationUser, e.getType().getActionLogCode(), e.getResource().getQuizDefinitionId(),
+                  e.getResource().getPool().getName(), e.getResource().getPoolId(), e.getResource().getQuizDefinitionId()))
+            .collect(Collectors.toList());
+      batchEntityInsert(logList, connection);
+   }
+
+   public void userModifiedStructureInformationInGeneratedQuiz(ApplicationUser applicationUser,
+         BigDecimal quizDefinitionId,
+         Connection connection) throws MessageException {
+      EntityUserActionLog actionLog = createLogObject(applicationUser,
+            UtilActionCodes.UPDATED_STRUCTURE_INFORMATION_FROM_GENERATED_QUIZ, quizDefinitionId, quizDefinitionId);
+      insertEntity(actionLog, connection);
+   }
+
+   public void userRegeneratedGeneratedQuizVersions(ApplicationUser applicationUser, EntityQuizDefinition quiz) {
+      logAction(applicationUser, UtilActionCodes.REGENERATED_GENERATED_QUIZ_VERSIONS, quiz.getQuizDefinitionId());
+   }
+
+   public void userTriggeredCertificateSynchronizationForQuizDefinition(ApplicationUser applicationUser,
+         BigDecimal quizDefinitionId) {
+      logAction(applicationUser, UtilActionCodes.CERTIFICATES_SYNCHRONIZED_FOR_QUIZ_DEF, quizDefinitionId, quizDefinitionId);
+   }
+
+   public void usersAttemptsDeleted(ApplicationUser applicationUser, List<EntityVQuizInstanceResult> list) {
+      try {
+         List<EntityUserActionLog> logList = new ArrayList<>();
+         for (EntityVQuizInstanceResult user : list) {
+            EntityUserActionLog userActionLog = createLogObject(applicationUser, UtilActionCodes.ATTEMPT_DELETED,
+                  user.getInstanceId(), user.getQuizName(), user.getQuizName());
+            logList.add(userActionLog);
+         }
+         batchEntityInsert(logList);
+      } catch (MessageException e) {
+         throw new PersistenceException(e);
+      }
+   }
+
+   public void pdfFileSavedManual(ApplicationUser applicationUser, EntityQuizResult result) {
+      logAction(applicationUser, UtilActionCodes.EDITABLE_PDF_SAVED_MANUAL, result.getQuizResultId(), result.getQuizResultId(),
+            result.getQuizInstanceId());
+   }
+
+   public void pdfFileSavedAutomatic(ApplicationUser applicationUser, EntityQuizResult result) {
+      logAction(applicationUser, UtilActionCodes.EDITABLE_PDF_SAVED_AUTOMATIC, result.getQuizResultId(), result.getQuizResultId(),
+            result.getQuizInstanceId());
+   }
+
+   public void finishedAttachmentsReview(ApplicationUser applicationUser, EntityQuizInstance entityQuizInstance) {
+      logAction(applicationUser, UtilActionCodes.FINISHED_ATTACHMENTS_REVIEW, entityQuizInstance.getId());
+   }
+
+   public void ecommerceSettingsSaved(ApplicationUser applicationUser,
+         String connectedAccountId,
+         boolean isSecretKeyChanged,
+         String taxType) {
+      logAction(applicationUser, UtilActionCodes.ECOMMERCE_SETTINGS_SAVED, null, connectedAccountId,
+            UtilProperites.getMessageProperty(Locale.ENGLISH, isSecretKeyChanged ? "yes" : "no"), taxType);
+   }
+}

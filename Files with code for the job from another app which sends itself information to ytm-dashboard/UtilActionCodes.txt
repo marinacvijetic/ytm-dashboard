@@ -1,0 +1,409 @@
+package com.mallocinc.ytm.database.util;
+
+import java.io.Serializable;
+import java.util.Locale;
+
+public class UtilActionCodes implements Serializable {
+   private static final long  serialVersionUID                                  = 1L;
+
+   public static final String LOGIN                                             = "LGN";
+   public static final String CHANGE_PASSWORD                                   = "CHP";
+   public static final String LOGOUT                                            = "LGO";
+   public static final String FAILED_LOGIN                                      = "FLG";
+   public static final String POOL_CREATED                                      = "POL_CREATE";
+   public static final String POOL_DELETED                                      = "POL_DELETE";
+   public static final String COURSE_DELETED                                    = "CRS_DELETE";
+   public static final String COURSE_CREATED                                    = "CRS_CREATE";
+   public static final String COURSE_UPDATED                                    = "CRS_UPDATE";
+   public static final String SUB_COURSE_CREATED                                = "CLS_CREATE";
+   public static final String SUB_COURSE_DELETED                                = "CLS_DELETE";
+   public static final String SUB_COURSE_UPDATED                                = "CLS_UPDATE";
+   public static final String QUIZ_TAKEN                                        = "QUIZ_TAKEN";
+   public static final String QUIZ_CREATED                                      = "QUIZ_CREAT";
+   public static final String QUIZ_DELETED                                      = "QUIZ_DELET";
+   public static final String QUIZ_TEMPLATE_CREATED                             = "QUIZ_TMP_C";
+   public static final String QUIZ_TEMPLATE_UPDATED                             = "QUIZ_TMP_U";
+   public static final String QUIZ_TEMPLATE_DELETED                             = "QUIZ_TMP_D";
+   public static final String SURVEY_TEMPLATE_CREATED                           = "SURV_TMP_C";
+   public static final String SURVEY_TEMPLATE_UPDATED                           = "SURV_TMP_U";
+   public static final String SURVEY_TEMPLATE_DELETED                           = "SURV_TMP_D";
+   public static final String QUIZ_UPDATED                                      = "QUIZ_UPDAT";
+   public static final String SURVEY_CREATED                                    = "SRV_CREATE";
+   public static final String SURVEY_DELETED                                    = "SRV_DELETE";
+   public static final String SURVEY_UPDATED                                    = "SRV_UPDATE";
+   public static final String SURVEY_TAKEN                                      = "SURV_TAKEN";
+   public static final String TRAINING_TAKEN                                    = "TRNG_TAKEN";
+   public static final String TRAINING_CREATED                                  = "TRNG_CREAT";
+   public static final String TRAINING_UPDATED                                  = "TRNG_UPDAT";
+   public static final String TRAINING_DELETED                                  = "TRNG_DELET";
+   public static final String TRAINING_LITTERATURE_ADDED                        = "TR_LIT_ADD";
+   public static final String TRAINING_LITTERATURE_REMOVED                      = "TR_LIT_DEL";
+   public static final String USER_CREATED                                      = "USER_CREAT";
+   public static final String USER_DELETED                                      = "USER_DELET";
+   public static final String USER_LOCKED                                       = "USER_LOCKD";
+   public static final String USER_SUSPENDED                                    = "USER_SUSPN";
+   public static final String USER_ACTIVATED                                    = "USER_ACTIV";
+   public static final String USER_DEACTIVATED                                  = "USER_DEACT";
+   public static final String USER_UPDATED                                      = "USER_UPDAT";
+   public static final String USER_PERSONAL_UPDATE                              = "USER_PR_UP";
+   public static final String USERS_LOADED                                      = "USERS_LOAD";
+   public static final String TOMCAT_SHUTDOWN                                   = "TCATSHUT";
+   public static final String SYSTEM_CRASH                                      = "SYSCRASH";
+   public static final String BROWSER_SHUT                                      = "BRWSRSHUT";
+   public static final String POPUP_CLICK_LEAVE                                 = "POPUPCLICK";
+   public static final String POPUP_INACTIVITY                                  = "POPUPTIME";
+   public static final String QUESTION_STARTED                                  = "QSTART";
+   public static final String QUESTION_FINISHED                                 = "QFINISH";
+   public static final String SECTION_STARTED                                   = "SECSTART";
+   public static final String SECTION_FINISHED                                  = "SECFINISH";
+   public static final String CONTINUE_LATER_PRESSED                            = "CONTLATER";
+   public static final String START_TEST                                        = "STARTTEST";
+   public static final String FINISH_TEST                                       = "FINISHTEST";
+   public static final String CONTINUE_TEST                                     = "CONTTEST";
+   public static final String PAUSE_TEST                                        = "PAUSETEST";
+   public static final String RESUME_TEST                                       = "RESUMETEST";
+   public static final String START_SURVEY                                      = "STARTSRV";
+   public static final String FINISH_SURVEY                                     = "FINISHSRV";
+   public static final String CONTINUE_SURVEY                                   = "CONTSURVEY";
+   public static final String PAUSE_SURVEY                                      = "PAUSESRV";
+   public static final String RESUME_SURVEY                                     = "RESUMESRV";
+   public static final String QUESTION_MODIFIED                                 = "QMODIFIED";
+   public static final String QUESTION_CREATED                                  = "QCREATED";
+   public static final String MORE_TIME_TEST                                    = "MORETIMETS";
+
+   public static final String ATTEMPT_UNVERIFIED                                = "UNVERIFYRE";
+
+   public static final String REPORT_HIDDEN_FROM_CANDIDATE                      = "RE_HIDDEN";
+
+   public static final String PROCTORING_SESSION_STARTED                        = "PROSESSTRT";
+   public static final String PROCTORING_SESSION_STOPED                         = "PROSESSTOP";
+   public static final String PROCTORING_SESSION_PROBLEM                        = "PROSESPROB";
+
+   public static final String TEST_LEFT                                         = "TESTLEFT";
+   public static final String SURVEY_LEFT                                       = "SURVEYLEFT";
+   public static final String TEST_RECONNECTED                                  = "TESTRECONN";
+   public static final String SURVEY_RECONNECTED                                = "SURVRECONN";
+
+   //ADDED ACTION CODES --
+   public static final String CERTIFICATE_CREATED                               = "CERTCREAT";
+   public static final String CERTIFICATE_DELETED                               = "CERTDELET";
+   public static final String CERTIFICATE_UPDATED                               = "CERTUPDAT";
+   public static final String LOCATION_CREATED                                  = "LOCATCREA";
+   public static final String LOCATION_UPDATED                                  = "LOCATUPDA";
+   public static final String LOCATION_DELETED                                  = "LOCATDELE";
+
+   public static final String CATEGORY_CREATED                                  = "CATEGRCRE";
+   public static final String CATEGORY_DELETED                                  = "CATEGRDEL";
+   public static final String CATEGORY_EDITED                                   = "CATEGREDI";
+   public static final String CUSTOM_TYPE_CREATED                               = "CUSTYPCRE";
+   public static final String CUSTOM_TYPE_DELETED                               = "CUSTYPDEL";
+   public static final String CUSTOM_TYPE_EDITED                                = "CUSTYPEDI";
+   //--
+
+   public static final String CUSTOM_COLUMN_UPDATED                             = "CUSCOLUPD";
+   public static final String CUSTOM_COLUMN_DELETED                             = "CUSCOLDEL";
+   public static final String CUSTOM_COLUMN_CREATED                             = "CUSCOLCRE";
+   public static final String CUSTOM_COLUMN_ENABLED                             = "CUSCOLENA";
+   public static final String CUSTOM_COLUMN_DISABLED                            = "CUSCOLDIS";
+
+   public static final String ATTACHMENT_CREATED                                = "ATTACHCRE";
+   public static final String ATTACHMENT_COPIED                                 = "ATTACHCOP";
+   public static final String ATTACHMENT_EDITED                                 = "ATTACHEDI";
+   public static final String ATTACHMENT_DELETED                                = "ATTACHDEL";
+   public static final String ATTACHMENT_DOWNLOADED                             = "ATTACHDOW";
+
+   public static final String SUPPORT_INFO_UPDATED                              = "SUPINFUPD";
+
+   public static final String JOB_CREATED                                       = "JOBCREATE";
+   public static final String JOB_DELETED                                       = "JOBDELETE";
+   public static final String JOB_EDITED                                        = "JOBEDITED";
+   public static final String JOB_COPIED                                        = "JOBCOPIED";
+   public static final String JOB_EXECUTED                                      = "JOBEXECUT";
+
+   public static final String NOTIFICATION_APP_UPDATED                          = "NOTAPPUPD";
+   public static final String NOTIFICATION_EMAIL_UPDATED                        = "NOTEMAUPD";
+   public static final String NOTIFICATION_STATUS                               = "NOTIFISTA";
+
+   public static final String LANGUAGE_BUNDLE_EDITED                            = "LANBUNEDI";
+   public static final String LANGUAGE_BUNDLE_DELETED                           = "LANBUNDEL";
+   public static final String LANGUAGE_BUNDLE_ACTIVATED                         = "LANBUNACT";
+   public static final String LANGUAGE_BUNDLE_DOWNLOADED                        = "LANBUNDOW";
+   public static final String LANGUAGE_BUNDLE_CREATED                           = "LANBUNCRE";
+
+   public static final String LANGUAGE_SETTINGS_STATUS                          = "LANSETSTA";
+
+   public static final String LOGO_RESET                                        = "LOGORESET";
+   public static final String LOGO_CHANGED                                      = "LOGOCHANG";
+
+   public static final String WHITE_LABELING_UPDATED                            = "WHILABUPD";
+
+   public static final String THEME_DELETED                                     = "THEMEDELE";
+   public static final String THEME_UPDATED                                     = "THEMEUPDA";
+   public static final String THEME_APPLIED                                     = "THEMEAPPL";
+
+   public static final String BROWSER_COMPATIBILITY_CREATED                     = "BROCOMCRE";
+   public static final String BROWSER_COMPATIBILITY_UPDATED                     = "BROCOMUPD";
+   public static final String BROWSER_COMPATIBILITY_DELETED                     = "BROCOMDEL";
+   public static final String OPERATING_SYSTEM_COMPATIBILITY_CREATED            = "OPSCOMCRE";
+   public static final String OPERATING_SYSTEM_COMPATIBILITY_UPDATED            = "OPSCOMUPD";
+   public static final String OPERATING_SYSTEM_COMPATIBILITY_DELETED            = "OPSCOMDEL";
+
+   public static final String MY_TESTS_AND_SURVEYS_VIEW_CONFIGURATION           = "MTASVCONF";
+
+   public static final String FINISH_TEST_URL_UPDATED                           = "FITEURUPD";
+
+   public static final String EXPIRING_TEST_REMINDERS_SAVED                     = "EXPTERESA";
+
+   public static final String UPCOMING_TEST_REMINDERS_SAVED                     = "UPCTERESA";
+
+   public static final String TEST_MAIL_SENT                                    = "TESMAISEN";
+
+   public static final String ADDITIONAL_MODULES_UPDATED                        = "ADDMODUPD";
+
+   public static final String KNOWLEDGE_DEF_REP_DEMO_DOWNLOADED                 = "KNODRDDOW";
+
+   public static final String KNOWLEDGE_DEFICIENCY_REPORT_UPDATED               = "KNDEREUPD";
+
+   public static final String SCORE_REPORT_UPDATED                              = "SCOREPUPD";
+
+   public static final String SUBSCRIBERS_DELETED                               = "SUBSCRDEL";
+   public static final String SUBSCRIBERS_UPDATED                               = "SUBSCRUPD";
+   public static final String SUBSCRIBERS_EXPORTED                              = "SUBSCREXP";
+   public static final String SUBSCRIBERS_LIST_OF_TRECKED_USERS_DELETED         = "SLOFTUDEL";
+
+   public static final String SCHEDULE_REPORT_STATUS_UPDATED                    = "SCRESTUPD";
+   public static final String SCHEDULE_REPORT_ADDED                             = "SCHREPADD";
+
+   public static final String FAVORITE_REPORT_ADDED                             = "FAVREPADD";
+   public static final String FAVORITE_REPORT_DELETED                           = "FAVREPDEL";
+   public static final String FAVORITE_REPORT_UPDATED                           = "FAVREPUPD";
+
+   public static final String REPORT_BUILDER_SAVED                              = "REPBUISAV";
+   public static final String REPORT_DISPLAYED                                  = "REPORTDIS";
+
+   public static final String BOOKING_SETTINGS_SAVED                            = "BOOSETSAV";
+
+   public static final String TRAINING_COURSE_SUSPENDED                         = "TRACOUSUS";
+   public static final String TRAINING_COURSE_UNSUSPENDED                       = "TRACOUUNS";
+
+   public static final String USERS_MOVED_TO_STEP                               = "USMOVTOST";
+   public static final String USERS_SETTED_TO_NOT_COMPLETED                     = "USESETTNC";
+   public static final String USERS_REMOVED                                     = "USERSREMO";
+   public static final String MANAGER_REMOVED                                   = "MANAGERRE";
+   public static final String USERS_ADDED                                       = "USERSADDE";
+   public static final String MANAGERS_ADDED                                    = "MANAGEADD";
+
+   public static final String TRAINING_COURSE_PUBLISHED                         = "TRACOUPUB";
+
+   public static final String TEST_REMOVED                                      = "TESTREMOV";
+   public static final String EXISTING_TEST_ADDED                               = "EXITESADD";
+
+   public static final String STEP_EDITED                                       = "STEPEDITE";
+   public static final String STEP_ADDED                                        = "STEPADDED";
+
+   public static final String COMMON_TESTING_SESSION_SCHEDULED                  = "COTESESCH";
+   public static final String ROOM_ADDED                                        = "ROOMADDED";
+   public static final String SPECIFY_ADDRESS_ADDED                             = "SPEADDADD";
+
+   public static final String POOL_EXPORTED_TO_JSON                             = "POEXPTOJS";
+   public static final String QUESTIONS_MOVED_FROM_POOL                         = "QUMOVFRPO";
+   public static final String QUESTIONS_COPIED_FROM_POOL                        = "QUCOPFRPO";
+
+   public static final String GRADING_SCALE_CREATED                             = "GRASCACRE";
+   public static final String GRADING_SCALE_UPDATED                             = "GRASCAUPD";
+   public static final String GRADING_SCALE_CHANGED                             = "GRASCACHA";
+
+   public static final String QUESTION_GRADING_CREATED                          = "QUGRASCRE";
+   public static final String QUESTION_GRADING_UPDATED                          = "QUGRASUPD";
+   public static final String QUESTION_GRADING_DELETED                          = "QUGRASDEL";
+
+   public static final String AUTHORIZATION_CREATED                             = "AUTHCREAT";
+   public static final String AUTHORIZATION_DELETED                             = "AUTHDELET";
+   public static final String AUTHORIZATION_UPDATED                             = "AUTHUPDAT";
+   public static final String AUTHORIZATION_REMOVED                             = "AUTHREMOV";
+
+   public static final String PROCTORS_ASSIGNED                                 = "PROCASSIG";
+   public static final String PROCTORS_DELETED                                  = "PROCDELET";
+
+   public static final String QUESTION_CREATED_FOR_SURVEY_OR_TEST               = "QUESTICRE";
+   public static final String QUESTIONS_IMPORTED_FROM_POOL                      = "QUIMPFRPO";
+   public static final String QUESTION_EDITED_IN_SURVEY                         = "QUEDIINSU";
+
+   public static final String CANDIDATE_DELETED_FROM_SURVEY_OR_TEST             = "CADELFRSU";
+   public static final String ATTEMPT_SUSPENDED                                 = "ATTEMSUSP";
+   public static final String ATTEMPT_UNSUSPENDED                               = "ATTEMUSUS";
+   public static final String SESSION_CHANGED_FOR_CANDIDATE                     = "SECHAFOCA";
+   public static final String CANDIDATES_ADDED_TO_SESSION                       = "CAADDTOSE";
+
+   public static final String SURVEY_OR_TEST_RETURNED_TO_WIZARD                 = "SOTRETWIZ";
+   public static final String PREVIEW_ATTEMPT_STARTED                           = "PREATTSTA";
+   public static final String SURVEY_OR_TEST_SUSPENDED                          = "SURTESSUS";
+   public static final String COPY_CREATED_FOR_TEST_OR_SURVEY                   = "COPCREFTS";
+   public static final String PREVIEW_ATTEMPTS_DELETED                          = "PREATTDEL";
+
+   public static final String TESTING_SESSION_DELETED                           = "TESSESDEL";
+   public static final String TESTING_SESSION_CREATED                           = "TESSESCRE";
+   public static final String TESTING_SESSION_UPDATED                           = "TESSESUPD";
+   public static final String TESTING_SESSION_ACTIVATED                         = "TESSESACT";
+   public static final String TESTING_SESSION_INACTIVATED                       = "TESSESINA";
+   public static final String MULTIPLE_TESTING_SESSION_ACTIVATED                = "MULSESACT";
+   public static final String MULTIPLE_TESTING_SESSION_INACTIVATED              = "MULSESINA";
+   public static final String MULTIPLE_TESTING_SESSION_CREATED                  = "MULSESCRE";
+   public static final String MULTIPLE_TESTING_SESSION_UPDATED                  = "MULSESUPD";
+
+   public static final String SURVEY_OR_TEST_PUBLISHED                          = "SURTESPUB";
+   public static final String TEST_RESULTS_EXPORTED_VIA_SYSTEM_JOB              = "TREXPVSJO";
+
+   public static final String ATTEMPT_DELETED                                   = "ATTEMPDEL";
+   public static final String ATTEMPT_MARKED_FOR_REVIEW                         = "ATMARFORE";
+   public static final String GRADE_SETTED_TO_ZERO                              = "GRSETTOZE";
+   public static final String ATTEMPT_VERIFIED                                  = "ATTEMPVER";
+   public static final String ATTEMPT_COMMENTED                                 = "ATTEMPCOMM";
+
+   public static final String COMMON_SESSION_EXPORTED                           = "COMSESEXP";
+
+   public static final String USERS_LIST_UPDATED                                = "USELISUPD";
+   public static final String USERS_REMOVED_FROM_QUESTION_POOL                  = "UREMFQUPO";
+   public static final String USERS_ASSIGNED_TO_QUESTION_POOL                   = "UASSTQUPO";
+
+   public static final String QUESTIONS_DELETED_FROM_POOL                       = "QUDELFRPO";
+   public static final String MULTIPLE_QUESTIONS_DELETED_FROM_POOL              = "MQUDELFRPO";
+   public static final String QUESTIONS_ADDED_TO_POOL                           = "QUADDTOPO";
+   public static final String QUESTIONS_UPDATED_FROM_POOL                       = "QUUPDFRPO";
+
+   public static final String QUESTION_POOL_UPDATED                             = "QUEPOOUPD";
+   public static final String QUESTION_POOL_CREATED                             = "QUEPOOCRE";
+   public static final String QUESTION_POOL_MOVED                               = "QUEPOOMOV";
+   public static final String QUESTION_VERSION_DELETED                          = "QUEVERDEL";
+   public static final String QUESTION_VERSION_ACTIVATED                        = "QUEVERACT";
+   public static final String QUESTION_VERSION_ADDED_TO_POOL                    = "QUEVERADDP";
+   public static final String QUESTION_VERSION_SCHEDULED                        = "QUEVERSCH";
+   public static final String QUESTION_EXTERNAL_IDS_UPDATED                     = "QUEEXTUPD";
+   public static final String QUESTION_MOVED_FROM_POOL                          = "QUEMOVFRPO";
+
+   public static final String VERIFICATION_CONFIGURATION_UPDATED                = "VERCONUPD";
+
+   public static final String CERTIFICATE_TEST_LIST_UPDATED                     = "CETELIUPD";
+   public static final String CERTIFICATE_CONDITION_UPDATED                     = "CETCONUPD";
+   public static final String MANAGERS_ADDED_FOR_CERTIFICATE                    = "MAADDFOCE";
+   public static final String MANAGERS_DELETED_FROM_CERTIFICATE                 = "MADELFRCE";
+
+   public static final String MANUAL_PROCTORING_REPORT_SUBMITED                 = "MAPRRESUB";
+
+   public static final String REDIRECTING_TO_PERSONAL_REPORT                    = "REDTOPERE";
+
+   public static final String CANDIDATES_ATTEMPT_RESET                          = "CANATTRES";
+
+   public static final String QUESTION_FLAGGED                                  = "QUESTFLAG";
+   public static final String QUESTION_UNFLAGGED                                = "QUESUFLAG";
+
+   public static final String ROLE_DELETED                                      = "ROLEDELET";
+   public static final String ROLE_UPDATED                                      = "ROLEUPDAT";
+
+   public static final String QUIZ_ADDED_TO_STATISTICS                          = "QUIADDSTA";
+   public static final String MEMBER_ADDED_TO_STATISTICS                        = "MEMADDSTA";
+
+   public static final String USER_ASSIGNED_TO_TEST                             = "USASSTOTE";
+   public static final String USER_STATUS_SETTED                                = "USESTASET";
+
+   public static final String SYNC_WITH_ACTIVE_DIRECTORY_SUCCEEDED              = "SYWIACDIS";
+   public static final String SYNC_WITH_ACTIVE_DIRECTORY_FAILED                 = "SYWIACDIF";
+
+   public static final String ATTACHMENT_ADDED                                  = "ATTACHADD";
+
+   public static final String MEMBERS_ADDED_TO_USER_GROUP                       = "MEADDUSGR";
+   public static final String MANAGERS_ADDED_TO_USER_GROUP                      = "MAADDUSGR";
+
+   public static final String TRAINING_CONTINUED                                = "TRNG_CONTI";
+   public static final String TRAINING_REVISITED                                = "TRNG_REVIS";
+   public static final String CHANGED_STEP                                      = "CNG_STP";
+   public static final String TRAINING_STARTED_VIA_DIRECT_LINK                  = "TRNGSTDIRL";
+
+   public static final String ATTACHMENT_ADDED_TO_TRAINING_COURSE               = "ATADDTRCO";
+
+   public static final String TEST_OR_SURVEY_PAUSED                             = "TESSURPAU";
+   public static final String TEST_OR_SURVEY_RESUMED                            = "TESSURRES";
+
+   public static final String SURVEY_OR_TEST_SELECTED                           = "SURTESSEL";
+   public static final String SURVEY_OR_TEST_BOOKED                             = "SURTESBKD";
+
+   public static final String BROWSER_LOCKDOWN_VIOLATION_REGISTERED             = "BLCKDVREG";
+   public static final String BROWSER_LOCKDOWN_VIOLATION_RESOLVED               = "BLCKDVRES";
+
+   public static final String PROCTORING_VIOLATION_REGISTERED                   = "PROCVILREG";
+   public static final String PROCTORING_VIOLATION_RESOLVED                     = "PROCVILRES";
+   public static final String PROCTORING_TERMINATION_TIMEOUT_REACHED            = "PROCTRTMRC";
+
+   public static final String POPUP_LOGOUT_INACTIVITY                           = "POPLOGINA";
+   public static final String POPUP_LOGOUT_CLICK                                = "POPLOGCLI";
+
+   public static final String QUESTION_STARTED_IN_TEST                          = "QUSTINTES";
+   public static final String QUESTION_STARTED_IN_TEST_WITH_SECTIONS            = "QUSTITEWS";
+   public static final String QUESTION_FINISHED_IN_TEST                         = "QUFIINTES";
+   public static final String QUESTION_FINISHED_IN_TEST_WITH_SECTIONS           = "QUFIITEWS";
+   public static final String BRANCHING_QUESTION_STARTED_IN_TEST                = "BRQUSTTES";
+   public static final String BRANCHING_QUESTION_STARTED_IN_TEST_WITH_SECTIONS  = "BRQUSTTWS";
+   public static final String BRANCHING_QUESTION_FINISHED_IN_TEST               = "BRQUFITES";
+   public static final String BRANCHING_QUESTION_FINISHED_IN_TEST_WITH_SECTIONS = "BRQUFITWS";
+   public static final String SECTION_STARTED_IN_TEST                           = "SECSTATES";
+   public static final String SECTION_FINISHED_IN_TEST                          = "SECFINTES";
+   public static final String TEST_OR_SURVEY_CONTINUED                          = "TESSURCON";
+
+   public static final String NEW_USER_CREATED                                  = "USR_CREATE";
+   public static final String WORKSPACE_CREATED                                 = "WSP_CREAT";
+   public static final String WORKSPACE_UPDATED                                 = "WSP_UPDAT";
+   public static final String WORKSPACE_DELETED                                 = "WSP_DELET";
+
+   public static final String WORKSPACE_MEMBER_ADDED                            = "MMBR_ADDD";
+   public static final String WORKSPACE_MEMBER_REMOVED                          = "MMBR_REMV";
+
+   public static final String FAILED_RESET_PASSWORD                             = "FLDPASSRST";
+
+   public static final String PRODUCT_PURCHASED                                 = "PRDCTPRCH";
+   public static final String RETAKE_PRICE_UPDATED                              = "RTKPRCUPD";
+   public static final String RETAKE_PRICE_REMOVED                              = "RTKPRCRMVD";
+
+   public static final String RESCHEDULE_REQUESTED                              = "RSCHDLREQ";
+   public static final String RESCHEDULE_RESOLVED                               = "RSCHDLRES";
+   public static final String DELETED_USER_FROM_USER_LIST                       = "DLTDUSRLST";
+
+   public static final String SPECIAL_REQUEST_ATTACHMENT_DELETED                = "SPRQAD";
+   public static final String SPECIAL_REQUEST_CREATED                           = "SPRQC";
+   public static final String SPECIAL_REQUEST_UPDATED                           = "SPRQU";
+
+   public static final String USERS_REMOVED_FROM_COURSE                         = "URMVDCRS";
+
+   public static final String ECOMMERCE_RECEIPT_SUMMARY_UPDATED                 = "ECOMRSMUPD";
+
+   public static final String IMPERSONATED_USER                                 = "IMPERSUSER";
+
+   public static final String QUIZ_RESULT_GRADED                                = "QRSLTGRADE";
+
+   public static final String GRADERS_ADDED_TO_TEST                             = "GRDSADDTST";
+   public static final String GRADERS_REMOVED_FROM_TEST                         = "GRDSDELTST";
+
+   public static final String ADDED_RESOURCE_FROM_GENERATED_QUIZ                = "UADRESFGNQ";
+   public static final String UPDATED_RESOURCE_FROM_GENERATED_QUIZ              = "UUPRESFGNQ";
+   public static final String REMOVED_RESOURCE_FROM_GENERATED_QUIZ              = "URMRESFGNQ";
+   public static final String UPDATED_STRUCTURE_INFORMATION_FROM_GENERATED_QUIZ = "URUPSTFGNQ";
+
+   public static final String REGENERATED_GENERATED_QUIZ_VERSIONS               = "UREGGQVERS";
+
+   public static final String CERTIFICATES_SYNCHRONIZED_FOR_QUIZ_DEF            = "CERTSYNCED";
+
+   public static final String EDITABLE_PDF_SAVED_MANUAL                         = "PDFSAVMANU";
+   public static final String EDITABLE_PDF_SAVED_AUTOMATIC                      = "PDFSAVAUTO";
+
+   public static final String FINISHED_ATTACHMENTS_REVIEW                       = "FINATTREVW";
+
+   public static final String ECOMMERCE_SETTINGS_SAVED                          = "ECOMSETTSV";
+
+   private UtilActionCodes() {
+
+   }
+
+   public static String getActionText(String code, Object... parameters) {
+      return String.format(UtilProperites.getMessageProperty(Locale.getDefault(), code), parameters);
+   }
+
+}

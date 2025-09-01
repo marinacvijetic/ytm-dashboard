@@ -1,0 +1,72 @@
+package com.mallocinc.ytm.model.entities.event;
+
+import org.apache.log4j.Logger;
+
+import com.mallocinc.ytm.model.entities.event.parameters.EventParameterPersonalizationUsername;
+import com.mallocinc.ytm.model.entities.event.parameters.EventParameterTimePersonalization;
+import com.mallocinc.ytm.model.entities.job.JobInstance;
+
+public class JobExecutedEventParameters extends EventParameters {
+
+   private static final Logger logger          = Logger.getLogger(JobExecutedEventParameters.class);
+
+   private static final String TO              = "to";
+   private static final String ID              = "id";
+   private static final String STARTED_AT      = "startedAt";
+   private static final String FINISHED_AT     = "finishedAt";
+   private static final String LOG             = "log";
+   private static final String ERROR_COUNT     = "errorCount";
+   private static final String JOB_ID          = "jobId";
+   private static final String JOB_NAME        = "jobName";
+   private static final String JOB_DESCRIPTION = "jobDescription";
+
+   private String              recieversUsername;
+   private String              jobId;
+   private String              jobName;
+   private String              jobDescription;
+   private String              id;
+   private String              startedAt;
+   private String              finishedAt;
+   private String              log;
+   private String              errorCount;
+
+   public JobExecutedEventParameters(JobInstance jobInstance) {
+      super();
+      id = jobInstance.getId().toString();
+      startedAt = jobInstance.getStartedAt().toString();
+      finishedAt = jobInstance.getFinishedAt().toString();
+      log = jobInstance.getLog();
+      errorCount = Integer.toString(jobInstance.getErrorCount());
+      jobId = jobInstance.getId().toString();
+      jobName = jobInstance.getJob().getName();
+      jobDescription = jobInstance.getJob().getDescription();
+      set(ID, id);
+      set(STARTED_AT, startedAt);
+      set(FINISHED_AT, finishedAt);
+      set(LOG, log);
+      set(ERROR_COUNT, errorCount);
+      set(JOB_ID, jobId);
+      set(JOB_NAME, jobName);
+      set(JOB_DESCRIPTION, jobDescription);
+
+   }
+
+   public JobExecutedEventParameters(String parametersMapJSON) {
+      super(parametersMapJSON);
+      this.jobId = get(JOB_ID);
+      this.jobName = get(JOB_NAME);
+      this.jobDescription = get(JOB_DESCRIPTION);
+      this.startedAt = get(STARTED_AT);
+      this.finishedAt = get(FINISHED_AT);
+      this.log = get(LOG);
+      this.errorCount = get(ERROR_COUNT);
+   }
+
+   @Override
+   protected void initParameterPersonalizations() {
+      super.initParameterPersonalizations();
+      this.setEventParameterPersonalization(STARTED_AT, new EventParameterTimePersonalization());
+      this.setEventParameterPersonalization(FINISHED_AT, new EventParameterTimePersonalization());
+      this.setEventParameterPersonalization(TO, new EventParameterPersonalizationUsername());
+   }
+}

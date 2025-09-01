@@ -153,7 +153,7 @@ export const StatisticsInfo: React.FC = () => {
 
   const fetchApps = () => {
     setLoading(true);
-    fetch(`${import.meta.env.VITE_BASE_URL}/statistics/apps`)
+    fetch(`${import.meta.env.VITE_BACKEND_HOST}/statistics/apps`)
     .then((res) => {
       if(!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
@@ -168,7 +168,7 @@ export const StatisticsInfo: React.FC = () => {
   const fetchData = async (pageToLoad: number=1) => {
     setLoading(true);
     fetch(`${
-        import.meta.env.VITE_BASE_URL
+        import.meta.env.VITE_BACKEND_HOST
       }/statistics?page=${pageToLoad}&limit=${limit}${appId ? `&appId=${appId}` : ""}`
     ).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

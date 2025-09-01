@@ -19,7 +19,7 @@ import lombok.extern.log4j.Log4j;
 @WebServlet("/app/info")
 public class ApplicationInfoShareServlet extends HttpServlet {
 
-   private static final long                  serialVersionUID = 1L;
+   private static final long              serialVersionUID = 1L;
 
    private final GetApplicationInfoReport reportBuilder    = new GetApplicationInfoReport();
 

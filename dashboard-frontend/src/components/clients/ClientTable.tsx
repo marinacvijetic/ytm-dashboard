@@ -48,7 +48,7 @@ export const ClientTable: React.FC = () => {
     setLoading(true);
     fetch(
       `${
-        import.meta.env.VITE_BASE_URL
+        import.meta.env.VITE_BACKEND_HOST
       }/clients?page=${pageToLoad}&limit=${limit}`
     )
       .then((res) => {
@@ -133,7 +133,7 @@ export const ClientTable: React.FC = () => {
 
   const handleSync = async (appId: string) => {
   try {
-    const data = await fetchJson<any>(`${import.meta.env.VITE_BASE_URL}/app-info/sync/${appId}`, { method: "GET", timeoutMs: 10000 });
+    const data = await fetchJson<Partial<Client>>(`${import.meta.env.VITE_BACKEND_HOST}/app-info/sync/${appId}`, { method: "GET", timeoutMs: 10000 });
 
     // success -> update table row
     setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data } : c)));
@@ -149,8 +149,16 @@ export const ClientTable: React.FC = () => {
     let message = "Sync failed";
     if (err instanceof HttpError) {
       message = err.message;
+      const body = err.body as unknown;
+      if(body && typeof body === 'object' && 'client' in body){
+        const updated = (body as { client: Partial<Client>}).client;
+        setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...updated } : c)));
+      }
     } else if (err instanceof Error) {
       message = err.message;
+      setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, last_ping_successful: false } : c)));
+    } else {
+      setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, last_ping_successful: false } : c)));
     }
     toast.current?.show({
       severity: "error",
@@ -160,48 +168,6 @@ export const ClientTable: React.FC = () => {
     });
   } 
 };
-
-  // const handleSync = async (appId: string) => {
-  //   try {
-
-  //     const resp = await fetch(
-  //       `${import.meta.env.VITE_BASE_URL}/app-info/sync/${appId}`
-  //     );
-
-  //     const data = await resp.json();
-
-  //     if (!resp.ok || data.status === "error") {
-  //       if (data?.client) {
-  //         setClients((prev) =>
-  //           prev.map((c) => (c.app_id === appId ? { ...c, ...data.client } : c))
-  //         );
-  //       }
-  //       throw new Error(data.reason || data.error || `HTTP ${resp.status}`);
-  //     }
-
-  //     setClients((prev) =>
-  //       prev.map((c) => (c.app_id === appId ? { ...c, ...data } : c))
-  //     );
-  //     toast.current?.show({
-  //       severity: "success",
-  //       summary: "Sync Successful",
-  //       detail: `${data.app_title || appId} synced successfully.`,
-  //       life: 3000,
-  //     });
-  //   } catch (err: unknown) {
-  //     console.error(`Sync failed for ${appId}`, err);
-  //     let message = err instanceof Error ? err.message : String(err);
-  //     if (/ECONNREFUSED/i.test(message)) {
-  //       message = "Application is unreachable.";
-  //     }
-  //     toast.current?.show({
-  //       severity: "error",
-  //       summary: "Sync Failed.",
-  //       detail: message,
-  //       life: 5000,
-  //     });
-  //   }
-  // };
 
   if (loading) {
     return <p className="text-white p-4">Loading…</p>;
