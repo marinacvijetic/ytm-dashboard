@@ -4,12 +4,10 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 
 import javax.net.ssl.SSLHandshakeException;
 
 import org.apache.http.HttpEntity;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.ConnectTimeoutException;
@@ -41,6 +39,11 @@ public class SendApplicationInfoReportJobExecutor extends JobExecutor {
    }
 
    @Override
+   protected boolean supportsEnableToggle() {
+      return true;
+   }
+
+   @Override
    protected void executeImpl() {
       try {
 
@@ -53,41 +56,32 @@ public class SendApplicationInfoReportJobExecutor extends JobExecutor {
       }
    }
 
-   private static String abbreviate(String s, int max) {
-      if (s == null) {
-         return null;
-      }
-      return s.length() > max ? s.substring(0, max) : s;
-   }
-
    private void postApplicationInfoReport(ApplicationInfoReport report) {
       log.info("Post Application Info Report - Started");
-      RequestConfig config = RequestConfig.custom().setConnectTimeout(8_000).setConnectionRequestTimeout(8_000)
-            .setSocketTimeout(12_000).build();
-      try (CloseableHttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(config).build()) {
+
+      try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
          HttpPost httpPost = new HttpPost(this.endpointUrl);
-         httpPost.setConfig(config);
          httpPost.setHeader("Content-Type", "application/json");
          httpPost.setHeader("Content-Type", "application/json");
          httpPost.setHeader("Accept", "application/json");
          httpPost.setHeader("User-Agent", "ytm-app/1.0");
-         httpPost.setHeader("X-Request-Id", UUID.randomUUID().toString());
+         //httpPost.setHeader("X-Request-Id", UUID.randomUUID().toString());
          //httpPost.setHeader("Authorization", "Bearer " + accessToken.getToken());
 
          ObjectMapper objectMapper = new ObjectMapper();
+
          objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
          String jsonInputString = objectMapper.writeValueAsString(report);
+
          HttpEntity entity = new StringEntity(jsonInputString, ContentType.APPLICATION_JSON.withCharset(StandardCharsets.UTF_8));
          httpPost.setEntity(entity);
-
-         httpPost.setHeader("Content-Type", "application/json; charset=UTF-8");
 
          try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
             int statusCode = response.getStatusLine().getStatusCode();
             String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
             if (statusCode / 100 != 2) {
                throw new ModelException(String.format("HTTP %d from dashboard at %s. Body: %s", statusCode, this.endpointUrl,
-                     abbreviate(responseBody, 300)));
+                     responseBody));
             }
             log.info("Post Application Info Report - Finished");
 

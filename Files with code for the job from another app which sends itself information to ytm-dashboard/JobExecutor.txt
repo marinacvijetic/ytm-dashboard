@@ -1,10 +1,8 @@
 package com.mallocinc.ytm.model.usecase.jobs;
 
 import java.sql.Timestamp;
+import java.util.Map;
 import java.util.Objects;
-
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -17,6 +15,8 @@ import com.mallocinc.ytm.model.usecase.user.GetUserById;
 import com.mallocinc.ytm.model.user.ApplicationUserModel;
 import com.mallocinc.ytm.model.util.StringUtils;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.Getter;
 
 public abstract class JobExecutor {
@@ -79,8 +79,14 @@ public abstract class JobExecutor {
       errorCount = 0;
       Timestamp startedAt = TimestampUtility.getCurrentTimestamp();
       Timestamp finishedAt;
-      info("Job started.");
       try {
+         if (supportsEnableToggle() && !isEnabled()) {
+            logger.append("Job is DISABLED via job.data.enabled=false. Skipping execution.");
+            finishedAt = TimestampUtility.getCurrentTimestamp();
+            return new JobInstance(job, startedAt, finishedAt, errorCount, logger.toString());
+         }
+
+         info("Job started.");
          executeImpl();
          info("Job finished.");
       } catch (Exception e) {
@@ -101,6 +107,29 @@ public abstract class JobExecutor {
 
    protected void addErrorCountFromService(int errorCount) {
       this.errorCount += errorCount;
+   }
+
+   protected boolean supportsEnableToggle() {
+      return false;
+   }
+
+   protected boolean isEnabled() {
+      return getIsEnabledJobData("enabled", false);
+   }
+
+   protected boolean getIsEnabledJobData(String key, boolean def) {
+      Map<String, Object> data = job.getData();
+      if (data == null) {
+         return def;
+      }
+      Object obj = data.get(key);
+      if (obj == null) {
+         return def;
+      }
+      if (obj instanceof Boolean) {
+         return (Boolean) obj;
+      }
+      return def;
    }
 
 }

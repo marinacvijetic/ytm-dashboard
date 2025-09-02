@@ -1,9 +1,8 @@
 // Creating server, listening for incoming requests, handling errors
 require('dotenv').config();
-const { port, frontendOrigin } = require('../config');
+const { port } = require('../config');
 const app = require('./app');
-const server = require('http').createServer(app);
-const PORT = process.env.PORT || 3300;
+
 
 const HOST = '0.0.0.0';
 app.listen(port, HOST, () => {

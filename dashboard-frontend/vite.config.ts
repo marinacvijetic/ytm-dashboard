@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3300', // backend adresa
+        target: process.env.VITE_BACKEND_HOST, // backend adresa
         changeOrigin: true,
         secure: false,
       },

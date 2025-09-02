@@ -4,6 +4,7 @@ import { Column } from "primereact/column";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { STATISTICS_ENDPOINT, STATISTICS_APPS } from "../../utils/endpoints";
 
 export type StatisticsLog = {
   id: string;
@@ -153,7 +154,7 @@ export const StatisticsInfo: React.FC = () => {
 
   const fetchApps = () => {
     setLoading(true);
-    fetch(`${import.meta.env.VITE_BACKEND_HOST}/statistics/apps`)
+    fetch(`${STATISTICS_APPS}`)
     .then((res) => {
       if(!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
@@ -168,8 +169,7 @@ export const StatisticsInfo: React.FC = () => {
   const fetchData = async (pageToLoad: number=1) => {
     setLoading(true);
     fetch(`${
-        import.meta.env.VITE_BACKEND_HOST
-      }/statistics?page=${pageToLoad}&limit=${limit}${appId ? `&appId=${appId}` : ""}`
+    STATISTICS_ENDPOINT}?page=${pageToLoad}&limit=${limit}${appId ? `&appId=${appId}` : ""}`
     ).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -259,7 +259,7 @@ export const StatisticsInfo: React.FC = () => {
           className="px-3 py-2 border border-gray-400 rounded text-sm text-black"
         />
         <div className="flex gap-2 items-center">
-          <Button label="Refresh" icon="pi pi-refresh" onClick={() => fetchData(page)} />
+          <Button label="Refresh" text raised onClick={() => fetchData(page)} />
         </div>
       </div>
 

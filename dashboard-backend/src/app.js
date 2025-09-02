@@ -11,14 +11,14 @@ const corsOptions = process.env.NODE_ENV === 'development'
   : { origin: frontendOrigin, credentials: false };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
 // Routes
 const clientRoutes = require('./routes/client.routes');
 const statisticsRoutes = require('./routes/statistics.routes');
-app.use('/api', clientRoutes, statisticsRoutes);
+app.use('/api', clientRoutes);
+app.use('/api', statisticsRoutes);
 
 app.get('/', (req, res) => {
   res.send('Homepage is working!');

@@ -12,7 +12,7 @@ exports.receiveStatisticsInfo = async (req, res) => {
       return res.status(400).json({ error: "Missing appId" });
 
     const created = await statisticsModel.createStatisticsLog(statsPayload);
-    return res.status(201).json(created);
+    return res.status(200).json(created);
   } catch (err) {
     console.error("Failed to create statistics_log:", err);
     return res

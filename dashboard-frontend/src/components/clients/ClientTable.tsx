@@ -6,6 +6,7 @@ import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
 import { useNavigate } from "react-router-dom";
 import { fetchJson, HttpError } from "../../lib/fetchJson";
+import { CLIENTS_ENDPOINT, SYNC_APP_INFO } from "../../utils/endpoints";
 
 type Client = {
   client_id: number;
@@ -47,9 +48,7 @@ export const ClientTable: React.FC = () => {
   const fetchData = (pageToLoad: number = 1) => {
     setLoading(true);
     fetch(
-      `${
-        import.meta.env.VITE_BACKEND_HOST
-      }/clients?page=${pageToLoad}&limit=${limit}`
+      `${CLIENTS_ENDPOINT}?page=${pageToLoad}&limit=${limit}`
     )
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -133,7 +132,7 @@ export const ClientTable: React.FC = () => {
 
   const handleSync = async (appId: string) => {
   try {
-    const data = await fetchJson<Partial<Client>>(`${import.meta.env.VITE_BACKEND_HOST}/app-info/sync/${appId}`, { method: "GET", timeoutMs: 10000 });
+    const data = await fetchJson<Partial<Client>>(`${SYNC_APP_INFO}${appId}`, { method: "GET", timeoutMs: 10000 });
 
     // success -> update table row
     setClients((prev) => prev.map((c) => (c.app_id === appId ? { ...c, ...data } : c)));
@@ -189,7 +188,7 @@ export const ClientTable: React.FC = () => {
             className="btn-text"
             onClick={handleRefesh}
             label="Refresh"
-            text-raised
+            text raised
           />
         </div>
       </div>

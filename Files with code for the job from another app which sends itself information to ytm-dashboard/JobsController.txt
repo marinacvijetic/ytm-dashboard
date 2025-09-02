@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import jakarta.inject.Named;
-
 import org.omnifaces.cdi.ViewScoped;
 
 import com.mallocinc.ytm.model.providers.ActionLogProvider;
@@ -20,6 +18,7 @@ import com.mallocinc.ytm.webview.controllers.setup.Controller;
 import com.mallocinc.ytm.webview.controllers.setup.FacesUtil;
 import com.mallocinc.ytm.webview.controllers.system.services.ServiceDTO;
 
+import jakarta.inject.Named;
 import lombok.Getter;
 
 @Named("jobsController")
@@ -87,6 +86,11 @@ public class JobsController extends Controller {
    }
 
    public void executeJob(JobDTO job) {
+      if (isDisabled(job)) {
+         FacesUtil.throwInfo("system.jobs.actions.execute.disabled");
+         return;
+      }
+
       new ExecuteJob().execute(ExecuteJob.Input.of(job.getId()));
       if (!getApplicationUser().isSuperuser()) {
          actionLogProvider.jobExecuted(getApplicationUser(), job.convertToEntity());
@@ -114,6 +118,22 @@ public class JobsController extends Controller {
                .map(ServiceDTO::new).collect(Collectors.toList());
       }
       return services;
+   }
+
+   private boolean isDisabled(JobDTO job) {
+      if (job == null || job.getData() == null) {
+         return false;
+      }
+
+      Object obj = job.getData().get("enabled");
+      if (obj == null) {
+         return false;
+      }
+      if (obj instanceof Boolean) {
+         return !((Boolean) obj);
+      }
+
+      return false;
    }
 
 }

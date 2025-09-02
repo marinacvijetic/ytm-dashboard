@@ -153,7 +153,7 @@ exports.syncAppInfo = async (req, res) => {
     const servletUrl = `${baseUrl}/app/info`;
     try {
       const { data: appInfo } = await axios.get(servletUrl, {
-        headers: { "Accept": "application/json", "User-Agent": "ytm-dashboard/1.0" }
+        headers:  "application/json",
       });
 
             if (!appInfo || typeof appInfo !== "object" || !appInfo.title) {
