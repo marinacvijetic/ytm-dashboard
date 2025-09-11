@@ -17,6 +17,8 @@ app.use(express.json());
 // Routes
 const clientRoutes = require('./routes/client.routes');
 const statisticsRoutes = require('./routes/statistics.routes');
+const eventsRoutes = require('./routes/events.routes');
+app.use('/api', eventsRoutes);
 app.use('/api', clientRoutes);
 app.use('/api', statisticsRoutes);
 

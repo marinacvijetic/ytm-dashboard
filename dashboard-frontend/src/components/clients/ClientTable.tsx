@@ -6,7 +6,11 @@ import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
 import { useNavigate } from "react-router-dom";
 import { fetchJson, HttpError } from "../../lib/fetchJson";
-import { CLIENTS_ENDPOINT, SYNC_APP_INFO } from "../../utils/endpoints";
+import {
+  CLIENTS_ENDPOINT,
+  SYNC_APP_INFO,
+  EVENTS_ENDPOINT,
+} from "../../utils/endpoints";
 import { Calendar } from "primereact/calendar";
 import { Dropdown } from "primereact/dropdown";
 import { Tooltip } from "primereact/tooltip";
@@ -39,7 +43,6 @@ type Client = {
   last_stats_job_at?: string;
 };
 
-
 export const ClientTable: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -52,7 +55,6 @@ export const ClientTable: React.FC = () => {
   const GRACE_MS = 60 * 60 * 1000; // 60 minutes
   const ROWS = 5;
 
-
   const fetchData = () => {
     setLoading(true);
     fetch(CLIENTS_ENDPOINT)
@@ -62,9 +64,10 @@ export const ClientTable: React.FC = () => {
       })
       .then((json: Client[]) => {
         const normalized = json.map((c) => ({
-          ...c, last_update: c.last_update ? new Date(c.last_update) : null,
-        }))
-        
+          ...c,
+          last_update: c.last_update ? new Date(c.last_update) : null,
+        }));
+
         setClients(normalized);
       })
       .catch((err) => {
@@ -76,6 +79,25 @@ export const ClientTable: React.FC = () => {
   // Load data whenever page changes
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const eventSource = new EventSource(EVENTS_ENDPOINT);
+    eventSource.addEventListener("client_update", (ev) => {
+      const data: Client = JSON.parse((ev as MessageEvent).data);
+      const normalized = {
+        ...data,
+        last_update: data.last_update ? new Date(data.last_update) : null,
+      };
+      setClients((prev) => {
+        const idx = prev.findIndex((c) => c.app_id === normalized.app_id);
+        if (idx === -1) return [...prev, normalized];
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...normalized };
+        return next;
+      });
+    });
+    return () => eventSource.close();
   }, []);
 
   useEffect(() => {
@@ -201,7 +223,8 @@ export const ClientTable: React.FC = () => {
   };
 
   const lastUpdatedBody = (row: Client) => {
-    const toMs = (d?: string | Date | null) => (d ? new Date(d as any).getTime() : 0);
+    const toMs = (d?: string | Date | null) =>
+      (d ? new Date(d).getTime() : 0);
     const ms = [
       row.last_manual_sync_at,
       row.last_appinfo_job_at,

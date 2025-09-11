@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { DataTable, type DataTablePageEvent } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Checkbox } from "primereact/checkbox";
 import { useSearchParams } from "react-router-dom";
-import { STATISTICS_ENDPOINT, STATISTICS_APPS } from "../../utils/endpoints";
+import {
+  STATISTICS_ENDPOINT,
+  STATISTICS_APPS,
+  EVENTS_ENDPOINT,
+} from "../../utils/endpoints";
 import { Calendar } from "primereact/calendar";
 import { Dropdown } from "primereact/dropdown";
 
@@ -152,6 +156,23 @@ export const StatisticsInfo: React.FC = () => {
   const [filterTo, setFilterTo] = useState<Date | null>(null);
   const [tempFilterFrom, setTempFilterFrom] = useState<Date | null>(null);
   const [tempFilterTo, setTempFilterTo] = useState<Date | null>(null);
+
+  const selectedAppRef = useRef(selectedApp);
+  useEffect(() => {
+    selectedAppRef.current = selectedApp;
+  }, [selectedApp]);
+  const filterFromRef = useRef(filterFrom);
+  useEffect(() => {
+    filterFromRef.current = filterFrom;
+  }, [filterFrom]);
+  const filterToRef = useRef(filterTo);
+  useEffect(() => {
+    filterToRef.current = filterTo;
+  }, [filterTo]);
+  const pageRef = useRef(page);
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
 
   // columns chooser
   const allColumns = [
@@ -686,6 +707,31 @@ export const StatisticsInfo: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const fetchDataRef = useRef(fetchData);
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  }, [fetchData]);
+
+  useEffect(() => {
+    const es = new EventSource(EVENTS_ENDPOINT);
+    const handler = (ev: MessageEvent) => {
+      const data = JSON.parse(ev.data);
+      if (data.app_id === selectedAppRef.current) {
+        fetchDataRef.current(
+          pageRef.current,
+          selectedAppRef.current,
+          filterFromRef.current,
+          filterToRef.current
+        );
+      }
+    };
+    es.addEventListener("stats_update", handler);
+    return () => {
+      es.removeEventListener("stats_update", handler);
+      es.close();
+    };
+  }, []);
 
   const onPage = (e: DataTablePageEvent) => setPage((e.page ?? 0) + 1);
 

@@ -1,26 +1,7 @@
 const statisticsModel = require("../models/statistics.model");
 const health = require("../models/health.model");
+const eventBus = require('../utils/eventBus');
 const { Prisma } = require("@prisma/client");
-
-// exports.receiveStatisticsInfo = async (req, res) => {
-//   try {
-//     const statsPayload = req.body;
-
-//     if (!statsPayload.id) return res.status(400).json({ error: "Missing id" });
-//     if (!statsPayload.recordedAt)
-//       return res.status(400).json({ error: "Missing recordedAt" });
-//     if (!statsPayload.appId)
-//       return res.status(400).json({ error: "Missing appId" });
-
-//     const created = await statisticsModel.createStatisticsLog(statsPayload);
-//     return res.status(200).json(created);
-//   } catch (err) {
-//     console.error("Failed to create statistics_log:", err);
-//     return res
-//       .status(err instanceof Prisma.PrismaClientValidationError ? 400 : 500)
-//       .json({ error: err.message });
-//   }
-// };
 
 exports.receiveStatisticsInfo = async (req, res) => {
   const statsPayload = req.body;
@@ -34,6 +15,8 @@ exports.receiveStatisticsInfo = async (req, res) => {
     const created = await statisticsModel.createStatisticsLog(statsPayload);
 
     await health.markStatsJob(statsPayload.appId, true);
+
+    eventBus.emit('stats_update', created);
 
     return res.status(200).json(created);
   } catch (err) {

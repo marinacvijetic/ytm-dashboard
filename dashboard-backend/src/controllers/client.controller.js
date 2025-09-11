@@ -96,10 +96,16 @@ exports.registerApp = async (req, res) => {
     clientApp = await clientModel.findClientByAppId(appId);
 
     // 4) Emit event and respond
+        // 4) Emit event and respond
+    const flaggedClient = {
+      ...clientApp,
+      status_flags: health.computeHealthFlags(clientApp),
+    };
     eventBus.emit("app_registered", {
       clientId: clientApp.client_id,
       appId,
     });
+    eventBus.emit('client_update', flaggedClient);
 
     res.status(200).json({ message: "App registered successfully", clientApp });
   } catch (err) {
@@ -202,6 +208,7 @@ exports.syncAppInfo = async (req, res) => {
         ...finalClient,
         status_flags: health.computeHealthFlags(finalClient),
       };
+      eventBus.emit('client_update', finalWithFlags);
       return res.json(finalWithFlags);
     } catch (e) {
       console.error(`Failed to sync app info for ${client.app_id}:`, e.message);
