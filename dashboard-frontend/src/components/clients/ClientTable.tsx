@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, type JSX } from "react";
-import { DataTable, type DataTablePageEvent } from "primereact/datatable";
+import { DataTable } from "primereact/datatable";
 import type { ColumnFilterElementTemplateOptions } from "primereact/column";
 import { Column } from "primereact/column";
 import { Button } from "primereact/button";
@@ -9,11 +9,8 @@ import { fetchJson, HttpError } from "../../lib/fetchJson";
 import { CLIENTS_ENDPOINT, SYNC_APP_INFO } from "../../utils/endpoints";
 import { Calendar } from "primereact/calendar";
 import { Dropdown } from "primereact/dropdown";
-import type {
-  DataTableFilterMeta,
-  DataTableFilterEvent,
-} from "primereact/datatable";
 import { Tooltip } from "primereact/tooltip";
+import { FilterMatchMode } from "primereact/api";
 
 type StatusFlags = {
   down: boolean;
@@ -30,7 +27,7 @@ type Client = {
   url: string;
   api_url: string;
   created_at: string;
-  last_update: string;
+  last_update: string | Date | null;
   last_ping_successful: boolean;
   is_active: boolean;
   proctor_edu: boolean;
@@ -42,92 +39,33 @@ type Client = {
   last_stats_job_at?: string;
 };
 
-type PaginatedResponse = {
-  data: Client[];
-  page: number;
-  totalPages: number;
-  totalCount: number;
-};
 
 export const ClientTable: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [page, setPage] = useState<number>(1); // 1-based
-  const [limit] = useState<number>(5); // rows per page
-  const [, setTotalPages] = useState<number>(1);
-  const [totalCount, setTotalCount] = useState<number>(0);
+
   const toast = useRef<Toast>(null);
   const navigate = useNavigate();
   const tooltipRef = useRef<Tooltip>(null);
 
-  const [sortField, setSortField] = useState<string>("app_title");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-
   const OUTDATED_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
   const GRACE_MS = 60 * 60 * 1000; // 60 minutes
+  const ROWS = 5;
 
-  const [filters, setFilters] = useState({
-    app_id: "",
-    proctor_edu: null as boolean | null,
-    proctorio: null as boolean | null,
-    superset_apache: null as boolean | null,
 
-    last_update: "",
-  });
-
-  // keep previous filters to decide when to debounce
-  const prevFiltersRef = useRef(filters);
-  // debounce timer id
-  const debounceRef = useRef<number | null>(null);
-  const scheduleFetch = (next: typeof filters, immediate = false) => {
-    if (debounceRef.current) {
-      window.clearTimeout(debounceRef.current);
-      debounceRef.current = null;
-    }
-    if (immediate) {
-      fetchData(1, next);
-    } else {
-      debounceRef.current = window.setTimeout(
-        () => fetchData(1, next),
-        400
-      ) as unknown as number;
-    }
-  };
-  // Fetch a specific page from the server
-  const fetchData = (pageToLoad = 1, filtersArg = filters) => {
+  const fetchData = () => {
     setLoading(true);
-    const params = new URLSearchParams({
-      page: pageToLoad.toString(),
-      limit: limit.toString(),
-      sortField,
-      sortOrder,
-      app_id: filtersArg.app_id,
-      last_update: filtersArg.last_update,
-    });
-    if (
-      filtersArg.proctor_edu !== null &&
-      filtersArg.proctor_edu !== undefined
-    ) {
-      params.set("proctor_edu", String(filtersArg.proctor_edu));
-    }
-    if (filtersArg.proctorio !== null && filtersArg.proctorio !== undefined) {
-      params.set("proctorio", String(filtersArg.proctorio));
-    }
-    if (
-      filtersArg.superset_apache !== null &&
-      filtersArg.superset_apache !== undefined
-    ) {
-      params.set("superset_apache", String(filtersArg.superset_apache));
-    }
-    fetch(`${CLIENTS_ENDPOINT}?${params}`)
+    fetch(CLIENTS_ENDPOINT)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
-      .then((json: PaginatedResponse) => {
-        setClients(json.data);
-        setTotalPages(json.totalPages);
-        setTotalCount(json.totalCount);
+      .then((json: Client[]) => {
+        const normalized = json.map((c) => ({
+          ...c, last_update: c.last_update ? new Date(c.last_update) : null,
+        }))
+        
+        setClients(normalized);
       })
       .catch((err) => {
         console.error("Failed to fetch clients", err);
@@ -137,18 +75,12 @@ export const ClientTable: React.FC = () => {
 
   // Load data whenever page changes
   useEffect(() => {
-    fetchData(page);
-  }, [page]);
+    fetchData();
+  }, []);
 
   useEffect(() => {
     tooltipRef.current?.updateTargetEvents();
   }, [clients]);
-
-  // Handler for DataTable pagination event
-  const onPage = (e: DataTablePageEvent) => {
-    // e.page is zero-based, so add 1
-    setPage(e.page! + 1);
-  };
 
   // Render a badge for boolean values
   const yesNoBadge = (value: boolean) => (
@@ -158,7 +90,7 @@ export const ClientTable: React.FC = () => {
   );
 
   const isOutdated = (row: Client) => {
-    const toMs = (d?: string) => (d ? new Date(d).getTime() : 0);
+    const toMs = (d?: string | Date | null) => (d ? new Date(d).getTime() : 0);
 
     const freshestCore = Math.max(
       toMs(row.last_manual_sync_at),
@@ -269,7 +201,7 @@ export const ClientTable: React.FC = () => {
   };
 
   const lastUpdatedBody = (row: Client) => {
-    const toMs = (d?: string) => (d ? new Date(d).getTime() : 0);
+    const toMs = (d?: string | Date | null) => (d ? new Date(d as any).getTime() : 0);
     const ms = [
       row.last_manual_sync_at,
       row.last_appinfo_job_at,
@@ -320,7 +252,7 @@ export const ClientTable: React.FC = () => {
   };
 
   const handleRefesh = async () => {
-    fetchData(page);
+    fetchData();
   };
 
   const handleSync = async (appId: string) => {
@@ -387,7 +319,7 @@ export const ClientTable: React.FC = () => {
       <div className="table-toolbar">
         <Button onClick={handleRefesh} label="Refresh" text raised />
       </div>
-      {/* PrimeReact DataTable with server-side pagination */}
+      {/* PrimeReact DataTable with client-side pagination */}
       <div className="overflow-x-auto">
         <Tooltip
           ref={tooltipRef}
@@ -397,7 +329,6 @@ export const ClientTable: React.FC = () => {
         />{" "}
         <DataTable
           value={clients}
-          lazy
           filterDisplay="row"
           loading={loading}
           scrollable
@@ -405,95 +336,10 @@ export const ClientTable: React.FC = () => {
           paginatorClassName="paginator"
           showGridlines
           paginator
-          rows={limit}
-          first={(page - 1) * limit}
-          totalRecords={totalCount}
-          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink PageDropdown RowsPerPageDropdown"
-          onPage={onPage}
+          rows={ROWS}
           className="client-table"
           emptyMessage="No clients found"
           rowClassName={rowClassName}
-          sortField={sortField}
-          sortOrder={sortOrder === "asc" ? 1 : -1}
-          onSort={(e) => {
-            setSortField(e.sortField);
-            setSortOrder(e.sortOrder === 1 ? "asc" : "desc");
-            fetchData(page);
-          }}
-          filters={{
-            app_id: { value: filters.app_id, matchMode: "contains" },
-            proctor_edu: { value: filters.proctor_edu, matchMode: "equals" },
-            proctorio: { value: filters.proctorio, matchMode: "equals" },
-            superset_apache: {
-              value: filters.superset_apache,
-              matchMode: "equals",
-            },
-            last_update: {
-              value: filters.last_update ? new Date(filters.last_update) : null,
-              matchMode: "equals",
-            },
-          }}
-          onFilter={(e: DataTableFilterEvent) => {
-            const meta = e.filters as DataTableFilterMeta;
-
-            // Read both simple and operator-style metas
-            const get = (key: string) => {
-              const m = (meta as any)?.[key];
-              if (!m) return undefined;
-              if (typeof m === "object" && "value" in m) return m.value;
-              if (
-                typeof m === "object" &&
-                "constraints" in m &&
-                Array.isArray(m.constraints)
-              ) {
-                return m.constraints[0]?.value;
-              }
-              return undefined;
-            };
-
-            // Normalize tri-state booleans
-            const tri = (v: any): boolean | null => {
-              if (v === true || v === "true") return true;
-              if (v === false || v === "false") return false;
-              return null; // "Any"
-            };
-
-            // Normalize date to ISO string (or empty string)
-            const dateIso = (v: any): string => {
-              if (!v) return "";
-              if (v instanceof Date) return v.toISOString();
-              const d = new Date(v);
-              return isNaN(d.getTime()) ? "" : d.toISOString();
-            };
-
-            const next = {
-              app_id: (get("app_id") as string) || "",
-              proctor_edu: tri(get("proctor_edu")),
-              proctorio: tri(get("proctorio")),
-              superset_apache: tri(get("superset_apache")),
-              last_update: dateIso(get("last_update")),
-            };
-
-            setFilters(next);
-            setPage(1);
-
-            const prev = prevFiltersRef.current;
-            prevFiltersRef.current = next;
-
-            const textChanged = next.app_id !== prev.app_id;
-
-            const immediateChanged =
-              next.proctor_edu !== prev.proctor_edu ||
-              next.proctorio !== prev.proctorio ||
-              next.superset_apache !== prev.superset_apache ||
-              next.last_update !== prev.last_update;
-
-            // debounce text typing; apply immediately for dropdowns/date/clear-icon
-            scheduleFetch(
-              next,
-              immediateChanged ? true : !textChanged ? true : false
-            );
-          }}
         >
           <Column
             field="app_title"
@@ -617,11 +463,13 @@ export const ClientTable: React.FC = () => {
           <Column
             field="last_update"
             header="Last Updated"
+            dataType="date"
             bodyClassName="!text-center"
             headerClassName="!text-center"
             sortable
             filter
             showFilterMenu={false}
+            filterMatchMode={FilterMatchMode.DATE_IS}
             body={lastUpdatedBody}
             filterElement={(options: ColumnFilterElementTemplateOptions) => (
               <Calendar

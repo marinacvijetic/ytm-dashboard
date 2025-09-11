@@ -23,62 +23,6 @@ exports.getAllClients = async (req, res) => {
   }
 };
 
-exports.getPaginatedClients = async (req, res) => {
-  const page = parseInt(req.query.page || "1", 10);
-  const limit = parseInt(req.query.limit || "5", 10);
-  const sortField = req.query.sortField || "app_title";
-  const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
-
-  // existing filters
-  const app_id = req.query.app_id || "";
-  const last_update = req.query.last_update || "";
-
-  // boolean filters
-  const parseBool = (v) =>
-    v === "true" ? true : v === "false" ? false : undefined;
-  const proctor_edu = parseBool(req.query.proctor_edu);
-  const proctorio = parseBool(req.query.proctorio);
-  const superset_apache = parseBool(req.query.superset_apache);
-
-  const safePage = isNaN(page) || page < 1 ? 1 : page;
-  const safeLimit = isNaN(limit) || limit < 1 ? 5 : limit;
-  const skip = (safePage - 1) * safeLimit;
-
-  try {
-    const filters = {
-      app_id,
-      last_update,
-      proctor_edu,
-      proctorio,
-      superset_apache,
-    };
-
-    const [data, totalCount] = await Promise.all([
-      clientModel.findClientsPage(
-        skip,
-        safeLimit,
-        filters,
-        sortField,
-        sortOrder
-      ),
-      clientModel.countClientsFiltered(filters),
-    ]);
-
-    const totalPages = Math.ceil(totalCount / safeLimit);
-
-    return res.json({
-      data: withFlags(data),
-      page: safePage,
-      totalPages,
-      totalCount,
-      pageSize: safeLimit,
-    });
-  } catch (err) {
-    console.error("Error in getPaginatedClients:", err.message);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
 exports.registerApp = async (req, res) => {
   const payload = req.body || {};
   const appId = payload.appId || payload.app_id;
@@ -147,6 +91,7 @@ exports.registerApp = async (req, res) => {
     await clientModel.updatePingStatus(appId, true);
     try {
       await health.markAppInfoJob(appId, true);
+      await health.markReachability(appId, true);
     } catch {}
     clientApp = await clientModel.findClientByAppId(appId);
 

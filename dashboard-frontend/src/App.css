@@ -4,6 +4,7 @@
 @theme {
   --color-primary-blue: #2fabdf; /* primary-blue color */
   --color-background1: #f7fafc; /* subtle gray/white app bg */
+  --color-background2: oklch(96.7% 0.003 264.542);
 }
 
 /* Base  */
@@ -31,7 +32,7 @@
   }
 
   .client-table td {
-    @apply px-4 py-3 text-gray-800 border border-gray-300;
+    @apply px-4 py-3 text-gray-800 border border-blue-600;
   }
 }
 
@@ -158,10 +159,14 @@
 }
 
 .client-table .p-datatable-thead > tr > th:first-child {
-  border-left: 1px rgb(229 231 235) !important;
+  border-left: 1px solid rgb(229 231 235) !important;
 }
 .client-table .p-datatable-thead > tr > th:last-child {
-  border-right: 1px rgb(229 231 235) !important;
+  border-right: 1px solid rgb(229 231 235) !important;
+}
+
+.client-table .p-datatable-frozen-view .p-datatable-thead > tr > th:first-child {
+  border-right: 1px solid rgb(229 231 235) !important;
 }
 
 /* Row state coloring */
@@ -289,7 +294,7 @@
 
 /* Menu list + items */
 .sidebar__menu {
-  /* default UL needs no layout here, but keeping hook for future */
+
 }
 .sidebar__item {
   @apply px-2 py-3 mt-4 duration-300 cursor-pointer flex gap-2 items-center;
@@ -298,12 +303,12 @@
   @apply bg-primary-blue text-white rounded-md;
 }
 
-/* Item icon (wrapper around your react-icon) */
+/* Item icon*/
 .sidebar__icon {
-  /* keep as hook in case you want to size/align icons later */
+
 }
 
-/* Item label: slide/hide when collapsed (matches your w-0 + translate-x-24) */
+/* Item label - slide/hide when collapsed */
 .sidebar__label {
   @apply duration-300 overflow-hidden font-semibold;
 }
