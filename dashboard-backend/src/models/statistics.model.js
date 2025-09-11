@@ -184,3 +184,32 @@ exports.findLatestLogByAppId = async (appId) => {
     throw err;
   }
 };
+
+exports.list = async({ page = 1, limit = 20, appId = '', from, to }) => {
+  const where = {};
+  if (appId) where.app_id = appId;
+
+  // from/to here are java script dates at local midnight; to is exclusive upper bound (to + 1 day)
+  if (from || to) {
+    where.recorded_at = {
+      ...(from && { gte: from }),
+      ...(to   && { lt: to }),
+    };
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [rows, totalCount] = await Promise.all([
+    prisma.statistics_log.findMany({
+      where,
+      orderBy: { recorded_at: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.statistics_log.count({ where }),
+  ]);
+
+  const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
+  return { data: rows, page, totalPages, totalCount };
+}
+

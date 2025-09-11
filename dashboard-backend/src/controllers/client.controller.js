@@ -2,15 +2,21 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const axios = require("axios");
 const clientModel = require("../models/client.model");
-const eventBus = require("../utils/eventBus");
+const health = require("../models/health.model");
 const { classifyAxiosError } = require("../utils/httpError");
+const eventBus = require('../utils/eventBus'); 
+
+
+// add each row non-exclusive flags
+const withFlags = (rows) =>
+  rows.map((r) => ({ ...r, status_flags: health.computeHealthFlags(r) }));
 
 exports.getAllClients = async (req, res) => {
   try {
     const clients = await prisma.clientApplication.findMany({
       include: { services: true },
     });
-    res.json(clients);
+    res.json(withFlags(clients));
   } catch (err) {
     console.error("Error in getAllClients:", err.message);
     res.status(500).json({ error: "Internal Server Error" });
@@ -18,28 +24,50 @@ exports.getAllClients = async (req, res) => {
 };
 
 exports.getPaginatedClients = async (req, res) => {
-  // Parse `page` and `limit` from the query string (defaults: page=1, limit=10)
   const page = parseInt(req.query.page || "1", 10);
-  const limit = parseInt(req.query.limit || "6", 10);
+  const limit = parseInt(req.query.limit || "5", 10);
+  const sortField = req.query.sortField || "app_title";
+  const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
 
-  // If invalid page/limit, force sensible defaults
+  // existing filters
+  const app_id = req.query.app_id || "";
+  const last_update = req.query.last_update || "";
+
+  // boolean filters
+  const parseBool = (v) =>
+    v === "true" ? true : v === "false" ? false : undefined;
+  const proctor_edu = parseBool(req.query.proctor_edu);
+  const proctorio = parseBool(req.query.proctorio);
+  const superset_apache = parseBool(req.query.superset_apache);
+
   const safePage = isNaN(page) || page < 1 ? 1 : page;
-  const safeLimit = isNaN(limit) || limit < 1 ? 6 : limit;
-
-  // Compute how many rows to skip (0-based)
+  const safeLimit = isNaN(limit) || limit < 1 ? 5 : limit;
   const skip = (safePage - 1) * safeLimit;
 
   try {
-    // 2) Use your Prisma helpers—no raw SQL here
+    const filters = {
+      app_id,
+      last_update,
+      proctor_edu,
+      proctorio,
+      superset_apache,
+    };
+
     const [data, totalCount] = await Promise.all([
-      clientModel.findClientsPage(skip, safeLimit),
-      clientModel.countClients(),
+      clientModel.findClientsPage(
+        skip,
+        safeLimit,
+        filters,
+        sortField,
+        sortOrder
+      ),
+      clientModel.countClientsFiltered(filters),
     ]);
 
     const totalPages = Math.ceil(totalCount / safeLimit);
 
-    res.json({
-      data,
+    return res.json({
+      data: withFlags(data),
       page: safePage,
       totalPages,
       totalCount,
@@ -52,6 +80,9 @@ exports.getPaginatedClients = async (req, res) => {
 };
 
 exports.registerApp = async (req, res) => {
+  const payload = req.body || {};
+  const appId = payload.appId || payload.app_id;
+
   try {
     const {
       appId,
@@ -114,6 +145,9 @@ exports.registerApp = async (req, res) => {
     }
     // Mark registration as a successful ping and active app
     await clientModel.updatePingStatus(appId, true);
+    try {
+      await health.markAppInfoJob(appId, true);
+    } catch {}
     clientApp = await clientModel.findClientByAppId(appId);
 
     // 4) Emit event and respond
@@ -125,6 +159,12 @@ exports.registerApp = async (req, res) => {
     res.status(200).json({ message: "App registered successfully", clientApp });
   } catch (err) {
     console.error("Register App Error:", err);
+    // mark job failure if we know the app id
+    if (req?.body?.appId) {
+      try {
+        await health.markAppInfoJob(req.body.appId, false);
+      } catch {}
+    }
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -142,7 +182,10 @@ exports.syncAppInfo = async (req, res) => {
       return res.status(404).json({ error: "Client application not found" });
     }
 
-    const baseUrl = ('http://localhost:8085/ytm.webview/' || "").replace(/\/$/, "");
+    const baseUrl = ("http://localhost:8085/ytm.webview/" || "").replace(
+      /\/$/,
+      ""
+    );
     // const baseUrl = (client.url || "").replace(/\/$/, "");
     if (!baseUrl) {
       return res
@@ -153,19 +196,24 @@ exports.syncAppInfo = async (req, res) => {
     const servletUrl = `${baseUrl}/app/info`;
     try {
       const { data: appInfo } = await axios.get(servletUrl, {
-        headers:  "application/json",
+        headers: "application/json",
       });
 
-            if (!appInfo || typeof appInfo !== "object" || !appInfo.title) {
+      if (!appInfo || typeof appInfo !== "object" || !appInfo.title) {
         return res.status(502).json({
           status: "error",
           error: {
             type: "InvalidResponse",
             message: "Invalid response payload from target application",
             code: "INVALID_RESPONSE",
-            request: { method: "GET", url: servletUrl, appId: client.app_id, timestamp: new Date().toISOString() },
-            response: { status: 200, body: JSON.stringify(appInfo) }
-          }
+            request: {
+              method: "GET",
+              url: servletUrl,
+              appId: client.app_id,
+              timestamp: new Date().toISOString(),
+            },
+            response: { status: 200, body: JSON.stringify(appInfo) },
+          },
         });
       }
 
@@ -199,24 +247,53 @@ exports.syncAppInfo = async (req, res) => {
       }
 
       await clientModel.updatePingStatus(client.app_id, true);
+      await Promise.all([
+        health.markManualSyncSuccess(client.app_id),
+        health.markReachability(client.app_id, true),
+      ]);
+
       const finalClient = await clientModel.findClientByAppId(client.app_id);
-      return res.json(finalClient);
+      const finalWithFlags = {
+        ...finalClient,
+        status_flags: health.computeHealthFlags(finalClient),
+      };
+      return res.json(finalWithFlags);
     } catch (e) {
       console.error(`Failed to sync app info for ${client.app_id}:`, e.message);
-      await clientModel.updatePingStatus(client.app_id, false);
-      const failedClient = await clientModel.findClientByAppId(client.app_id);
-      const classified = classifyAxiosError(e, { method: 'GET', url: servletUrl, appId: client.app_id });
-      classified.client = failedClient;
-      
-      const statusCode = (/^\d+$/.test(classified?.error?.code || '') ? Number(classified.error.code) : 503);
-      return res.status(statusCode).json(classified);
+      await clientModel.updatePingStatus(client.app_id, false, false);
 
+      try {
+        await health.markReachability(client.app_id, false);
+      } catch {}
+
+      const failedClient = await clientModel.findClientByAppId(client.app_id);
+      const classified = classifyAxiosError(e, {
+        method: "GET",
+        url: servletUrl,
+        appId: client.app_id,
+      });
+
+      // include current flags so the row can update immediately in UI
+      classified.client = {
+        ...failedClient,
+        status_flags: health.computeHealthFlags(failedClient),
+      };
+
+      const statusCode = /^\d+$/.test(classified?.error?.code || "")
+        ? Number(classified.error.code)
+        : 503;
+      return res.status(statusCode).json(classified);
     }
   } catch (e) {
     console.error("Application information sync failed", e);
-    return res.status(500).json({ 
-      status: "error", 
-      error: {type: "ApplicationError", message: "Sync failed", code: "INTERNAL_ERROR", details: e.message} 
+    return res.status(500).json({
+      status: "error",
+      error: {
+        type: "ApplicationError",
+        message: "Sync failed",
+        code: "INTERNAL_ERROR",
+        details: e.message,
+      },
     });
   }
 };

@@ -1,51 +1,68 @@
 @import "tailwindcss";
-@layer tailwind-base, primereact, tailwind-utilities ;
 
+/* Custom theme colors */
+@theme {
+  --color-primary-blue: #2fabdf; /* primary-blue color */
+  --color-background1: #f7fafc; /* subtle gray/white app bg */
+}
+
+/* Base  */
 @layer base {
+
   h2 {
-    @apply text-3xl font-semibold mb-4 text-gray-700;
+    @apply text-3xl font-semibold text-gray-600 mb-10;
   }
 
-  //Links
-  a {
-    @apply text-blue-500 hover:underline;
+  .client-table {
+    @apply table-fixed;
   }
 
-  // Table elements
-  thead tr {
-    @apply bg-gray-300 border border-gray-300;
-  }
   .client-table th {
-    @apply px-4 py-2 place-content-center whitespace-nowrap min-w-max bg-[#F4F6F8]  text-sm font-semibold text-gray-800 border border-gray-200;
+    @apply px-4 py-2 text-center whitespace-nowrap bg-[#F4F6F8];
   }
+
   .client-table th,
   .client-table td {
     min-width: 120px;
   }
-  tbody tr:nth-child(even) {
+
+  .client-table tbody tr:nth-child(even) {
     @apply bg-[#F9FAFB];
   }
-  td {
-    @apply px-4 py-3 text-sm text-gray-800 border border-gray-300;
-  }
 
-  input {
-    @apply bg-white;
-  }
-
-  textarea,
-  select {
-    @apply px-3 py-2 border border-gray-400 rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500;
+  .client-table td {
+    @apply px-4 py-3 text-gray-800 border border-gray-300;
   }
 }
 
+/* Components  */
 @layer components {
-  .client-table {
-    @apply font-normal table-fixed;
+  .card-dashboard {
+    @apply bg-white border border-gray-300 rounded-xl shadow-lg w-70 h-50;
   }
+
+  /* Filter controls sizing */
+  .client-table .p-column-filter {
+    width: 100%;
+  }
+
+  .client-table .p-datatable-thead .p-column-filter {
+    min-width: 220px;
+  }
+  .client-table .p-column-header-content {
+    @apply flex justify-center items-center gap-2 text-lg font-semibold text-gray-700;
+  }
+  .client-table .p-column-filter .p-inputtext,
+  .client-table .p-column-filter .p-dropdown,
+  .client-table .p-column-filter .p-calendar,
+  .client-table .p-column-filter .p-calendar .p-inputtext,
+  .client-table .p-column-filter .p-dropdown .p-dropdown-label {
+    width: 100%;
+  }
+
+  /* Badges (Yes/No) */
   .badge-yesno {
-    @apply inline-flex items-center justify-center rounded-lg font-semibold 
-    text-xs w-20 h-7 text-center;
+    @apply inline-flex items-center justify-center rounded-lg font-semibold w-20 h-7 text-center;
   }
   .badge-yes {
     @apply bg-green-500/30 text-green-900;
@@ -53,86 +70,246 @@
   .badge-no {
     @apply bg-red-500/30 text-red-900;
   }
-  .column {
-    @apply border border-gray-200;
-  }
+
+  /* Links inside table cells */
   .url {
-    @apply text-blue-700 text-[14px];
+    @apply text-blue-700;
   }
 
-  .card-dashboard {
-    @apply bg-white border border-gray-300 rounded-xl shadow-lg w-70 h-50 ;
-  }
-
-  .update-button {
-    @apply flex items-center gap-2 px-3 py-1 rounded-full bg-primary-blue text-white text-sm hover:bg-blue-600 transition-colors;
-  }
-
+  /* Action buttons */
+  .update-button,
   .stats-button {
     @apply flex items-center gap-2 px-3 py-1 rounded-full bg-primary-blue text-white text-sm hover:bg-blue-600 transition-colors;
   }
 
-  /* Paginator container */
+  /* Paginator wrapper (paginatorClassName="paginator") */
+  .paginator {
+    position: relative !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 70px;
+  }
+  .p-paginator-left-content {
+    position: absolute !important;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 16px;
+  }
+
+  /* PrimeReact paginator */
   .p-paginator {
-    @apply flex justify-center items-center gap-1 mt-2 bg-gray-100 py-2 rounded-b-lg;
+    @apply mt-2 bg-transparent py-4;
   }
 
-  /* Page number buttons */
-  .p-paginator-pages{
-    @apply bg-white border border-gray-300 text-gray-700 rounded-lg px-3 py-1 mx-1 transition hover:bg-blue-100 hover:text-blue-600 cursor-pointer;
+  /* The pill container that wraps page buttons */
+  .p-paginator-pages {
+    @apply flex items-center bg-white border border-gray-300 rounded-xl px-2 py-1 shadow-sm;
+    gap: 2px; /* Space between buttons */
   }
 
-  /* Active page button */
-  .p-paginator-page .p-highlight {
-    @apply bg-primary-blue text-white font-bold;
+  /* Page buttons inside the pill */
+  .p-paginator-page {
+    @apply bg-transparent border-0 text-gray-700 rounded-full px-3 py-1 cursor-pointer transition;
+  }
+  .p-paginator-page:hover {
+    @apply bg-gray-100 text-gray-800;
+  }
+  .p-paginator-page.p-highlight {
+    @apply bg-blue-50 text-blue-600 font-semibold ring-1 ring-blue-200;
   }
 
   /* Prev/Next/First/Last buttons */
   .p-paginator-prev,
   .p-paginator-next,
   .p-paginator-first,
-  .p-paginator-last{
-    @apply bg-white border border-gray-300 text-gray-700 rounded-lg px-2 py-1 mx-1 transition hover:bg-blue-100 hover:text-blue-600 cursor-pointer;
+  .p-paginator-last {
+    @apply bg-transparent border-0 text-gray-400 rounded-full p-2 mx-1 cursor-pointer transition;
   }
-
-  /* Disabled state */
+  .p-paginator-prev:hover,
+  .p-paginator-next:hover,
+  .p-paginator-first:hover,
+  .p-paginator-last:hover {
+    @apply text-gray-600 bg-gray-100;
+  }
   .p-paginator-prev.p-disabled,
   .p-paginator-next.p-disabled,
   .p-paginator-first.p-disabled,
-  .p-paginator-last.p-disabled{
-    @apply bg-gray-200 text-gray-400 cursor-not-allowed border-gray-200;
-  }
-
-  //Primary button
-  .btn-primary {
-    @apply inline-flex items-center px-4 py-2 bg-primary-blue text-white font-medium rounded hover:bg-indigo-700 transition;
-  }
-
-
-  .stats-details-panel {
-    @apply bg-white rounded-lg shadow p-6 grid grid-cols-2 gap-x-8 gap-y-2;
-  }
-  .stats-details-panel span {
-    @apply font-semibold text-gray-700;
-  }
-
-}
-
-@layer tailwind-utilities {
-  .p-datatable .p-datatable-tbody > tr.client-down {
-    @apply bg-red-100;
-  }
-
-  .p-datatable .p-datatable-tbody > tr.client-outdated {
-    @apply bg-yellow-100;
+  .p-paginator-last.p-disabled {
+    @apply text-gray-300 cursor-not-allowed bg-transparent;
   }
 }
 
-@theme {
-  --color-background: #ffffff;
-  --color-primary-blue: #2fabdf;
-  --color-background3: #f4f8fe;
-  --color-sidebarText: #687c93;
-  --color-background4: #5da7db;
-  --color-sky: oklch(95.1% 0.026 236.824);
+.client-table .p-datatable-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* Vertical and horizontal borders on <thead> cells (header + filter row) */
+.client-table .p-datatable-thead > tr > th {
+  border-top: 1px solid rgb(229 231 235) !important; /* gray-200 */
+  border-bottom: 1px solid rgb(229 231 235) !important;
+}
+
+/* vertical dividers between header cells */
+.client-table .p-datatable-thead > tr > th + th {
+  border-left: 1px solid rgb(229 231 235) !important; /* gray-200 */
+}
+
+.client-table .p-datatable-thead > tr > th:first-child {
+  border-left: 1px rgb(229 231 235) !important;
+}
+.client-table .p-datatable-thead > tr > th:last-child {
+  border-right: 1px rgb(229 231 235) !important;
+}
+
+/* Row state coloring */
+/* These classes are added via rowClassName 'client-down' - 'client-outdated' */
+.p-datatable .p-datatable-tbody > tr.client-down {
+  background-color: #fee2e2 !important;
+}
+.p-datatable .p-datatable-tbody > tr.client-outdated {
+  background-color: #fef9c3 !important;
+}
+
+:root {
+  --table-font-size: 15px; /* body/filter text size */
+}
+
+.client-table {
+  font-size: var(--table-font-size);
+  line-height: 1.5;
+}
+
+/* Make everything inside inherit the table size */
+.client-table td,
+.client-table th,
+.client-table .p-column-header-content,
+.client-table .p-inputtext,
+.client-table .p-dropdown .p-dropdown-label,
+.client-table .p-calendar .p-inputtext {
+  font-size: inherit !important;
+}
+
+/* Links in cells - use the table size, just keep the color */
+.client-table .url {
+  font-size: inherit !important;
+}
+
+/* Toolbar and actions layout */
+.table-toolbar {
+  @apply flex justify-end items-center mb-4;
+}
+.table-actions {
+  @apply flex items-center justify-center gap-2;
+}
+
+/* Status icons */
+.status-icon {
+  @apply inline-flex items-center justify-center rounded-full;
+  width: 35px;
+  height: 35px;
+  box-shadow: 0 4px 8px rgba(0,0,0,.25);
+  border: 1px solid rgba(0,0,0,.06);
+  transition: transform .08s ease;
+}
+.status-icon i {
+  font-size: 25px;
+}
+
+/* Tooltip target for last updated */
+.last-update-tooltip {
+  cursor: help;
+}
+
+/*-----------LAYOUT STYLES-----------*/
+/* Root layout container */
+.app-shell {
+  display: flex;
+  width: 100vw;           
+  min-height: 100vh;       
+  min-height: 100dvh;       
+  background-color: var(--color-background1);
+}
+
+/* Main area */
+.main-content {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 1rem;           
+}
+
+/*-----------SIDEBAR STYLES-----------*/
+/* Root sidebar */
+.sidebar {
+  @apply h-screen p-3 flex flex-col duration-500 text-[#687C93] border-r border-gray-300;
+}
+
+/* Open vs collapsed widths */
+.sidebar.is-open {
+  @apply w-60;
+}
+.sidebar.is-collapsed {
+  @apply w-17;
+}
+
+/* Header block (logo + toggle) */
+.sidebar__brand {
+  @apply border-b border-gray-300 flex flex-col justify-between items-center transition-all;
+}
+.sidebar.is-open .sidebar__brand {
+  @apply px-3 py-2 h-25;
+}
+.sidebar.is-collapsed .sidebar__brand {
+  @apply p-0;
+}
+
+/* Logo sizing */
+.sidebar__logo {
+  @apply transition-all;
+}
+.sidebar.is-open .sidebar__logo {
+  @apply w-50;
+}
+.sidebar.is-collapsed .sidebar__logo {
+  @apply w-70;
+}
+
+/* Toggle button (MdMenuOpen icon) */
+.sidebar__toggle {
+  @apply cursor-pointer transition-all duration-500;
+}
+.sidebar.is-open .sidebar__toggle {
+  @apply ml-40;
+}
+.sidebar.is-collapsed .sidebar__toggle {
+  @apply rotate-180 duration-300;
+}
+
+/* Menu list + items */
+.sidebar__menu {
+  /* default UL needs no layout here, but keeping hook for future */
+}
+.sidebar__item {
+  @apply px-2 py-3 mt-4 duration-300 cursor-pointer flex gap-2 items-center;
+}
+.sidebar__item:hover {
+  @apply bg-primary-blue text-white rounded-md;
+}
+
+/* Item icon (wrapper around your react-icon) */
+.sidebar__icon {
+  /* keep as hook in case you want to size/align icons later */
+}
+
+/* Item label: slide/hide when collapsed (matches your w-0 + translate-x-24) */
+.sidebar__label {
+  @apply duration-300 overflow-hidden font-semibold;
+}
+.sidebar.is-collapsed .sidebar__label {
+  @apply w-0 translate-x-24;
+}
+.sidebar.is-open .sidebar__label {
+  @apply translate-x-0;
 }

@@ -39,12 +39,14 @@ public class SendApplicationInfoReportJobExecutor extends JobExecutor {
    }
 
    @Override
-   protected boolean supportsEnableToggle() {
-      return true;
-   }
-
-   @Override
    protected void executeImpl() {
+      
+      Boolean enabled = (Boolean) getJob().getData().get("enabled");
+      if (enabled == null || !enabled) {
+         log.info("SendApplicationInfoReport job is DISABLED. Skipping execution.");
+         return;
+      }
+      
       try {
 
          ApplicationInfoReport report = reportBuilder.buildReport();

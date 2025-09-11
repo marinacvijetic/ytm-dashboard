@@ -1,10 +1,30 @@
 const statisticsModel = require("../models/statistics.model");
+const health = require("../models/health.model");
 const { Prisma } = require("@prisma/client");
 
-exports.receiveStatisticsInfo = async (req, res) => {
-  try {
-    const statsPayload = req.body;
+// exports.receiveStatisticsInfo = async (req, res) => {
+//   try {
+//     const statsPayload = req.body;
 
+//     if (!statsPayload.id) return res.status(400).json({ error: "Missing id" });
+//     if (!statsPayload.recordedAt)
+//       return res.status(400).json({ error: "Missing recordedAt" });
+//     if (!statsPayload.appId)
+//       return res.status(400).json({ error: "Missing appId" });
+
+//     const created = await statisticsModel.createStatisticsLog(statsPayload);
+//     return res.status(200).json(created);
+//   } catch (err) {
+//     console.error("Failed to create statistics_log:", err);
+//     return res
+//       .status(err instanceof Prisma.PrismaClientValidationError ? 400 : 500)
+//       .json({ error: err.message });
+//   }
+// };
+
+exports.receiveStatisticsInfo = async (req, res) => {
+  const statsPayload = req.body;
+  try {
     if (!statsPayload.id) return res.status(400).json({ error: "Missing id" });
     if (!statsPayload.recordedAt)
       return res.status(400).json({ error: "Missing recordedAt" });
@@ -12,43 +32,80 @@ exports.receiveStatisticsInfo = async (req, res) => {
       return res.status(400).json({ error: "Missing appId" });
 
     const created = await statisticsModel.createStatisticsLog(statsPayload);
+
+    await health.markStatsJob(statsPayload.appId, true);
+
     return res.status(200).json(created);
   } catch (err) {
     console.error("Failed to create statistics_log:", err);
+
+    if (statsPayload && statsPayload.appId) {
+      try {
+        await health.markStatsJob(statsPayload.appId, false);
+      } catch {}
+    }
+
     return res
       .status(err instanceof Prisma.PrismaClientValidationError ? 400 : 500)
       .json({ error: err.message });
   }
 };
 
-// GET /statistics
-exports.getAllLogs = async (req, res) => {
-  const page = parseInt(req.query.page || "1", 10);
-  const limit = parseInt(req.query.limit || "6", 10);
-  const appId = req.query.appId;
-
-  const safePage = isNaN(page) || page < 1 ? 1 : page;
-  const safeLimit = isNaN(limit) || limit < 1 ? 6 : limit;
-  const skip = (safePage - 1) * safeLimit;
-
+exports.getAllLogs = async function getAllLogs(req, res) {
   try {
-    const [data, totalCount] = await Promise.all([
-      statisticsModel.findLogsPage(skip, safeLimit, appId),
-      statisticsModel.countLogs(appId),
-    ]);
+    const page = Math.max(parseInt(req.query.page ?? "1", 10), 1);
+    const limit = Math.min(
+      Math.max(parseInt(req.query.limit ?? "20", 10), 1),
+      200
+    );
+    const appId = String(req.query.appId || "").trim();
 
-    const totalPages = Math.ceil(totalCount / safeLimit);
+    if (!appId) {
+      return res.json({ data: [], page, totalPages: 1, totalCount: 0 });
+    }
 
-    res.json({
-      data,
-      page: safePage,
-      totalPages,
-      totalCount,
-      pageSize: safeLimit,
+    const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    const ymdStart = (y) =>
+      ISO_DATE_RE.test(y)
+        ? new Date(
+            Number(y.slice(0, 4)),
+            Number(y.slice(5, 7)) - 1,
+            Number(y.slice(8, 10)),
+            0,
+            0,
+            0,
+            0
+          )
+        : null;
+    const addDays = (d, n) => {
+      const x = new Date(d);
+      x.setDate(x.getDate() + n);
+      return x;
+    };
+
+    const fromY = req.query.from ? String(req.query.from) : null;
+    const toY = req.query.to ? String(req.query.to) : null;
+
+    let from = fromY ? ymdStart(fromY) : null;
+    let to = toY ? ymdStart(toY) : null;
+    if (from && to && from > to) [from, to] = [to, from];
+
+    const upperExclusive = to ? addDays(to, 1) : null;
+
+    // ⬇️ use the imported model
+    const out = await statisticsModel.list({
+      page,
+      limit,
+      appId,
+      from,
+      to: upperExclusive,
     });
+    return res.json(out);
   } catch (err) {
-    console.error("Error in getAllLogs:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("GET /statistics failed:", err);
+    return res
+      .status(500)
+      .json({ error: "STATISTICS_LIST_FAILED", message: err.message });
   }
 };
 
@@ -75,3 +132,20 @@ exports.getLatestLogByAppId = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Returns JS Date at local midnight for YYYY-MM-DD (no TZ drift issues
+// on the DB because we query [gte: from, lt: to+1day]).
+function parseYmdStart(ymd) {
+  if (!ISO_DATE_RE.test(ymd)) return null;
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0, 0); // local midnight
+}
+
+// add N days (used to make the upper bound exclusive)
+function addDays(d, n) {
+  const dt = new Date(d.getTime());
+  dt.setDate(dt.getDate() + n);
+  return dt;
+}

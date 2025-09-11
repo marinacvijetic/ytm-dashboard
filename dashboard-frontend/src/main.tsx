@@ -4,9 +4,9 @@ import { PrimeReactProvider } from "primereact/api";
 import App from './App.tsx'
 
 // 1) PrimeReact styles
-import 'primeicons/primeicons.css'
 import 'primereact/resources/themes/lara-light-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css'
 
 // 2) Tailwind
 import './App.css'

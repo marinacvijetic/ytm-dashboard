@@ -1,6 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-
 
 exports.findClientByAppId = async (app_id) => {
   return await prisma.clientApplication.findUnique({
@@ -8,7 +7,16 @@ exports.findClientByAppId = async (app_id) => {
   });
 };
 
-exports.createClient = async (app_id, app_title, version, url, api_url, proctor_edu, proctorio, superset_apache) => {
+exports.createClient = async (
+  app_id,
+  app_title,
+  version,
+  url,
+  api_url,
+  proctor_edu,
+  proctorio,
+  superset_apache
+) => {
   return await prisma.clientApplication.create({
     data: {
       app_id,
@@ -27,32 +35,50 @@ exports.createClient = async (app_id, app_title, version, url, api_url, proctor_
   });
 };
 
-exports.updateClient = async (app_id, app_title, version, url, api_url, proctor_edu, proctorio, superset_apache, last_ping_successful, is_active) => {
+
+exports.updateClient = async (
+  app_id,
+  app_title,
+  version,
+  url,
+  api_url,
+  proctor_edu,
+  proctorio,
+  superset_apache,
+  last_ping_successful,
+  is_active
+) => {
+  const data = {
+    app_title,
+    version,
+    url,
+    api_url,
+    last_update: new Date(),
+    proctor_edu,
+    proctorio,
+    superset_apache,
+  };
+  if (typeof last_ping_successful === 'boolean') data.last_ping_successful = last_ping_successful;
+  if (typeof is_active === 'boolean') data.is_active = is_active;
+
   return await prisma.clientApplication.update({
     where: { app_id },
-    data: {
-      app_title,
-      version,
-      url,
-      api_url,
-      last_update: new Date(),
-      last_ping_successful: true,
-      is_active: true,
-      proctor_edu,
-      proctorio,
-      superset_apache,
-    },
+    data,
   });
 };
 
-exports.updatePingStatus = async (app_id, success) => {
+
+exports.updatePingStatus = async (app_id, success, updateLastUpdate = true) => {
+  const data = {
+    last_ping_successful: success,
+    is_active: success,
+  };
+  if (updateLastUpdate) {
+    data.last_update = new Date();
+  }
   return await prisma.clientApplication.update({
-    where: {app_id},
-    data: {
-      last_update: new Date(),
-      last_ping_successful: success,
-      is_active: success,
-    },
+    where: { app_id },
+    data,
   });
 };
 
@@ -73,7 +99,7 @@ exports.createService = async (app_id, type, last_ping, status) => {
       app_id,
       type,
       last_ping,
-      status
+      status,
     },
   });
 };
@@ -87,7 +113,7 @@ exports.updateService = async (app_id, type, last_ping, status) => {
     },
     data: {
       last_ping,
-      status
+      status,
     },
   });
 };
@@ -102,18 +128,73 @@ exports.countClients = async () => {
   }
 };
 
-exports.findClientsPage = async (skip, take) => {
+exports.findClientsPage = async (skip, take, filters, sortField, sortOrder) => {
   try {
-    const clients = await prisma.clientApplication.findMany({
-      skip: skip,
-      take: take,
-      // include: {services: true},
-    });
+    const where = {};
+    if (filters.app_id) {
+      where.app_id = { contains: filters.app_id, mode: "insensitive" };
+    }
+    if (filters.last_update) {
+      const date = new Date(filters.last_update);
+      if (!isNaN(date.getTime())) {
+        const start = new Date(date.setHours(0, 0, 0, 0));
+        const end = new Date(date.setHours(23, 59, 59, 999));
+        where.last_update = { gte: start, lte: end };
+      }
+    }
+    if (typeof filters.proctor_edu === "boolean") {
+      where.proctor_edu = filters.proctor_edu;
+    }
+    if (typeof filters.proctorio === "boolean") {
+      where.proctorio = filters.proctorio;
+    }
+    if (typeof filters.superset_apache === "boolean") {
+      where.superset_apache = filters.superset_apache;
+    }
 
-    // Map into the exact shape your front‐end expects:
+    const clients = await prisma.clientApplication.findMany({
+      skip,
+      take,
+      where: Object.keys(where).length ? where : undefined,
+      orderBy: { [sortField]: sortOrder },
+    });
     return clients;
   } catch (err) {
     console.error("[client.model] findClientsPage error:", err);
     throw err;
   }
 };
+
+exports.countClientsFiltered = async (filters) => {
+  try {
+    const where = {};
+    if (filters.app_id) {
+      where.app_id = { contains: filters.app_id, mode: "insensitive" };
+    }
+    if (filters.last_update) {
+      const date = new Date(filters.last_update);
+      if (!isNaN(date.getTime())) {
+        const start = new Date(date.setHours(0, 0, 0, 0));
+        const end = new Date(date.setHours(23, 59, 59, 999));
+        where.last_update = { gte: start, lte: end };
+      }
+    }
+    if (typeof filters.proctor_edu === "boolean") {
+      where.proctor_edu = filters.proctor_edu;
+    }
+    if (typeof filters.proctorio === "boolean") {
+      where.proctorio = filters.proctorio;
+    }
+    if (typeof filters.superset_apache === "boolean") {
+      where.superset_apache = filters.superset_apache;
+    }
+
+    return await prisma.clientApplication.count({
+      where: Object.keys(where).length ? where : undefined,
+    });
+  } catch (err) {
+    console.error("[client.model] countClientsFiltered error:", err);
+    throw err;
+  }
+};
+

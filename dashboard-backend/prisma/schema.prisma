@@ -8,21 +8,28 @@ datasource db {
 }
 
 model ClientApplication {
-  client_id            Int              @id @default(autoincrement())
-  app_id               String?          @unique
-  app_title            String?
-  version              String?
-  url                  String?
-  api_url              String?
-  created_at           DateTime?        @db.Timestamp(6)
-  last_update          DateTime?        @db.Timestamp(6)
-  proctor_edu          Boolean?         @default(false)
-  proctorio            Boolean?         @default(false)
-  superset_apache      Boolean?         @default(false)
-  last_ping_successful Boolean?         @default(false)
-  is_active            Boolean?         @default(false)
-  services             services[]
-  statistics_logs      statistics_log[]
+  client_id                  Int              @id @default(autoincrement())
+  app_id                     String?          @unique
+  app_title                  String?
+  version                    String?
+  url                        String?
+  api_url                    String?
+  created_at                 DateTime?        @db.Timestamp(6)
+  last_update                DateTime?        @db.Timestamp(6)
+  proctor_edu                Boolean?         @default(false)
+  proctorio                  Boolean?         @default(false)
+  superset_apache            Boolean?         @default(false)
+  last_ping_successful       Boolean?         @default(false)
+  is_active                  Boolean?         @default(false)
+  last_manual_sync_at        DateTime?        @db.Timestamp(6)
+  last_reachability_check_at DateTime?        @db.Timestamp(6)
+  last_reachability_ok       Boolean?         @default(false)
+  last_appinfo_job_at        DateTime?        @db.Timestamp(6)
+  last_appinfo_job_ok        Boolean?         @default(false)
+  last_stats_job_at          DateTime?        @db.Timestamp(6)
+  last_stats_job_ok          Boolean?         @default(false)
+  services                   services[]
+  statistics_logs            statistics_log[]
 
   @@map("client_applications")
 }

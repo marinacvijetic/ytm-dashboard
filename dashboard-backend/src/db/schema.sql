@@ -37,7 +37,14 @@ CREATE TABLE public.client_applications (
     proctorio boolean DEFAULT false,
     superset_apache boolean DEFAULT false,
     last_ping_successful boolean DEFAULT false,
-    is_active boolean DEFAULT false
+    is_active boolean DEFAULT false,
+    last_manual_sync_at         timestamp without time zone,
+    last_reachability_check_at  timestamp without time zone,
+    last_reachability_ok        boolean DEFAULT false,
+    last_appinfo_job_at         timestamp without time zone,
+    last_appinfo_job_ok         boolean DEFAULT false,
+    last_stats_job_at           timestamp without time zone,
+    last_stats_job_ok           boolean DEFAULT false,
 );
 
 

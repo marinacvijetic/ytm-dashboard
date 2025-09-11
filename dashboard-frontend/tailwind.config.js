@@ -7,9 +7,9 @@ export default defineConfig({
   ],
   theme: {
     extend: {
-      colors: {
-        'primary-blue': '#2fabdf',
-      }
+      fontFamily: {
+        icons: ["primeicons", "react-icons"],
+      },
     }
   }
 })
