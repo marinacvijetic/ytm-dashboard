@@ -714,7 +714,7 @@ export const StatisticsInfo: React.FC = () => {
   }, [fetchData]);
 
   useEffect(() => {
-    const es = new EventSource(EVENTS_ENDPOINT);
+    const eventSource = new EventSource(EVENTS_ENDPOINT);
     const handler = (ev: MessageEvent) => {
       const data = JSON.parse(ev.data);
       if (data.app_id === selectedAppRef.current) {
@@ -726,10 +726,10 @@ export const StatisticsInfo: React.FC = () => {
         );
       }
     };
-    es.addEventListener("stats_update", handler);
+    eventSource.addEventListener("stats_update", handler);
     return () => {
-      es.removeEventListener("stats_update", handler);
-      es.close();
+      eventSource.removeEventListener("stats_update", handler);
+      eventSource.close();
     };
   }, []);
 

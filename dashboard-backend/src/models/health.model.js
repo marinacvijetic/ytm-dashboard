@@ -73,7 +73,6 @@ exports.computeHealthFlags = (row) => {
     stats_job_late: row.last_stats_job_at
             ? ((now - toMs(row.last_stats_job_at) > (D7 + GRACE)) || row.last_stats_job_ok === false)
             : true,
-    never_synced: !(row.last_manual_sync_at || row.last_appinfo_job_at || row.last_stats_job_at),
   };
 
   return flags;

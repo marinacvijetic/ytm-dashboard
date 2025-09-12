@@ -1,5 +1,6 @@
 const statisticsModel = require("../models/statistics.model");
 const health = require("../models/health.model");
+const clientModel = require("../models/client.model");
 const eventBus = require('../utils/eventBus');
 const { Prisma } = require("@prisma/client");
 
@@ -16,6 +17,14 @@ exports.receiveStatisticsInfo = async (req, res) => {
 
     await health.markStatsJob(statsPayload.appId, true);
 
+    const clientApp = await clientModel.findClientByAppId(statsPayload.appId);
+    if (clientApp) {
+      const flagged = {
+        ...clientApp, status_flags: health.computeHealthFlags(clientApp),
+      };
+      eventBus.emit('client_update', flagged);
+    }
+
     eventBus.emit('stats_update', created);
 
     return res.status(200).json(created);
@@ -25,7 +34,16 @@ exports.receiveStatisticsInfo = async (req, res) => {
     if (statsPayload && statsPayload.appId) {
       try {
         await health.markStatsJob(statsPayload.appId, false);
-      } catch {}
+        const clientApp = await clientModel.findClientByAppId(statsPayload.appId);
+        if (clientApp) {
+          const flagged = {
+            ...clientApp, status_flags: health.computeHealthFlags(clientApp),
+          };
+          eventBus.emit('client_update', flagged);
+        }
+      } catch (err){
+        console.error("Failed to markStatsJob:", err);
+      }
     }
 
     return res

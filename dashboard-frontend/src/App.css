@@ -147,11 +147,12 @@
   border-spacing: 0 !important;
 }
 
+
 /* Vertical and horizontal borders on <thead> cells (header + filter row) */
 .client-table .p-datatable-thead > tr > th {
   border-top: 1px solid rgb(229 231 235) !important; /* gray-200 */
   border-bottom: 1px solid rgb(229 231 235) !important;
-  background-color: var(--color-background2) !important;
+
 }
 
 /* vertical dividers between header cells */
