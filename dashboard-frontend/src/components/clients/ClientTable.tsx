@@ -388,6 +388,7 @@ export const ClientTable: React.FC = () => {
             filter
             showFilterMenu={false}
             filterPlaceholder="Search APP ID"
+            filterMatchMode={FilterMatchMode.CONTAINS}
           />
           <Column
             field="version"

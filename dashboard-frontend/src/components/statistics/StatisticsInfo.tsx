@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { DataTable, type DataTablePageEvent } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Button } from "primereact/button";
@@ -149,6 +149,7 @@ export const StatisticsInfo: React.FC = () => {
   const initialAppId = searchParams.get("appId") ?? "";
   const [apps, setApps] = useState<AppInfo[]>([]);
   const [selectedApp, setSelectedApp] = useState<string>(initialAppId);
+
 
   // filters dialog state
   const [showFilterDialog, setShowFilterDialog] = useState(false);
@@ -629,10 +630,16 @@ export const StatisticsInfo: React.FC = () => {
   const [showColumnDialog, setShowColumnDialog] = useState(false);
   const [columnSearch, setColumnSearch] = useState("");
 
-  const appOptions = apps.map((app) => ({
-    label: app.app_title ? `${app.app_title} (${app.app_id})` : app.app_id,
-    value: app.app_id,
-  }));
+const appOptions = useMemo(
+  () =>
+    apps.map((app) => ({
+      label: app.app_title ? `${app.app_title} (${app.app_id})` : app.app_id,
+      value: app.app_id,
+      app_title: app.app_title ?? "",
+      app_id: app.app_id,
+    })),
+  [apps]
+);
 
   // load apps on mount
   useEffect(() => {
@@ -772,6 +779,11 @@ export const StatisticsInfo: React.FC = () => {
             placeholder="Select application..."
             className="w-85"
             showClear
+            filter
+            filterBy="label,app_title,app_id"
+            filterPlaceholder="Search by name or ID"
+            filterMatchMode="contains"
+            filterInputAutoFocus
           />
         </div>
 
