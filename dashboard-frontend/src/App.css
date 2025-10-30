@@ -168,8 +168,10 @@
 }
 
 .client-table .p-datatable-frozen-view .p-datatable-thead > tr > th:first-child {
-  border-right: 1px solid rgb(229 231 235) !important;
+  border-right: 2px solid #2fabdf !important; /* Use your primary blue or any color */
 }
+
+
 
 /* Row state coloring */
 /* These classes are added via rowClassName 'client-down' - 'client-outdated' */
@@ -319,4 +321,13 @@
 }
 .sidebar.is-open .sidebar__label {
   @apply translate-x-0;
+}
+
+/* Add right border to the frozen Client column cells */
+.client-table .p-datatable-frozen-view .p-datatable-tbody > tr > td:first-child {
+  border-right: 2px solid #2fabdf !important;
+}
+
+.text-right {
+  text-align: right !important;
 }

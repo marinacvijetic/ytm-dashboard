@@ -224,7 +224,8 @@ export const ClientTable: React.FC = () => {
 
   const lastUpdatedBody = (row: Client) => {
     const toMs = (d?: string | Date | null) =>
-      (d ? new Date(d).getTime() : 0);
+      d ? new Date(d).getTime() : 0;
+
     const ms = [
       row.last_manual_sync_at,
       row.last_appinfo_job_at,
@@ -235,18 +236,30 @@ export const ClientTable: React.FC = () => {
       .filter(Boolean);
 
     const freshestMs = ms.length ? Math.max(...ms) : 0;
-    const compact = freshestMs ? new Date(freshestMs).toLocaleString() : "";
+
+    const compact = freshestMs
+      ? new Intl.DateTimeFormat("en-US", {
+          year: "numeric",
+          month: "short", // "Oct"
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true, // Use 12-hour format
+        }).format(new Date(freshestMs))
+      : "—";
 
     const fmt = (d?: string) =>
       d
-        ? new Date(d).toLocaleString(undefined, {
+        ? new Intl.DateTimeFormat("en-US", {
             year: "numeric",
-            month: "2-digit",
+            month: "short",
             day: "2-digit",
             hour: "2-digit",
             minute: "2-digit",
             second: "2-digit",
-          })
+            hour12: true,
+          }).format(new Date(d))
         : "—";
 
     const tip = [

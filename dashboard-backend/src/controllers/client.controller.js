@@ -133,7 +133,7 @@ exports.syncAppInfo = async (req, res) => {
       return res.status(404).json({ error: "Client application not found" });
     }
 
-    const baseUrl = ("http://localhost:8085/ytm.webview/" || "").replace(
+    const baseUrl = ("http://localhost:8089/ytm.webview/" || "").replace(
       /\/$/,
       ""
     );
