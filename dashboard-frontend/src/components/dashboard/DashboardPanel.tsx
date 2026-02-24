@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Card } from "primereact/card";
-import { CLIENTS_ENDPOINT } from "../../utils/endpoints";
+import { API_BASE } from "../../utils/endpoints";
 export const DashboardPanel: React.FC = () => {
   const [stats, setStats] = useState({ apps: 0 });
 
   useEffect(() => {
-    fetch(CLIENTS_ENDPOINT)
+    fetch(`${API_BASE}/all-clients`)
       .then((res) => res.json())
       .then((data: unknown[]) => {
         setStats({

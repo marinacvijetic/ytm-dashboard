@@ -18,9 +18,9 @@ app.use(express.json());
 const clientRoutes = require('./routes/client.routes');
 const statisticsRoutes = require('./routes/statistics.routes');
 const eventsRoutes = require('./routes/events.routes');
-app.use('/api', eventsRoutes);
 app.use('/api', clientRoutes);
 app.use('/api', statisticsRoutes);
+app.use('/api', eventsRoutes);
 
 app.get('/', (req, res) => {
   res.send('Homepage is working!');

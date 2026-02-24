@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 datasource db {
@@ -28,6 +29,14 @@ model ClientApplication {
   last_appinfo_job_ok        Boolean?         @default(false)
   last_stats_job_at          DateTime?        @db.Timestamp(6)
   last_stats_job_ok          Boolean?         @default(false)
+  rest_api                   Boolean?         @default(false)
+  ecommerce                  Boolean?         @default(false)
+  sso                        Boolean?         @default(false)
+  open_ai                    Boolean?         @default(false)
+  green_house                Boolean?         @default(false)
+  lti                        Boolean?         @default(false)
+  billing_enabled            Boolean?         @default(false)
+  billing_remaining_credit   Decimal?         @db.Decimal
   services                   services[]
   statistics_logs            statistics_log[]
 

@@ -1,6 +1,6 @@
-export const API_BASE = import.meta.env.VITE_BACKEND_HOST + '/api';
+export const API_BASE = '/api';
 
-export const CLIENTS_ENDPOINT        = `${API_BASE}/clients`;
+export const CLIENTS_ENDPOINT        = `${API_BASE}/all-clients`;
 export const STATISTICS_ENDPOINT     = `${API_BASE}/statistics`;
 export const STATISTICS_APPS         = `${API_BASE}/statistics/apps`;
 export const SYNC_APP_INFO           = `${API_BASE}/app-info/sync/`;

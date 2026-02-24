@@ -4,8 +4,7 @@ const axios = require("axios");
 const clientModel = require("../models/client.model");
 const health = require("../models/health.model");
 const { classifyAxiosError } = require("../utils/httpError");
-const eventBus = require('../utils/eventBus'); 
-
+const eventBus = require("../utils/eventBus");
 
 // add each row non-exclusive flags
 const withFlags = (rows) =>
@@ -19,6 +18,76 @@ exports.getAllClients = async (req, res) => {
     res.json(withFlags(clients));
   } catch (err) {
     console.error("Error in getAllClients:", err.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.getPaginatedClients = async (req, res) => {
+  const page = parseInt(req.query.page || "1", 10);
+  const limit = parseInt(req.query.limit || "5", 10);
+  const sortField = req.query.sortField || "app_title";
+  const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
+
+  // existing filters
+  const app_id = req.query.app_id || "";
+  const last_update = req.query.last_update || "";
+
+  // boolean filters
+  const parseBool = (v) =>
+    v === "true" ? true : v === "false" ? false : undefined;
+  const proctor_edu = parseBool(req.query.proctor_edu);
+  const proctorio = parseBool(req.query.proctorio);
+  const superset_apache = parseBool(req.query.superset_apache);
+  const rest_api = parseBool(req.query.rest_api);
+  const ecommerce = parseBool(req.query.ecommerce);
+  const sso = parseBool(req.query.sso);
+  const open_ai = parseBool(req.query.open_ai);
+  const green_house = parseBool(req.query.green_house);
+  const lti = parseBool(req.query.lti);
+  const billing_enabled = parseBool(req.query.billing_enabled);
+
+  const safePage = isNaN(page) || page < 1 ? 1 : page;
+  const safeLimit = isNaN(limit) || limit < 1 ? 5 : limit;
+  const skip = (safePage - 1) * safeLimit;
+
+  try {
+    const filters = {
+      app_id,
+      last_update,
+      proctor_edu,
+      proctorio,
+      superset_apache,
+      rest_api,
+      ecommerce,
+      sso,
+      open_ai,
+      green_house,
+      lti,
+      billing_enabled,
+    };
+
+    const [data, totalCount] = await Promise.all([
+      clientModel.findClientsPage(
+        skip,
+        safeLimit,
+        filters,
+        sortField,
+        sortOrder,
+      ),
+      clientModel.countClientsFiltered(filters),
+    ]);
+
+    const totalPages = Math.ceil(totalCount / safeLimit);
+
+    return res.json({
+      data: withFlags(data),
+      page: safePage,
+      totalPages,
+      totalCount,
+      pageSize: safeLimit,
+    });
+  } catch (err) {
+    console.error("Error in getPaginatedClients:", err.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -37,6 +106,14 @@ exports.registerApp = async (req, res) => {
       proctorEdu,
       proctorio,
       superset,
+      restApi,
+      ecommerce,
+      sso,
+      openAi,
+      greenHouse,
+      lti,
+      billingEnabled,
+      billingRemainingCredit,
       services,
     } = req.body;
 
@@ -55,7 +132,15 @@ exports.registerApp = async (req, res) => {
         apiUrl,
         proctorEdu,
         proctorio,
-        superset
+        superset,
+        restApi,
+        ecommerce,
+        sso,
+        openAi,
+        greenHouse,
+        lti,
+        billingEnabled,
+        billingRemainingCredit
       );
     } else {
       clientApp = await clientModel.updateClient(
@@ -66,7 +151,15 @@ exports.registerApp = async (req, res) => {
         apiUrl,
         proctorEdu,
         proctorio,
-        superset
+        superset,
+        restApi,
+        ecommerce,
+        sso,
+        openAi,
+        greenHouse,
+        lti,
+        billingEnabled,
+        billingRemainingCredit
       );
     }
 
@@ -91,21 +184,14 @@ exports.registerApp = async (req, res) => {
     await clientModel.updatePingStatus(appId, true);
     try {
       await health.markAppInfoJob(appId, true);
-      await health.markReachability(appId, true);
     } catch {}
     clientApp = await clientModel.findClientByAppId(appId);
 
     // 4) Emit event and respond
-        // 4) Emit event and respond
-    const flaggedClient = {
-      ...clientApp,
-      status_flags: health.computeHealthFlags(clientApp),
-    };
     eventBus.emit("app_registered", {
       clientId: clientApp.client_id,
       appId,
     });
-    eventBus.emit('client_update', flaggedClient);
 
     res.status(200).json({ message: "App registered successfully", clientApp });
   } catch (err) {
@@ -133,11 +219,7 @@ exports.syncAppInfo = async (req, res) => {
       return res.status(404).json({ error: "Client application not found" });
     }
 
-    const baseUrl = ("http://localhost:8089/ytm.webview/" || "").replace(
-      /\/$/,
-      ""
-    );
-    // const baseUrl = (client.url || "").replace(/\/$/, "");
+    const baseUrl = (client.url || "").replace(/\/$/, "");
     if (!baseUrl) {
       return res
         .status(400)
@@ -176,7 +258,15 @@ exports.syncAppInfo = async (req, res) => {
         appInfo.apiUrl,
         appInfo.proctorEdu,
         appInfo.proctorio,
-        appInfo.superset
+        appInfo.superset,
+        appInfo.restApi,
+        appInfo.ecommerce,
+        appInfo.sso,
+        appInfo.openAi,
+        appInfo.greenHouse,
+        appInfo.lti,
+        appInfo.billingEnabled,
+        appInfo.billingRemainingCredit
       );
 
       if (Array.isArray(appInfo.services)) {
@@ -208,7 +298,6 @@ exports.syncAppInfo = async (req, res) => {
         ...finalClient,
         status_flags: health.computeHealthFlags(finalClient),
       };
-      eventBus.emit('client_update', finalWithFlags);
       return res.json(finalWithFlags);
     } catch (e) {
       console.error(`Failed to sync app info for ${client.app_id}:`, e.message);

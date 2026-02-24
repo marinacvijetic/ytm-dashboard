@@ -8,25 +8,27 @@ router.get("/events", (req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
 
+  res.setHeader("X-Accel-Buffering", "no");     //disable proxy buffering
+  res.setHeader("Content-Encoding", "identity"); //SSE must not be compressed
+
   const origin = req.headers.origin || "*";
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Credentials", "false");
 
   if (res.flushHeaders) res.flushHeaders();
 
-  res.write(`: connected\n\n`);
+   // Browser how fast to auto-retry if disconnected
+  res.write(`retry: 15000\n\n`);
 
+  const onClientUpdate = (payload) =>
+    res.write(`event: client_update\ndata: ${JSON.stringify(payload)}\n\n`);
+  const onStatsUpdate = (payload) =>
+    res.write(`event: stats_update\ndata: ${JSON.stringify(payload)}\n\n`);
+
+  // Heartbeat every 15s so proxies don't assume the connection is idle
   const heartbeatInterval = setInterval(() => {
-    res.write(`event: ping\ndata: {}\n\n`);
+    res.write(`event: ping\ndata: {"t":"${new Date().toISOString()}"}\n\n`);
   }, 15000);
-
-  const sendEvent = (event, data) => {
-    res.write(`event: ${event}\n`);
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-  };
-
-  const onClientUpdate = (payload) => sendEvent("client_update", payload);
-  const onStatsUpdate = (payload) => sendEvent("stats_update", payload);
 
   eventBus.on("client_update", onClientUpdate);
   eventBus.on("stats_update", onStatsUpdate);
@@ -35,13 +37,10 @@ router.get("/events", (req, res) => {
     clearInterval(heartbeatInterval);
     eventBus.off("client_update", onClientUpdate);
     eventBus.off("stats_update", onStatsUpdate);
-    try {
-      res.end();
-    } catch (_) {}
+    try { res.end(); } catch (_) {}
   };
 
   req.on("close", close);
-  req.on("end", close);
 });
 
 module.exports = router;

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+:root {
+  --ytm-primary: #101f4a;
+  --ytm-primary-rgb: 16, 31, 74;
+  --sidebar-active: #101f4a;
+}
+
 /* Custom theme colors */
 @theme {
   --color-primary-blue: #2fabdf; /* primary-blue color */
@@ -9,17 +15,12 @@
 
 /* Base  */
 @layer base {
-
   h2 {
     @apply text-3xl font-semibold text-gray-600 mb-10;
   }
 
   .client-table {
     @apply table-fixed;
-  }
-
-  .client-table th {
-    @apply px-4 py-2 text-center whitespace-nowrap bg-[#F4F6F8];
   }
 
   .client-table th,
@@ -32,7 +33,7 @@
   }
 
   .client-table td {
-    @apply px-4 py-3 text-gray-800 border border-blue-600;
+    @apply px-4 py-3 text-gray-800 border border-gray-200;
   }
 }
 
@@ -44,12 +45,16 @@
 
   /* Filter controls sizing */
   .client-table .p-column-filter {
-    width: 100%;
+    width: 100% !important;
+  }
+  .client-table th.th-left .p-column-header-content {
+    justify-content: flex-start !important;
   }
 
-  .client-table .p-datatable-thead .p-column-filter {
-    min-width: 220px;
+  .client-table td.td-left {
+    text-align: left !important;
   }
+
   .client-table .p-column-header-content {
     @apply flex justify-center items-center gap-2 text-lg font-semibold text-gray-700;
   }
@@ -61,15 +66,107 @@
     width: 100%;
   }
 
+  .client-table .p-column-filter .p-calendar {
+    width: 100% !important;
+  }
+
+  .client-table .p-column-filter .p-calendar .p-inputtext {
+    height: 2.25rem !important;
+    border-radius: 0.75rem 0 0 0.75rem !important;
+    border-right: 0 !important;
+  }
+
+  .client-table .p-column-filter .p-calendar .p-datepicker-trigger {
+    height: 2.25rem !important;
+    width: 2.75rem !important;
+    border-radius: 0 0.75rem 0.75rem 0 !important;
+    background: #101f4a !important;
+    border: 1px solid #101f4a !important;
+    box-shadow: none !important;
+  }
+
+  .client-table
+    .p-column-filter
+    .p-calendar
+    .p-datepicker-trigger
+    .p-button-icon {
+    color: #ffffff !important;
+  }
+
+  .client-table .p-column-filter .p-calendar .p-datepicker-trigger:hover {
+    background: #101f4a !important;
+    opacity: 0.95;
+  }
+
+  .page-badge {
+    @apply inline-flex items-center rounded-lg bg-blue-50 text-blue-700 text-lg font-semibold px-3 py-1 mb-4;
+  }
+
+  .page-header {
+    @apply mb-4;
+  }
+
+  .page-title {
+    @apply flex items-center gap-2 text-2xl font-semibold text-gray-800;
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-gray-500 mb-6;
+  }
+
+  .page-card {
+    @apply bg-white border border-gray-200 rounded-xl p-4;
+  }
+
+  .page-card__header {
+    @apply flex items-center justify-between mb-4;
+  }
+
+  .page-card__header-left {
+    @apply flex items-center gap-2 text-gray-800 font-semibold;
+  }
+
+  .page-card--table {
+    @apply p-0 overflow-hidden;
+  }
+  /* Flush table to card edges (no inner padding) */
+  .page-card--table .page-card__header {
+    @apply px-4 pt-4 pb-3;
+    margin-bottom: 0 !important; /* overrides mb-4 from base */
+  }
+
+  .page-card__body {
+    @apply p-0;
+  }
+
+  /* Remove DataTable outer border so card border is the frame */
+  .page-card--table .p-datatable {
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .btn-refresh.p-button {
+    background: #101f4a !important;
+    border: 1px solid #101f4a !important;
+    color: #ffffff !important;
+    border-radius: 12px !important;
+    padding: 0.5rem 1.25rem !important;
+    box-shadow: none !important;
+  }
+
+  .btn-refresh.p-button:hover {
+    background: #101f4a !important;
+    border-color: #101f4a !important;
+    opacity: 0.95;
+  }
+
+  .btn-refresh.p-button:focus {
+    box-shadow: none !important;
+  }
+
   /* Badges (Yes/No) */
   .badge-yesno {
     @apply inline-flex items-center justify-center rounded-lg font-semibold w-20 h-7 text-center;
-  }
-  .badge-yes {
-    @apply bg-green-500/30 text-green-900;
-  }
-  .badge-no {
-    @apply bg-red-500/30 text-red-900;
   }
 
   /* Links inside table cells */
@@ -78,9 +175,30 @@
   }
 
   /* Action buttons */
-  .update-button,
-  .stats-button {
-    @apply flex items-center gap-2 px-3 py-1 rounded-full bg-primary-blue text-white text-sm hover:bg-blue-600 transition-colors;
+  .table-actions {
+    display: inline-flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .action-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #64748b; /* slate-500 */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .action-btn:hover {
+    background: #f8fafc; /* slate-50 */
+    border-color: #cbd5e1; /* slate-300 */
+    color: #101f4a; /* your dark blue */
   }
 
   /* Paginator wrapper (paginatorClassName="paginator") */
@@ -112,13 +230,27 @@
 
   /* Page buttons inside the pill */
   .p-paginator-page {
-    @apply bg-transparent border-0 text-gray-700 rounded-full px-3 py-1 cursor-pointer transition;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important; /* rounded square */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    background: transparent !important;
+    border: 0 !important;
+    color: #374151 !important; /* gray-700 */
+    cursor: pointer !important;
   }
   .p-paginator-page:hover {
-    @apply bg-gray-100 text-gray-800;
+    background: #f3f4f6 !important; /* gray-100 */
+    color: #111827 !important; /* gray-900 */
   }
   .p-paginator-page.p-highlight {
-    @apply bg-blue-50 text-blue-600 font-semibold ring-1 ring-blue-200;
+    background: #101f4a !important;
+    color: #fff !important;
+    box-shadow: none !important;
+    border: 0 !important;
   }
 
   /* Prev/Next/First/Last buttons */
@@ -140,6 +272,125 @@
   .p-paginator-last.p-disabled {
     @apply text-gray-300 cursor-not-allowed bg-transparent;
   }
+
+  .ytm-dialog.p-dialog {
+  border-radius: 0 !important;
+  overflow: hidden;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 20px 60px rgba(17, 24, 39, 0.18) !important;
+}
+
+.ytm-dialog .p-dialog-header {
+  background: #ffffff !important;
+  padding: 1.25rem 1.5rem !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.ytm-dialog .p-dialog-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+
+.ytm-dialog .p-dialog-header-icons {
+  gap: 0.25rem;
+}
+
+.ytm-dialog .p-dialog-header-icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 9999px !important;
+}
+
+.ytm-dialog .p-dialog-header-icon:hover {
+  background: #f3f4f6 !important;
+}
+
+.ytm-dialog .p-dialog-header-close-icon {
+  color: #111827 !important;
+}
+
+.ytm-dialog .p-dialog-content {
+  background: #ffffff !important;
+  padding: 1.25rem 1.5rem !important;
+}
+
+.ytm-dialog .p-dialog-footer {
+  background: #ffffff !important;
+  border-top: 1px solid #e5e7eb !important;
+  padding: 1rem 1.5rem !important;
+}
+
+/* Inputs inside dialogs (search, etc.) */
+.ytm-dialog .ytm-dialog__input {
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 0 12px;
+  outline: none;
+  box-shadow: none;
+  width: 100%;
+  color: #111827;
+}
+
+.ytm-dialog .ytm-dialog__input:focus {
+  border-color: #101f4a;
+}
+
+/* Prime Calendar inside dialogs */
+.ytm-dialog .p-calendar {
+  width: 100% !important;
+}
+
+.ytm-dialog .p-calendar .p-inputtext {
+  height: 44px !important;
+  border-radius: 12px 0 0 12px !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
+}
+
+.ytm-dialog .p-calendar .p-datepicker-trigger {
+  height: 44px !important;
+  width: 52px !important;
+  border-radius: 0 12px 12px 0 !important;
+  background: #101f4a !important;
+  border: 1px solid #101f4a !important;
+  box-shadow: none !important;
+}
+
+.ytm-dialog .p-calendar .p-datepicker-trigger .p-button-icon {
+  color: #ffffff !important;
+}
+
+.ytm-dialog .p-calendar .p-datepicker-trigger:hover {
+  opacity: 0.95;
+}
+
+/* Prime Checkbox inside dialogs */
+.ytm-dialog .p-checkbox .p-checkbox-box {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.ytm-dialog .p-checkbox .p-checkbox-box.p-highlight {
+  background: #101f4a !important;
+  border-color: #101f4a !important;
+}
+
+.ytm-dialog .p-checkbox:not(.p-disabled) .p-checkbox-box:hover {
+  border-color: #101f4a !important;
+}
+
+/* Column list area in Choose Columns */
+.ytm-dialog .ytm-dialog__scroll {
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
 }
 
 .client-table .p-datatable-table {
@@ -147,12 +398,30 @@
   border-spacing: 0 !important;
 }
 
+.client-table.p-datatable {
+  border: 1px solid rgb(229 231 235) !important; /* gray-200 */
+  border-radius: 12px !important;
+  overflow: hidden;
+}
 
 /* Vertical and horizontal borders on <thead> cells (header + filter row) */
 .client-table .p-datatable-thead > tr > th {
-  border-top: 1px solid rgb(229 231 235) !important; /* gray-200 */
-  border-bottom: 1px solid rgb(229 231 235) !important;
+  background: #f4f6f8 !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+  border-color: #e5e7eb !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
 
+  border-top: 1px solid rgb(229 231 235) !important;
+  border-bottom: 1px solid rgb(229 231 235) !important;
+}
+
+.client-table .p-datatable-tbody > tr > td {
+  border-color: #e5e7eb !important;
+  padding: 0.85rem 1rem !important;
+  font-size: 0.875rem !important;
+  color: #334155 !important;
 }
 
 /* vertical dividers between header cells */
@@ -167,19 +436,69 @@
   border-right: 1px solid rgb(229 231 235) !important;
 }
 
-.client-table .p-datatable-frozen-view .p-datatable-thead > tr > th:first-child {
-  border-right: 2px solid #2fabdf !important; /* Use your primary blue or any color */
-}
-
-
-
 /* Row state coloring */
 /* These classes are added via rowClassName 'client-down' - 'client-outdated' */
-.p-datatable .p-datatable-tbody > tr.client-down {
+/* .p-datatable .p-datatable-tbody > tr.client-down {
   background-color: #fee2e2 !important;
 }
 .p-datatable .p-datatable-tbody > tr.client-outdated {
   background-color: #fef9c3 !important;
+} */
+
+/* ===== ClientTable filter row (Search row) ===== */
+.client-table .p-datatable-thead > tr.p-datatable-filters > th,
+.client-table .p-datatable-thead > tr:nth-child(2) > th {
+  background: #ffffff !important;
+  padding: 0.25rem 0.75rem !important;
+}
+
+/* Make filter cell content use full width */
+.client-table .p-datatable-thead > tr.p-datatable-filters > th .p-column-filter,
+.client-table
+  .p-datatable-thead
+  > tr.p-datatable-filters
+  > th
+  .p-column-filter-element,
+.client-table .p-datatable-thead > tr:nth-child(2) > th .p-column-filter,
+.client-table
+  .p-datatable-thead
+  > tr:nth-child(2)
+  > th
+  .p-column-filter-element {
+  width: 100% !important;
+}
+
+/* Our custom search (icon + input) should look like “flat” content inside the cell */
+.client-table .filter-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2.5rem; /* matches design row height */
+}
+
+.client-table .filter-search__icon {
+  color: #94a3b8; /* gray */
+  font-size: 0.95rem;
+  flex: 0 0 auto;
+}
+
+.client-table .filter-search__input {
+  flex: 1 1 auto;
+  width: 100%;
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: inherit !important;
+  color: #475569; /* slate */
+}
+
+.client-table .filter-search__input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
 }
 
 :root {
@@ -194,11 +513,33 @@
 /* Make everything inside inherit the table size */
 .client-table td,
 .client-table th,
-.client-table .p-column-header-content,
-.client-table .p-inputtext,
-.client-table .p-dropdown .p-dropdown-label,
-.client-table .p-calendar .p-inputtext {
+.client-table .p-column-header-content {
   font-size: inherit !important;
+}
+
+.client-table .p-calendar .p-inputtext {
+  height: 2.25rem !important;
+  border-radius: 0.75rem !important;
+}
+
+.client-table .p-dropdown .p-dropdown-label {
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.875rem !important;
+}
+
+.client-table .p-dropdown {
+  height: 2.25rem !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: none !important;
+}
+
+.client-table .p-inputtext {
+  height: 2.25rem !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: none !important;
+  font-size: 0.875rem !important;
 }
 
 /* Links in cells - use the table size, just keep the color */
@@ -210,21 +551,49 @@
 .table-toolbar {
   @apply flex justify-end items-center mb-4;
 }
-.table-actions {
-  @apply flex items-center justify-center gap-2;
+
+/* ===== Status pill (Status column) ===== */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
+  min-height: 2rem;
 }
 
-/* Status icons */
-.status-icon {
-  @apply inline-flex items-center justify-center rounded-full;
-  width: 35px;
-  height: 35px;
-  box-shadow: 0 4px 8px rgba(0,0,0,.25);
-  border: 1px solid rgba(0,0,0,.06);
-  transition: transform .08s ease;
+/* background colors like design */
+.status-pill--success {
+  background: #dcfce7; /* green-100 */
 }
-.status-icon i {
-  font-size: 25px;
+
+.status-pill--warning {
+  background: #fde68a; /* yellow-ish like design */
+}
+
+.status-pill--danger {
+  background: #fee2e2; /* red-100 */
+}
+
+/* icons should be OUTLINED circles, no white fill, no shadow */
+.status-pill__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+
+  background: transparent; /* <-- important */
+  border: 1.5px solid currentColor; /* <-- outlined circle */
+  box-shadow: none; /* <-- remove shadow */
+}
+
+.status-pill__icon i {
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 /* Tooltip target for last updated */
@@ -232,13 +601,41 @@
   cursor: help;
 }
 
+/* Date picker*/
+.client-table .date-filter.p-calendar {
+  width: 100% !important;
+}
+
+.client-table .date-filter.p-calendar .p-inputtext {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.client-table .date-filter.p-calendar .p-datepicker-trigger {
+  background: #101f4a !important;
+  border-color: #101f4a !important;
+  color: #ffffff !important;
+
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+
+  /* keep the outer radius consistent */
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+.client-table .date-filter.p-calendar .p-datepicker-trigger:focus,
+.client-table .date-filter.p-calendar .p-datepicker-trigger:active {
+  box-shadow: none !important;
+}
+
 /*-----------LAYOUT STYLES-----------*/
 /* Root layout container */
 .app-shell {
   display: flex;
-  width: 100vw;           
-  min-height: 100vh;       
-  min-height: 100dvh;       
+  width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--color-background1);
 }
 
@@ -246,7 +643,53 @@
 .main-content {
   flex: 1 1 auto;
   overflow: auto;
-  padding: 1rem;           
+  padding: 1rem;
+}
+
+/* Stats page card header right controls */
+.stats-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.stats-app-select {
+  min-width: 300px;
+  margin-left: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .stats-app-select {
+    width: 100% !important;
+  }
+}
+
+/* Outline button like "Filters" in the design */
+.btn-outline.p-button {
+  background: #ffffff !important;
+  border: 1px solid rgb(229 231 235) !important;
+  color: #111827 !important;
+  border-radius: 12px !important;
+  padding: 0.5rem 1.25rem !important;
+  box-shadow: none !important;
+}
+
+.btn-outline.p-button:hover {
+  background: rgb(249 250 251) !important;
+}
+
+.btn-outline.p-button:focus {
+  box-shadow: none !important;
+}
+
+/* Move "Rows: {totalRecords}" to the far right inside your centered paginator */
+.paginator .p-paginator-current {
+  position: absolute !important;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
 }
 
 /*-----------SIDEBAR STYLES-----------*/
@@ -298,18 +741,18 @@
 
 /* Menu list + items */
 .sidebar__menu {
-
 }
 .sidebar__item {
   @apply px-2 py-3 mt-4 duration-300 cursor-pointer flex gap-2 items-center;
 }
-.sidebar__item:hover {
-  @apply bg-primary-blue text-white rounded-md;
+/* Active + hover color (dark blue from screenshot) */
+.sidebar__item:hover,
+.sidebar__item.is-active {
+  @apply bg-[#101F4A] text-white rounded-xl;
 }
 
 /* Item icon*/
 .sidebar__icon {
-
 }
 
 /* Item label - slide/hide when collapsed */
@@ -323,11 +766,29 @@
   @apply translate-x-0;
 }
 
-/* Add right border to the frozen Client column cells */
-.client-table .p-datatable-frozen-view .p-datatable-tbody > tr > td:first-child {
-  border-right: 2px solid #2fabdf !important;
-}
-
 .text-right {
   text-align: right !important;
+}
+
+@layer primereact {
+  /* Checked state can be either on wrapper (.p-highlight) or on box attribute (data-p-highlight="true") */
+  .ytm-dialog .p-checkbox.p-highlight .p-checkbox-box,
+  .ytm-dialog .p-checkbox .p-checkbox-box[data-p-highlight="true"] {
+    background: var(--sidebar-active) !important; /* #101F4A */
+    border-color: var(--sidebar-active) !important;
+  }
+
+  /* Checkmark icon color */
+  .ytm-dialog .p-checkbox.p-highlight .p-checkbox-icon,
+  .ytm-dialog .p-checkbox .p-checkbox-box[data-p-highlight="true"] .p-checkbox-icon,
+  .ytm-dialog .p-checkbox .p-checkbox-box[data-p-highlight="true"] .p-icon {
+    color: #ffffff !important;
+  }
+
+  /* Focus ring (optional but nice) */
+  .ytm-dialog .p-checkbox .p-checkbox-input:focus-visible + .p-checkbox-box,
+  .ytm-dialog .p-checkbox.p-focus .p-checkbox-box {
+    box-shadow: 0 0 0 2px rgba(16, 31, 74, 0.25) !important;
+    border-color: var(--sidebar-active) !important;
+  }
 }

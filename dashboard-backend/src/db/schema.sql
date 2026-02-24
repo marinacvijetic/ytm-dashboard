@@ -36,6 +36,14 @@ CREATE TABLE public.client_applications (
     proctor_edu boolean DEFAULT false,
     proctorio boolean DEFAULT false,
     superset_apache boolean DEFAULT false,
+    rest_api boolean DEFAULT false,
+    ecommerce boolean DEFAULT false,
+    sso boolean DEFAULT false,
+    open_ai boolean DEFAULT false,
+    green_house boolean DEFAULT false,
+    lti boolean DEFAULT false,
+    billing_enabled boolean DEFAULT false,
+    billing_remaining_credit numeric,
     last_ping_successful boolean DEFAULT false,
     is_active boolean DEFAULT false,
     last_manual_sync_at         timestamp without time zone,
@@ -44,11 +52,11 @@ CREATE TABLE public.client_applications (
     last_appinfo_job_at         timestamp without time zone,
     last_appinfo_job_ok         boolean DEFAULT false,
     last_stats_job_at           timestamp without time zone,
-    last_stats_job_ok           boolean DEFAULT false,
+    last_stats_job_ok           boolean DEFAULT false
 );
 
 
-ALTER TABLE public.client_applications OWNER TO postgres;
+ALTER TABLE public.client_applications OWNER TO CURRENT_USER;
 
 --
 -- Name: client_applications_client_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -77,7 +85,7 @@ CREATE TABLE public.services (
 );
 
 
-ALTER TABLE public.services OWNER TO postgres;
+ALTER TABLE public.services OWNER TO CURRENT_USER;
 
 --
 -- Name: statistics_log; Type: TABLE; Schema: public; Owner: postgres
@@ -190,7 +198,7 @@ CREATE TABLE public.statistics_log (
 );
 
 
-ALTER TABLE public.statistics_log OWNER TO postgres;
+ALTER TABLE public.statistics_log OWNER TO CURRENT_USER;
 
 --
 -- Name: TABLE statistics_log; Type: COMMENT; Schema: public; Owner: postgres

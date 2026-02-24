@@ -15,8 +15,15 @@ exports.createClient = async (
   api_url,
   proctor_edu,
   proctorio,
-  superset_apache
-) => {
+  superset_apache,
+  rest_api,
+  ecommerce,
+  sso,
+  open_ai,
+  green_house,
+  lti,
+  billing_enabled,
+  billing_remaining_credit) => {
   return await prisma.clientApplication.create({
     data: {
       app_id,
@@ -31,6 +38,19 @@ exports.createClient = async (
       proctor_edu,
       proctorio,
       superset_apache,
+
+      // NEW
+      rest_api,
+      ecommerce,
+      sso,
+      open_ai,
+      green_house,
+      lti,
+      billing_enabled,
+      billing_remaining_credit:
+        billing_remaining_credit === null || billing_remaining_credit === undefined
+          ? null
+          : String(billing_remaining_credit)
     },
   });
 };
@@ -45,6 +65,14 @@ exports.updateClient = async (
   proctor_edu,
   proctorio,
   superset_apache,
+  rest_api,
+  ecommerce,
+  sso,
+  open_ai,
+  green_house,
+  lti,
+  billing_enabled,
+  billing_remaining_credit,
   last_ping_successful,
   is_active
 ) => {
@@ -57,6 +85,17 @@ exports.updateClient = async (
     proctor_edu,
     proctorio,
     superset_apache,
+    rest_api,
+    ecommerce,
+    sso,
+    open_ai,
+    green_house,
+    lti,
+    billing_enabled,
+    billing_remaining_credit:
+      billing_remaining_credit === null || billing_remaining_credit === undefined
+        ? null
+        : String(billing_remaining_credit)
   };
   if (typeof last_ping_successful === 'boolean') data.last_ping_successful = last_ping_successful;
   if (typeof is_active === 'boolean') data.is_active = is_active;
@@ -118,5 +157,99 @@ exports.updateService = async (app_id, type, last_ping, status) => {
   });
 };
 
+// Returns the total number of clients in the table.
+exports.countClients = async () => {
+  try {
+    return await prisma.clientApplication.count();
+  } catch (err) {
+    console.error("[client.model] countClients error:", err);
+    throw err;
+  }
+};
 
+exports.findClientsPage = async (skip, take, filters, sortField, sortOrder) => {
+  try {
+    const where = {};
+    if (filters.app_id) {
+      where.app_id = { contains: filters.app_id, mode: "insensitive" };
+    }
+    if (filters.last_update) {
+      const date = new Date(filters.last_update);
+      if (!isNaN(date.getTime())) {
+        const start = new Date(date.setHours(0, 0, 0, 0));
+        const end = new Date(date.setHours(23, 59, 59, 999));
+        where.last_update = { gte: start, lte: end };
+      }
+    }
+    if (typeof filters.proctor_edu === "boolean") {
+      where.proctor_edu = filters.proctor_edu;
+    }
+    if (typeof filters.proctorio === "boolean") {
+      where.proctorio = filters.proctorio;
+    }
+    if (typeof filters.superset_apache === "boolean") {
+      where.superset_apache = filters.superset_apache;
+    }
+    if (typeof filters.rest_api === "boolean") where.rest_api = filters.rest_api;
+    if (typeof filters.ecommerce === "boolean") where.ecommerce = filters.ecommerce;
+    if (typeof filters.sso === "boolean") where.sso = filters.sso;
+    if (typeof filters.open_ai === "boolean") where.open_ai = filters.open_ai;
+    if (typeof filters.green_house === "boolean") where.green_house = filters.green_house;
+    if (typeof filters.lti === "boolean") where.lti = filters.lti;
+    if (typeof filters.billing_enabled === "boolean") where.billing_enabled = filters.billing_enabled;
+
+
+    const clients = await prisma.clientApplication.findMany({
+      skip,
+      take,
+      where: Object.keys(where).length ? where : undefined,
+      orderBy: { [sortField]: sortOrder },
+    });
+    return clients;
+  } catch (err) {
+    console.error("[client.model] findClientsPage error:", err);
+    throw err;
+  }
+};
+
+exports.countClientsFiltered = async (filters) => {
+  try {
+    const where = {};
+    if (filters.app_id) {
+      where.app_id = { contains: filters.app_id, mode: "insensitive" };
+    }
+    if (filters.last_update) {
+      const date = new Date(filters.last_update);
+      if (!isNaN(date.getTime())) {
+        const start = new Date(date.setHours(0, 0, 0, 0));
+        const end = new Date(date.setHours(23, 59, 59, 999));
+        where.last_update = { gte: start, lte: end };
+      }
+    }
+    if (typeof filters.proctor_edu === "boolean") {
+      where.proctor_edu = filters.proctor_edu;
+    }
+    if (typeof filters.proctorio === "boolean") {
+      where.proctorio = filters.proctorio;
+    }
+    if (typeof filters.superset_apache === "boolean") {
+      where.superset_apache = filters.superset_apache;
+    }
+    if (typeof filters.rest_api === "boolean") where.rest_api = filters.rest_api;
+    if (typeof filters.ecommerce === "boolean") where.ecommerce = filters.ecommerce;
+    if (typeof filters.sso === "boolean") where.sso = filters.sso;
+    if (typeof filters.open_ai === "boolean") where.open_ai = filters.open_ai;
+    if (typeof filters.green_house === "boolean") where.green_house = filters.green_house;
+    if (typeof filters.lti === "boolean") where.lti = filters.lti;
+    if (typeof filters.billing_enabled === "boolean") where.billing_enabled = filters.billing_enabled;
+
+
+    return await prisma.clientApplication.count({
+      where: Object.keys(where).length ? where : undefined,
+    });
+  } catch (err) {
+    console.error("[client.model] countClientsFiltered error:", err);
+    throw err;
+  }
+};
 

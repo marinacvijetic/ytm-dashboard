@@ -1,0 +1,46 @@
+services:
+  backend:
+    env_file:
+      - path: .env # default
+        required: true
+    build: ./dashboard-backend
+    container_name: dashboard-backend
+    ports:
+      - "3300:3300"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - FRONTEND_ORIGIN="${FRONTEND_URL}"
+    depends_on:
+      - postgres
+
+  frontend:
+    env_file:
+      - path: .env # default
+        required: true
+    build: ./dashboard-frontend
+    container_name: dashboard-frontend
+    ports:
+      - "5173:5173"        # Vite preview port; change if you use another dev server
+      #     - "4173:5173"        # Vite preview port; change if you use another dev server
+    environment:
+      - VITE_BACKEND_HOST=backend
+      - FRONTEND_ORIGIN="${FRONTEND_URL}"
+    depends_on:
+      - backend
+
+  postgres:
+    env_file:
+      - path: .env # default
+        required: true
+    image: postgres:16
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./dashboard-backend/src/db:/docker-entrypoint-initdb.d
+
+volumes:
+  postgres-data:
+  

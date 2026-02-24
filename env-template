@@ -1,0 +1,7 @@
+POSTGRES_USER=POSTGRES_USER
+POSTGRES_PASSWORD=PASSWORD
+POSTGRES_DB=DATABASE_NAME
+VITE_BASE_URL=http://backend:3300
+FRONTEND_URL=https://ytm-dashboard-development.youtestme.com
+
+# VITE_BASE_URL=http://localhost:3300
